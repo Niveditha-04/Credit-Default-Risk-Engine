@@ -1,0 +1,24 @@
+{
+  "raw_file": "data/raw/accepted_2007_to_2018Q4.csv.gz",
+  "raw_file_size_bytes": 400885234,
+  "raw_file_sha256": "dd972c625896155b388224f3ce729e921dae7a9278af579f5a1d72ab49b632ce",
+  "raw_row_count": 2260701,
+  "raw_column_count": 151,
+  "row_count_method_1": "duckdb read_csv count(*)",
+  "row_count_method_2": "pandas read_csv chunksize=200000",
+  "row_count_methods_agree": true,
+  "column_count_methods_agree": true,
+  "parquet_file": "data/interim/accepted_2007_to_2018Q4_raw.parquet",
+  "parquet_file_size_bytes": 408105838,
+  "parquet_row_count": 2260701,
+  "parquet_column_count": 151,
+  "parquet_row_count_verification": "duckdb read_parquet count(*) vs pyarrow ParquetFile metadata",
+  "machine": {
+    "os": "macOS-26.6.2-arm64-arm-64bit",
+    "python_version": "3.11.15",
+    "total_ram_gb": 16.0,
+    "duckdb_memory_limit_gb": 8.0,
+    "cpu_count": 10
+  },
+  "generated_at_utc": "2026-11-01T14:52:41.125562+00:00"
+}
