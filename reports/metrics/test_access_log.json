@@ -1,0 +1,26 @@
+[
+  {
+    "timestamp_utc": "2026-11-09T14:30:28.713728+00:00",
+    "script": "score_test.py",
+    "row_count": 282787,
+    "action": "Loaded test.parquet for the one-time Phase 5 scoring pass"
+  },
+  {
+    "timestamp_utc": "2026-11-09T14:30:36.686695+00:00",
+    "script": "score_test.py",
+    "row_count": 282787,
+    "action": "Saved scored test to reports/metrics/test_scored.parquet (3 model PDs + economics/benchmark/stability/robustness fields)"
+  },
+  {
+    "timestamp_utc": "2026-11-09T14:44:47.691996+00:00",
+    "script": "score_test.py",
+    "row_count": 282787,
+    "action": "Loaded test.parquet for the one-time Phase 5 scoring pass"
+  },
+  {
+    "timestamp_utc": "2026-11-09T14:44:57.748056+00:00",
+    "script": "score_test.py",
+    "row_count": 282787,
+    "action": "Saved scored test to reports/metrics/test_scored.parquet (3 model PDs + economics/benchmark/stability/robustness fields)"
+  }
+]

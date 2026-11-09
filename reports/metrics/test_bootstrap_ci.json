@@ -1,0 +1,51 @@
+{
+  "single_model_auc_ci": {
+    "lightgbm": {
+      "auc_ci": {
+        "ci_low": 0.6847,
+        "ci_high": 0.6898
+      }
+    },
+    "xgboost": {
+      "auc_ci": {
+        "ci_low": 0.6859,
+        "ci_high": 0.6912
+      }
+    },
+    "scorecard": {
+      "auc_ci": {
+        "ci_low": 0.6686,
+        "ci_high": 0.6735
+      }
+    },
+    "sub_grade": {
+      "auc_ci": {
+        "ci_low": 0.676,
+        "ci_high": 0.6812
+      }
+    }
+  },
+  "paired_auc_diff_ci": {
+    "lightgbm_vs_scorecard": {
+      "mean_diff": 0.0162,
+      "ci_low": 0.0146,
+      "ci_high": 0.0178,
+      "n_resamples_used": 1000,
+      "significant": true
+    },
+    "lightgbm_vs_xgboost": {
+      "mean_diff": -0.0014,
+      "ci_low": -0.002,
+      "ci_high": -0.0008,
+      "n_resamples_used": 1000,
+      "significant": true
+    },
+    "lightgbm_vs_sub_grade": {
+      "mean_diff": 0.0086,
+      "ci_low": 0.0063,
+      "ci_high": 0.0109,
+      "n_resamples_used": 1000,
+      "significant": true
+    }
+  }
+}

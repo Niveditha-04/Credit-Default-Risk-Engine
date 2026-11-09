@@ -1,0 +1,39 @@
+{
+  "lightgbm": {
+    "auc": 0.6872,
+    "gini": 0.3745,
+    "ks": 0.2697,
+    "brier": 0.11966,
+    "brier_skill_score": 0.0555,
+    "mean_predicted_pd_pct": 13.74,
+    "actual_default_rate_pct": 14.88
+  },
+  "xgboost": {
+    "auc": 0.6886,
+    "gini": 0.3772,
+    "ks": 0.2725,
+    "brier": 0.11954,
+    "brier_skill_score": 0.0564,
+    "mean_predicted_pd_pct": 13.79,
+    "actual_default_rate_pct": 14.88
+  },
+  "scorecard": {
+    "auc": 0.6711,
+    "gini": 0.3421,
+    "ks": 0.248,
+    "brier": 0.12105,
+    "brier_skill_score": 0.0445,
+    "mean_predicted_pd_pct": 13.33,
+    "actual_default_rate_pct": 14.88
+  },
+  "sub_grade": {
+    "auc": 0.6786,
+    "gini": 0.3573,
+    "ks": 0.2619,
+    "brier": 0.12153,
+    "brier_skill_score": 0.0407,
+    "mean_predicted_pd_pct": 12.52,
+    "actual_default_rate_pct": 14.88,
+    "note": "AUC/Gini/KS use sub_grade's ordinal rank directly (5a); Brier/calibration use the train-fit sub_grade-to-PD map (5b)."
+  }
+}
