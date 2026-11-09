@@ -3,9 +3,14 @@
     features together, and does it show up in the raw train default rate?
   - dti dip: does it show up in the raw train default rate?
 
-These checks distinguish "the model is picking up a real historical
-pattern" from "this is noise/overfitting on a sparse tail" - by comparing
-against the actual label, not just the model's own SHAP output.
+Every bucket's raw default rate is reported with n and a 95% Wilson score
+confidence interval - some of these buckets are small (the $500K+ income
+bucket has n=116, the dti 0-1 bucket has n=700), and a point-estimate
+"dip" or "rise" that looks clean on a chart can be well within sampling
+noise once you look at the interval. These checks distinguish "the model
+is picking up a real historical pattern" from "this is noise/overfitting
+on a sparse tail" - by comparing against the actual label with honest
+uncertainty, not just the model's own SHAP output or a bare point estimate.
 """
 
 import json
@@ -24,6 +29,39 @@ SEED = 42
 
 INCOME_BINS = [0, 30000, 50000, 70000, 90000, 110000, 150000, 200000, 300000, 500000, 1e7]
 DTI_BINS = [-0.01, 1, 3, 5, 8, 12, 16, 20, 25, 30, 100]
+
+Z_95 = 1.959963984540054  # standard normal 97.5th percentile
+
+
+def wilson_ci(n_success: int, n: int, z: float = Z_95) -> tuple[float, float]:
+    """95% Wilson score interval for a binomial proportion, in percent."""
+    if n == 0:
+        return (float("nan"), float("nan"))
+    p = n_success / n
+    denom = 1 + z**2 / n
+    center = (p + z**2 / (2 * n)) / denom
+    margin = (z / denom) * np.sqrt(p * (1 - p) / n + z**2 / (4 * n**2))
+    return (max(0.0, center - margin) * 100, min(1.0, center + margin) * 100)
+
+
+def default_rate_with_ci(df: pd.DataFrame, col: str, bins: list) -> pd.DataFrame:
+    d = df.copy()
+    d["bucket"] = pd.cut(d[col], bins=bins)
+    rows = []
+    for bucket, g in d.groupby("bucket", observed=True):
+        n = len(g)
+        n_default = int(g["target"].sum())
+        rate = 100 * n_default / n
+        lo, hi = wilson_ci(n_default, n)
+        rows.append({
+            "bucket": str(bucket), "n": n, "default_rate_pct": round(rate, 2),
+            "ci_low": round(lo, 2), "ci_high": round(hi, 2),
+        })
+    return pd.DataFrame(rows)
+
+
+def cis_overlap(row_a: pd.Series, row_b: pd.Series) -> bool:
+    return not (row_a["ci_high"] < row_b["ci_low"] or row_b["ci_high"] < row_a["ci_low"])
 
 
 def main() -> None:
@@ -66,48 +104,62 @@ def main() -> None:
     grouped_monotonic = np.all(np.diff(grouped_means) <= 0) or np.all(np.diff(grouped_means) >= 0)
     print(f"\nGrouped SHAP monotonic across income buckets: {grouped_monotonic}")
 
-    # --- Income reversal: raw train default rate ---
+    # --- Income: raw train default rate, with n and 95% CI ---
     train = pd.read_parquet(TRAIN_PARQUET)
-    train_income = train.copy()
-    train_income["bucket"] = pd.cut(train_income["annual_inc"], bins=INCOME_BINS)
-    income_rate = train_income.groupby("bucket", observed=True).agg(
-        n=("target", "size"), default_rate_pct=("target", lambda x: round(100 * x.mean(), 2))
-    )
-    income_rate.to_csv(METRICS_DIR / "train_default_rate_by_income_bucket.csv")
-    print("\n=== Raw train default rate by income bucket ===")
-    print(income_rate.to_string())
-    rates = income_rate["default_rate_pct"].values
-    income_rate_has_uptick = bool(np.any(np.diff(rates) > 0.3))  # more than a trivial wiggle
-    print(f"Raw default rate shows an uptick after its minimum: {income_rate_has_uptick}")
+    income_rate = default_rate_with_ci(train, "annual_inc", INCOME_BINS)
+    income_rate.to_csv(METRICS_DIR / "train_default_rate_by_income_bucket.csv", index=False)
+    print("\n=== Raw train default rate by income bucket (n, 95% Wilson CI) ===")
+    print(income_rate.to_string(index=False))
 
-    # --- dti dip: raw train default rate ---
-    train_dti = train.copy()
-    train_dti["bucket"] = pd.cut(train_dti["dti"], bins=DTI_BINS)
-    dti_rate = train_dti.groupby("bucket", observed=True).agg(
-        n=("target", "size"), default_rate_pct=("target", lambda x: round(100 * x.mean(), 2))
-    )
-    dti_rate.to_csv(METRICS_DIR / "train_default_rate_by_dti_bucket.csv")
-    print("\n=== Raw train default rate by dti bucket ===")
-    print(dti_rate.to_string())
-    dti_rates = dti_rate["default_rate_pct"].values
-    dti_dip_present = bool(np.any(np.diff(dti_rates[:5]) < 0))  # any decrease in the first 5 buckets
-    print(f"Raw default rate shows a local dip in the low-dti region: {dti_dip_present}")
+    row_500k = income_rate[income_rate["bucket"].str.contains("500000.0, 10000000.0")].iloc[0]
+    row_110_150k = income_rate[income_rate["bucket"].str.contains("110000.0, 150000.0")].iloc[0]
+    income_500k_overlaps_min = cis_overlap(row_500k, row_110_150k)
+    print(f"\n$500K+ CI [{row_500k['ci_low']}, {row_500k['ci_high']}] vs $110-150K (min) CI "
+          f"[{row_110_150k['ci_low']}, {row_110_150k['ci_high']}]: overlap = {income_500k_overlaps_min}")
+
+    # --- dti: raw train default rate, with n and 95% CI ---
+    dti_rate = default_rate_with_ci(train, "dti", DTI_BINS)
+    dti_rate.to_csv(METRICS_DIR / "train_default_rate_by_dti_bucket.csv", index=False)
+    print("\n=== Raw train default rate by dti bucket (n, 95% Wilson CI) ===")
+    print(dti_rate.to_string(index=False))
+
+    row_0_1 = dti_rate[dti_rate["bucket"].str.contains(r"\-0.01, 1.0")].iloc[0]
+    row_5_8 = dti_rate[dti_rate["bucket"].str.contains("5.0, 8.0")].iloc[0]
+    dti_low_end_overlaps = cis_overlap(row_0_1, row_5_8)
+    print(f"\ndti 0-1 CI [{row_0_1['ci_low']}, {row_0_1['ci_high']}] vs dti 5-8 CI "
+          f"[{row_5_8['ci_low']}, {row_5_8['ci_high']}]: overlap = {dti_low_end_overlaps}")
 
     summary = {
         "income_reversal": {
             "grouped_shap_monotonic_across_buckets": bool(grouped_monotonic),
             "note": (
-                "annual_inc alone reverses clearly (SHAP rises from -0.237 at $90-110K back toward -0.14 at "
+                "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.237 toward -0.14 at "
                 "$500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), "
                 "the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward "
-                "zero - the other income-scaled features partly offset annual_inc's own reversal, since a very "
-                "high earner's loan_to_income and revol_bal_to_income are mechanically very low."
+                "zero - the other income-scaled features partly offset annual_inc's own rise."
             ),
-            "raw_train_default_rate_shows_uptick": income_rate_has_uptick,
+            "raw_rate_500k_plus_ci": [float(row_500k["ci_low"]), float(row_500k["ci_high"])],
+            "raw_rate_110_150k_min_ci": [float(row_110_150k["ci_low"]), float(row_110_150k["ci_high"])],
+            "cis_overlap": bool(income_500k_overlaps_min),
+            "verdict": (
+                "PLATEAU, not reversal: the $500K+ bucket (n=116) has a wide CI that fully contains the "
+                "$110-150K minimum's CI. The raw data cannot distinguish 'risk rises again at very high income' "
+                "from 'risk stays flat with noise' at this sample size."
+            ),
         },
-        "dti_dip": {
-            "raw_train_default_rate_shows_dip": dti_dip_present,
-            "note": "Both the SHAP dip and the raw train default rate dip in the dti=3-8 region before rising.",
+        "dti_low_end": {
+            "raw_rate_0_1_ci": [float(row_0_1["ci_low"]), float(row_0_1["ci_high"])],
+            "raw_rate_5_8_ci": [float(row_5_8["ci_low"]), float(row_5_8["ci_high"])],
+            "cis_overlap": bool(dti_low_end_overlaps),
+            "verdict": (
+                "CORRECTED CLAIM: the SHAP dip (minimum at dti=5-8) and the raw default rate do NOT agree at "
+                "the low end - dti=0-1 (n=700) is actually the SAFEST raw bucket (8.43%), not the riskiest, "
+                "while SHAP shows dti=0-1 as less protective than dti=5-8. This is a small non-monotonic SHAP "
+                "shape at very low dti that is NOT clearly visible in the raw default rate (its CI overlaps "
+                "neighboring buckets) - likely a conditional effect (interacting with other features) or "
+                "sampling noise on a modest bucket, not a confirmed standalone historical pattern. The overall "
+                "rising trend from dti~15 upward IS robust (buckets there are large, CIs tight, non-overlapping)."
+            ),
         },
     }
     with open(METRICS_DIR / "shap_followup_checks_summary.json", "w") as f:

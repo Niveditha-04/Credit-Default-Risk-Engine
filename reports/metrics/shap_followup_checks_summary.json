@@ -1,11 +1,28 @@
 {
   "income_reversal": {
     "grouped_shap_monotonic_across_buckets": false,
-    "note": "annual_inc alone reverses clearly (SHAP rises from -0.237 at $90-110K back toward -0.14 at $500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward zero - the other income-scaled features partly offset annual_inc's own reversal, since a very high earner's loan_to_income and revol_bal_to_income are mechanically very low.",
-    "raw_train_default_rate_shows_uptick": true
+    "note": "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.237 toward -0.14 at $500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward zero - the other income-scaled features partly offset annual_inc's own rise.",
+    "raw_rate_500k_plus_ci": [
+      5.38,
+      16.19
+    ],
+    "raw_rate_110_150k_min_ci": [
+      7.3,
+      8.32
+    ],
+    "cis_overlap": true,
+    "verdict": "PLATEAU, not reversal: the $500K+ bucket (n=116) has a wide CI that fully contains the $110-150K minimum's CI. The raw data cannot distinguish 'risk rises again at very high income' from 'risk stays flat with noise' at this sample size."
   },
-  "dti_dip": {
-    "raw_train_default_rate_shows_dip": true,
-    "note": "Both the SHAP dip and the raw train default rate dip in the dti=3-8 region before rising."
+  "dti_low_end": {
+    "raw_rate_0_1_ci": [
+      6.59,
+      10.72
+    ],
+    "raw_rate_5_8_ci": [
+      9.26,
+      10.33
+    ],
+    "cis_overlap": true,
+    "verdict": "CORRECTED CLAIM: the SHAP dip (minimum at dti=5-8) and the raw default rate do NOT agree at the low end - dti=0-1 (n=700) is actually the SAFEST raw bucket (8.43%), not the riskiest, while SHAP shows dti=0-1 as less protective than dti=5-8. This is a small non-monotonic SHAP shape at very low dti that is NOT clearly visible in the raw default rate (its CI overlaps neighboring buckets) - likely a conditional effect (interacting with other features) or sampling noise on a modest bucket, not a confirmed standalone historical pattern. The overall rising trend from dti~15 upward IS robust (buckets there are large, CIs tight, non-overlapping)."
   }
 }
