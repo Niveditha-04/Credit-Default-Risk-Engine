@@ -341,7 +341,6 @@ def main(log_to_mlflow: bool = False) -> None:
 
     # Model selection: best AUC across both LightGBM searches, then the
     # SIMPLEST (fewest trees) trial within SIMPLICITY_AUC_TOLERANCE of it.
-    lgb_trials_by_id = {t["trial"]: t for t in lgb_trials}
     best_trial = max(lgb_trials, key=lambda t: t["auc"])
     best_auc = best_trial["auc"]
     within_tolerance = [t for t in lgb_trials if t["auc"] >= best_auc - SIMPLICITY_AUC_TOLERANCE]
@@ -377,7 +376,7 @@ def main(log_to_mlflow: bool = False) -> None:
         return metrics, train_pred, val_pred
 
     best_metrics, _, _ = model_metrics(lgb_boosters[best_trial["trial"]], best_trial, "best")
-    chosen_metrics, chosen_train_pred, chosen_val_pred = model_metrics(
+    chosen_metrics, _chosen_train_pred, chosen_val_pred = model_metrics(
         lgb_boosters[chosen_trial["trial"]], chosen_trial, "chosen"
     )
 

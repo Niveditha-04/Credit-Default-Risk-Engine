@@ -6,12 +6,28 @@ balancer, no concurrency, no network beyond localhost.
 """
 
 import json
+import os
 import platform
+import subprocess
 import time
 from pathlib import Path
 
 import httpx
 import numpy as np
+
+
+def load_average() -> list:
+    try:
+        return list(os.getloadavg())
+    except (OSError, AttributeError):
+        return []
+
+
+def cpu_model() -> str:
+    try:
+        return subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return platform.processor() or platform.machine()
 
 METRICS_DIR = Path("reports/metrics")
 BASE_URL = "http://localhost:8000"
@@ -68,7 +84,12 @@ def main() -> None:
         "label": "local laptop numbers, not production - single container, no load balancer, sequential requests over localhost",
         "machine": {
             "platform": platform.platform(),
-            "processor": platform.processor() or platform.machine(),
+            "cpu": cpu_model(),
+            "cpu_count": os.cpu_count(),
+            "load_average_1_5_15min": load_average(),
+            "note": "load average is whatever else was running on this laptop at measurement time "
+            "(OS, browser, etc.) - nothing else from this project (no concurrent build, test, or "
+            "training script) was running. Not a dedicated/isolated benchmark host.",
         },
         "n_requests_per_condition": N_REQUESTS,
         "with_reason_codes": summarize(with_reasons),

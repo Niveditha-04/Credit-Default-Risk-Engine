@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements-serve.txt
 COPY src/api/ src/api/
 COPY src/evaluation/score_models.py src/evaluation/score_models.py
 COPY src/evaluation/__init__.py src/evaluation/__init__.py
+COPY src/explain/labels.py src/explain/labels.py
+COPY src/explain/__init__.py src/explain/__init__.py
 COPY src/features/feature_engineering.py src/features/feature_engineering.py
 COPY src/features/__init__.py src/features/__init__.py
 COPY src/models/math_utils.py src/models/math_utils.py

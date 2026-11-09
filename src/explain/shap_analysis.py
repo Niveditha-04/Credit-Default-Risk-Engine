@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 import shap
 
+from src.explain.labels import PLAIN_ENGLISH
+
 METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
 TEST_PARQUET = "data/processed/test.parquet"
@@ -36,34 +38,6 @@ ROLLOUT_FLAG_COLUMNS = [
     "never_flag__mths_since_recent_inq",
     "never_flag__mths_since_recent_revol_delinq",
 ]
-
-# Plain-English labels for reason codes. Only covers features that appear
-# in the top drivers below; extend if a new feature shows up.
-PLAIN_ENGLISH = {
-    "fico_mean": "credit score (FICO)",
-    "dti": "debt-to-income ratio",
-    "loan_to_income": "loan amount relative to income",
-    "inq_last_6mths": "number of recent credit inquiries",
-    "annual_inc": "annual income",
-    "revol_util": "revolving credit utilization",
-    "purpose": "stated loan purpose",
-    "bc_open_to_buy": "available bankcard credit",
-    "acc_open_past_24mths": "accounts opened in the last 24 months",
-    "mths_since_recent_bc": "months since most recent bankcard account opened",
-    "mths_since_recent_inq": "months since most recent credit inquiry",
-    "total_bc_limit": "total bankcard credit limit",
-    "num_tl_op_past_12m": "accounts opened in the last 12 months",
-    "bc_util": "bankcard utilization",
-    "home_ownership": "home ownership status",
-    "revol_bal_to_income": "revolving balance relative to income",
-    "loan_amnt": "loan amount",
-    "mo_sin_old_il_acct": "age of oldest installment account",
-    "mo_sin_old_rev_tl_op": "age of oldest revolving account",
-    "tot_hi_cred_lim": "total high credit limit across accounts",
-    "num_rev_tl_bal_gt_0": "number of revolving accounts with a balance",
-    "credit_history_months": "length of credit history (months)",
-    "emp_length": "years employed",
-}
 
 
 def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
