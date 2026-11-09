@@ -1,0 +1,15 @@
+{
+  "model": "lightgbm",
+  "train_auc": 0.7568,
+  "train_gini": 0.5136,
+  "train_ks": 0.3765,
+  "validation_auc": 0.6846,
+  "validation_gini": 0.3692,
+  "validation_ks": 0.2689,
+  "train_minus_validation_auc_gap": 0.0722,
+  "gap_flagged": true,
+  "validation_auc_above_investigate_threshold": false,
+  "scorecard_validation_auc": 0.665,
+  "lift_over_scorecard_auc": 0.0196,
+  "note": "Validation was used for early stopping AND hyperparameter selection AND calibration in this phase, so this validation AUC is optimistic as an out-of-sample estimate. Test (2015) is untouched and will give the honest read in Phase 5."
+}

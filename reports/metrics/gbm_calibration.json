@@ -1,0 +1,10 @@
+{
+  "brier_uncalibrated": 0.11243,
+  "brier_isotonic": 0.11224,
+  "brier_platt": 0.11304,
+  "chosen_method": "isotonic",
+  "mean_predicted_pd_before_pct": 13.09,
+  "actual_default_rate_pct": 13.73,
+  "mean_predicted_pd_after_isotonic_pct": 13.73,
+  "mean_predicted_pd_after_platt_pct": 13.73
+}
