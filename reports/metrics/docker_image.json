@@ -1,0 +1,10 @@
+{
+  "image": "credit-default-risk-engine:latest",
+  "image_id": "f7337384c9d0",
+  "size_bytes": 161600526,
+  "size_mb": 161.6,
+  "docker_images_reported_size": "758MB",
+  "free_disk_bytes_at_record_time": 13268770816,
+  "free_disk_gb_at_record_time": 13.3,
+  "base_image": "python:3.11-slim",
+}

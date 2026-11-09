@@ -2,25 +2,32 @@
   "label": "local laptop numbers, not production - single container, no load balancer, sequential requests over localhost",
   "machine": {
     "platform": "macOS-26.6.2-arm64-arm-64bit",
-    "processor": "arm"
+    "cpu": "Apple M4",
+    "cpu_count": 10,
+    "load_average_1_5_15min": [
+      4.5146484375,
+      4.15673828125,
+      4.265625
+    ],
+    "note": "load average is whatever else was running on this laptop at measurement time (OS, browser, etc.) - nothing else from this project (no concurrent build, test, or training script) was running. Not a dedicated/isolated benchmark host."
   },
   "n_requests_per_condition": 1000,
   "with_reason_codes": {
     "n": 1000,
-    "p50_ms": 25.095,
-    "p95_ms": 31.57,
-    "p99_ms": 49.864,
-    "mean_ms": 26.144,
-    "min_ms": 20.062,
-    "max_ms": 259.769
+    "p50_ms": 17.79,
+    "p95_ms": 23.297,
+    "p99_ms": 36.515,
+    "mean_ms": 19.313,
+    "min_ms": 16.255,
+    "max_ms": 178.844
   },
   "without_reason_codes": {
     "n": 1000,
-    "p50_ms": 20.675,
-    "p95_ms": 25.307,
-    "p99_ms": 35.001,
-    "mean_ms": 21.328,
-    "min_ms": 16.692,
-    "max_ms": 124.996
+    "p50_ms": 15.045,
+    "p95_ms": 20.447,
+    "p99_ms": 31.243,
+    "mean_ms": 16.225,
+    "min_ms": 13.758,
+    "max_ms": 129.024
   }
 }
