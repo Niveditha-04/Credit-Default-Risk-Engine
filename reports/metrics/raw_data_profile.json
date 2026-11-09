@@ -9,7 +9,7 @@
   "row_count_methods_agree": true,
   "column_count_methods_agree": true,
   "parquet_file": "data/interim/accepted_2007_to_2018Q4_raw.parquet",
-  "parquet_file_size_bytes": 408105838,
+  "parquet_file_size_bytes": 407998058,
   "parquet_row_count": 2260701,
   "parquet_column_count": 151,
   "parquet_row_count_verification": "duckdb read_parquet count(*) vs pyarrow ParquetFile metadata",
@@ -20,5 +20,5 @@
     "duckdb_memory_limit_gb": 8.0,
     "cpu_count": 10
   },
-  "generated_at_utc": "2026-11-01T14:52:41.125562+00:00"
+  "generated_at_utc": "2026-11-09T10:38:36.808146+00:00"
 }

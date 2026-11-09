@@ -67,7 +67,15 @@ def build_select_expr(col: str) -> str:
         # A debt-to-income ratio cannot be negative. 2 rows in the raw file
         # have dti = -1 (likely a sentinel), 1 of which is in our 2012-2018
         # term=36/individual population (logged in phase2_cleaning.json).
-        return f'CASE WHEN TRY_CAST("{col}" AS DOUBLE) < 0 THEN NULL ELSE TRY_CAST("{col}" AS DOUBLE) END AS "{col}"'
+        # dti > 100 is treated as impossible too: 2,561 rows in the raw
+        # file, dominated by a dti=999 sentinel cluster (135 rows, by far
+        # the single most common value above 100) - none fall in our
+        # 2012-2018 term=36/individual population, but nulled defensively
+        # since this cleaning runs on the full table (including replay).
+        return (
+            f'CASE WHEN TRY_CAST("{col}" AS DOUBLE) < 0 OR TRY_CAST("{col}" AS DOUBLE) > 100 '
+            f'THEN NULL ELSE TRY_CAST("{col}" AS DOUBLE) END AS "{col}"'
+        )
     if col in NUMERIC_COLUMNS:
         return f'TRY_CAST("{col}" AS DOUBLE) AS "{col}"'
     if col in TEXT_COLUMNS:
@@ -96,6 +104,12 @@ def main() -> None:
         f"""
         SELECT count(*) FROM read_parquet('{RAW_PARQUET.as_posix()}')
         WHERE issue_d IS NOT NULL AND TRY_CAST(dti AS DOUBLE) < 0
+        """
+    ).fetchone()[0]
+    n_dti_over_100 = con.execute(
+        f"""
+        SELECT count(*) FROM read_parquet('{RAW_PARQUET.as_posix()}')
+        WHERE issue_d IS NOT NULL AND TRY_CAST(dti AS DOUBLE) > 100
         """
     ).fetchone()[0]
 
@@ -138,6 +152,7 @@ def main() -> None:
         "term_distinct_values_after_parsing": [t[0] for t in term_values],
         "n_columns": len(raw_cols),
         "negative_dti_rows_set_to_null": n_negative_dti,
+        "dti_over_100_rows_set_to_null": n_dti_over_100,
     }
 
     with open(OUT_METRICS, "w") as f:
