@@ -1,0 +1,33 @@
+{
+  "gap_decomposition": {
+    "approved_population": "LightGBM approvals at the fixed policy cutoff",
+    "n_approved": 281109,
+    "mean_pd_original": 0.1356,
+    "mean_pd_scaled": 0.147,
+    "actual_default_rate_approved": 0.147,
+    "scale_factor": 1.0846,
+    "ex_ante_ev_original": 276185609.46,
+    "ex_ante_ev_pd_scaled_to_actual": 254282486.08,
+    "ex_post_realized_cash": 231563567.21,
+    "original_gap": 44622042.25,
+    "gap_explained_by_pd_level_drift": 21903123.37,
+    "gap_explained_by_pd_level_drift_pct_of_original_gap": 49.09,
+    "remainder_gap": 22718918.88,
+    "remainder_gap_pct_of_original_gap": 50.91
+  },
+  "recovery_timing_check": {
+    "train_charged_off": {
+      "n": 18281,
+      "median_months_to_last_pymnt": 17.0,
+      "median_recoveries_over_funded_pct": 5.45,
+      "mean_recoveries_over_funded_pct": 6.73
+    },
+    "test_charged_off": {
+      "n": 42089,
+      "median_months_to_last_pymnt": 16.0,
+      "median_recoveries_over_funded_pct": 5.86,
+      "mean_recoveries_over_funded_pct": 7.51
+    },
+    "note": "Data snapshot is March 2019. Test (2015-issued) charged-off loans have had less calendar time to accumulate post-charge-off recoveries than train (2012-2013-issued) charged-off loans by that snapshot date."
+  }
+}

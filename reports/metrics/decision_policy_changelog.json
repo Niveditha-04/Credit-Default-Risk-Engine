@@ -33,5 +33,12 @@
     "ex_post_realized_cash_formula": "total_pymnt - collection_recovery_fee - funded_amnt",
     "all_estimated_from": "train (2012-2013) and validation (2014) only; applied to test (2015) exactly once, no re-tuning",
     "note": "Model AUC/Gini/KS/Brier/calibration metrics from the original Test evaluation commit are UNCHANGED - only the economics formulas and the decision policy derived from them are corrected here."
+  },
+  "v2_addendum_fixed_rate_methodology": {
+    "superseded_file": "test_fixed_approval_rate_views_v1_superseded.csv",
+    "bug": "Fixed 70/80/90% approval-rate cut-offs were picked by sorting TEST's own PD distribution, not validation's.",
+    "detail": "Each model's cut-off for a target approval rate (e.g. 80%) must be determined from validation only, then applied as a fixed PD value to test - sorting test itself to hit an exact approval rate on test is implicitly using test to set the policy, even though it looks like a harmless descriptive table.",
+    "replacement_file": "test_fixed_approval_rate_comparison.csv",
+    "fix": "Cut-offs now computed once on validation (per score: LightGBM, XGBoost, scorecard, sub_grade map), then applied unchanged to test. Actual resulting test approval rate is reported alongside the target rate and will not land exactly on 70/80/90% as a result - that is expected and correct."
   }
 }

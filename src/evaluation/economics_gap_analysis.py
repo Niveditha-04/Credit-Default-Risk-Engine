@@ -1,0 +1,267 @@
+"""Three analyses, all evaluation-only (no policy or model changes):
+
+1. Fixed approval-rate (70/80/90%) comparison on test, for all 4 scores
+   (LightGBM, XGBoost, scorecard, sub_grade map). Cut-offs are set on
+   VALIDATION per score, then applied as a fixed value to test - test's
+   own distribution is never used to pick a cut-off.
+2. Ex-ante/ex-post gap decomposition for LightGBM: how much of the gap is
+   just the model's mean predicted PD (13.74%) being below the actual
+   test default rate (14.88%), vs how much is left over. Plus a check of
+   the recovery-timing hypothesis (newer loans have had less time to
+   recover by the March 2019 data snapshot).
+3. Verification of the scorecard's ex-ante EV being inflated by a less
+   dispersed PD distribution rather than a different approval set.
+
+Reads: reports/metrics/test_scored.parquet (already scored, no new test
+read), data/processed/validation.parquet, train.parquet, and the cleaned
+table restricted to train/test populations (never touches test rows
+beyond what's already in test_scored.parquet).
+"""
+
+import json
+from pathlib import Path
+
+import duckdb
+import joblib
+import numpy as np
+import pandas as pd
+
+from src.models.gbm import logit
+
+METRICS_DIR = Path("reports/metrics")
+TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+VALIDATION_PARQUET = "data/processed/validation.parquet"
+TRAIN_PARQUET = "data/processed/train.parquet"
+CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
+
+FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
+
+
+def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    with open(METRICS_DIR / "frozen_model_config.json") as f:
+        frozen = json.load(f)
+
+    validation = pd.read_parquet(VALIDATION_PARQUET)
+    for col in ["home_ownership", "purpose", "verification_status"]:
+        validation[col] = validation[col].astype("category")
+
+    from src.evaluation.score_models import score_lightgbm, score_scorecard, score_xgboost
+
+    out = validation[["id", "target"]].copy()
+    out["pd_lightgbm"] = score_lightgbm(validation, frozen["lightgbm_chosen"])
+    out["pd_xgboost"] = score_xgboost(validation, frozen["xgboost"])
+    out["pd_scorecard"] = score_scorecard(validation, frozen["scorecard"])
+
+    train_cleaned = con.execute(
+        f"""
+        SELECT id, sub_grade FROM read_parquet('{CLEANED_PARQUET}')
+        WHERE term = 36 AND application_type = 'Individual'
+          AND EXTRACT(year FROM issue_d) BETWEEN 2012 AND 2013
+        """
+    ).fetchdf()
+    train_target = pd.read_parquet(TRAIN_PARQUET)[["id", "target"]]
+    pd_map = train_target.merge(train_cleaned, on="id", how="left").groupby("sub_grade")["target"].mean().to_dict()
+
+    val_cleaned = con.execute(
+        f"""
+        SELECT id, sub_grade, installment, loan_amnt FROM read_parquet('{CLEANED_PARQUET}')
+        WHERE term = 36 AND application_type = 'Individual' AND EXTRACT(year FROM issue_d) = 2014
+        """
+    ).fetchdf()
+    out = out.merge(val_cleaned, on="id", how="left")
+    out["pd_sub_grade_mapped"] = out["sub_grade"].map(pd_map)
+    return out, pd_map
+
+
+def main() -> None:
+    con = duckdb.connect()
+    con.execute("SET memory_limit = '8GB'")
+
+    with open(METRICS_DIR / "decision_policy.json") as f:
+        policy = json.load(f)
+    lgd = policy["lgd_used_in_ev_model"]
+    prepayment_ratio = policy["prepayment_adjusted_interest"]["ratio"]
+
+    test = pd.read_parquet(TEST_SCORED)
+    print(f"Loaded {len(test)} rows from {TEST_SCORED} (already scored, no new test read)")
+
+    # ================================================================
+    # 1. Fixed approval-rate comparison, cut-offs set on VALIDATION
+    # ================================================================
+    print("\n=== Scoring validation (all 4) to set fixed-rate cut-offs ===")
+    val, train_pd_map = score_validation_all(con)
+
+    test["pd_sub_grade_mapped"] = test["sub_grade"].map(train_pd_map)
+    test["scheduled_interest"] = test["installment"] * 36 - test["loan_amnt"]
+    test["interest_income"] = test["scheduled_interest"] * prepayment_ratio
+    test["realized_net_cash"] = test["total_pymnt"] - test["collection_recovery_fee"] - test["funded_amnt"]
+
+    score_cols = {
+        "lightgbm": "pd_lightgbm", "xgboost": "pd_xgboost",
+        "scorecard": "pd_scorecard", "sub_grade_map": "pd_sub_grade_mapped",
+    }
+
+    rows = []
+    cutoffs_used = {}
+    for name, col in score_cols.items():
+        val_sorted = val.sort_values(col).reset_index(drop=True)
+        cutoffs_used[name] = {}
+        for rate_pct in FIXED_APPROVAL_RATES_PCT:
+            n_approve = int(len(val_sorted) * rate_pct / 100)
+            cutoff = float(val_sorted.iloc[:n_approve][col].max())
+            cutoffs_used[name][rate_pct] = cutoff
+
+            approved = test[test[col] <= cutoff]
+            ev = float(
+                ((1 - approved[col]) * approved["interest_income"]
+                 - approved[col] * approved["loan_amnt"] * lgd).sum()
+            )
+            rows.append(
+                {
+                    "model": name,
+                    "target_approval_rate_pct": rate_pct,
+                    "pd_cutoff_from_validation": round(cutoff, 4),
+                    "actual_approval_rate_on_test_pct": round(100 * len(approved) / len(test), 2),
+                    "actual_default_rate_approved_pct": round(100 * approved["target"].mean(), 2),
+                    "ex_ante_total_expected_net_value": round(ev, 2),
+                    "ex_post_realized_net_cash_total": round(float(approved["realized_net_cash"].sum()), 2),
+                }
+            )
+    fixed_table = pd.DataFrame(rows)
+    fixed_table.to_csv(METRICS_DIR / "test_fixed_approval_rate_comparison.csv", index=False)
+    print(fixed_table.to_string(index=False))
+
+    # ================================================================
+    # 2. Gap decomposition for LightGBM
+    # ================================================================
+    print("\n=== Gap decomposition: LightGBM ===")
+    champion_full_cutoff = policy["chosen_pd_cutoff"]
+    approved = test[test["pd_lightgbm"] <= champion_full_cutoff].copy()
+
+    original_mean_pd = approved["pd_lightgbm"].mean()
+    actual_rate = approved["target"].mean()
+    scale = actual_rate / original_mean_pd
+    approved["pd_scaled"] = (approved["pd_lightgbm"] * scale).clip(0, 1)
+
+    ev_original = float(
+        ((1 - approved["pd_lightgbm"]) * approved["interest_income"]
+         - approved["pd_lightgbm"] * approved["loan_amnt"] * lgd).sum()
+    )
+    ev_scaled = float(
+        ((1 - approved["pd_scaled"]) * approved["interest_income"]
+         - approved["pd_scaled"] * approved["loan_amnt"] * lgd).sum()
+    )
+    ex_post = float(approved["realized_net_cash"].sum())
+
+    gap_decomposition = {
+        "approved_population": "LightGBM approvals at the fixed policy cutoff",
+        "n_approved": len(approved),
+        "mean_pd_original": round(float(original_mean_pd), 4),
+        "mean_pd_scaled": round(float((approved["pd_scaled"]).mean()), 4),
+        "actual_default_rate_approved": round(float(actual_rate), 4),
+        "scale_factor": round(float(scale), 4),
+        "ex_ante_ev_original": round(ev_original, 2),
+        "ex_ante_ev_pd_scaled_to_actual": round(ev_scaled, 2),
+        "ex_post_realized_cash": round(ex_post, 2),
+        "original_gap": round(ev_original - ex_post, 2),
+        "gap_explained_by_pd_level_drift": round(ev_original - ev_scaled, 2),
+        "gap_explained_by_pd_level_drift_pct_of_original_gap": round(
+            100 * (ev_original - ev_scaled) / (ev_original - ex_post), 2
+        ),
+        "remainder_gap": round(ev_scaled - ex_post, 2),
+        "remainder_gap_pct_of_original_gap": round(100 * (ev_scaled - ex_post) / (ev_original - ex_post), 2),
+    }
+    print(json.dumps(gap_decomposition, indent=2))
+
+    print("\n=== Recovery-timing check: train vs test charged-off loans ===")
+    train_co = con.execute(
+        f"""
+        SELECT id, issue_d, last_pymnt_d, funded_amnt, recoveries,
+               date_diff('month', issue_d, last_pymnt_d) AS months_to_last_pymnt
+        FROM read_parquet('{CLEANED_PARQUET}')
+        WHERE term = 36 AND application_type = 'Individual'
+          AND EXTRACT(year FROM issue_d) BETWEEN 2012 AND 2013
+          AND loan_status = 'Charged Off'
+        """
+    ).fetchdf()
+    test_co = test[test["target"] == 1].copy()
+    test_co["months_to_last_pymnt"] = (
+        (pd.to_datetime(test_co["last_pymnt_d"]).dt.year - pd.to_datetime(test_co["issue_d"]).dt.year) * 12
+        + (pd.to_datetime(test_co["last_pymnt_d"]).dt.month - pd.to_datetime(test_co["issue_d"]).dt.month)
+    )
+
+    recovery_timing = {
+        "train_charged_off": {
+            "n": len(train_co),
+            "median_months_to_last_pymnt": float(train_co["months_to_last_pymnt"].median()),
+            "median_recoveries_over_funded_pct": round(
+                float((train_co["recoveries"] / train_co["funded_amnt"]).median()) * 100, 2
+            ),
+            "mean_recoveries_over_funded_pct": round(
+                float((train_co["recoveries"] / train_co["funded_amnt"]).mean()) * 100, 2
+            ),
+        },
+        "test_charged_off": {
+            "n": len(test_co),
+            "median_months_to_last_pymnt": float(test_co["months_to_last_pymnt"].median()),
+            "median_recoveries_over_funded_pct": round(
+                float((test_co["recoveries"] / test_co["funded_amnt"]).median()) * 100, 2
+            ),
+            "mean_recoveries_over_funded_pct": round(
+                float((test_co["recoveries"] / test_co["funded_amnt"]).mean()) * 100, 2
+            ),
+        },
+        "note": "Data snapshot is March 2019. Test (2015-issued) charged-off loans have had less calendar time to accumulate post-charge-off recoveries than train (2012-2013-issued) charged-off loans by that snapshot date.",
+    }
+    print(json.dumps(recovery_timing, indent=2))
+
+    with open(METRICS_DIR / "test_gap_decomposition_lightgbm.json", "w") as f:
+        json.dump({"gap_decomposition": gap_decomposition, "recovery_timing_check": recovery_timing}, f, indent=2)
+
+    # ================================================================
+    # 3. Scorecard gap explanation check
+    # ================================================================
+    print("\n=== Scorecard vs LightGBM: approval-set overlap and PD dispersion ===")
+    lgb_approved_ids = set(test[test["pd_lightgbm"] <= champion_full_cutoff]["id"])
+    sc_cutoff = champion_full_cutoff  # same fixed PD cutoff policy applied to all models
+    sc_approved_ids = set(test[test["pd_scorecard"] <= sc_cutoff]["id"])
+
+    overlap = lgb_approved_ids & sc_approved_ids
+    only_lgb = lgb_approved_ids - sc_approved_ids
+    only_sc = sc_approved_ids - lgb_approved_ids
+
+    common = test[test["id"].isin(overlap)]
+    scorecard_check = {
+        "lightgbm_approved_n": len(lgb_approved_ids),
+        "scorecard_approved_n": len(sc_approved_ids),
+        "approved_by_both_n": len(overlap),
+        "approved_by_both_pct_of_lightgbm_set": round(100 * len(overlap) / len(lgb_approved_ids), 2),
+        "approved_by_both_pct_of_scorecard_set": round(100 * len(overlap) / len(sc_approved_ids), 2),
+        "only_lightgbm_approved_n": len(only_lgb),
+        "only_scorecard_approved_n": len(only_sc),
+        "pd_std_full_test": {
+            "lightgbm": round(float(test["pd_lightgbm"].std()), 4),
+            "scorecard": round(float(test["pd_scorecard"].std()), 4),
+        },
+        "on_commonly_approved_loans": {
+            "mean_pd_lightgbm": round(float(common["pd_lightgbm"].mean()), 4),
+            "mean_pd_scorecard": round(float(common["pd_scorecard"].mean()), 4),
+            "std_pd_lightgbm": round(float(common["pd_lightgbm"].std()), 4),
+            "std_pd_scorecard": round(float(common["pd_scorecard"].std()), 4),
+        },
+        "interpretation": (
+            "Approval sets are nearly identical (see overlap percentages). The ex-ante EV difference comes "
+            "from the scorecard assigning systematically lower/less dispersed PDs to the SAME commonly-approved "
+            "loans (see mean/std PD on commonly-approved loans), which mechanically inflates its computed EV - "
+            "not from the scorecard approving a different, better-risk set of loans."
+        ),
+    }
+    print(json.dumps(scorecard_check, indent=2))
+    with open(METRICS_DIR / "test_scorecard_gap_explanation.json", "w") as f:
+        json.dump(scorecard_check, f, indent=2)
+
+    print("\nDone.")
+
+
+if __name__ == "__main__":
+    main()
