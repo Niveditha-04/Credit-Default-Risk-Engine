@@ -1,0 +1,26 @@
+{
+  "label": "local laptop numbers, not production - single container, no load balancer, sequential requests over localhost",
+  "machine": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "n_requests_per_condition": 1000,
+  "with_reason_codes": {
+    "n": 1000,
+    "p50_ms": 25.095,
+    "p95_ms": 31.57,
+    "p99_ms": 49.864,
+    "mean_ms": 26.144,
+    "min_ms": 20.062,
+    "max_ms": 259.769
+  },
+  "without_reason_codes": {
+    "n": 1000,
+    "p50_ms": 20.675,
+    "p95_ms": 25.307,
+    "p99_ms": 35.001,
+    "mean_ms": 21.328,
+    "min_ms": 16.692,
+    "max_ms": 124.996
+  }
+}

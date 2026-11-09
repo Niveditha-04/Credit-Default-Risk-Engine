@@ -1,0 +1,40 @@
+# No raw or interim data, no bulk processed splits, no mlruns, no CLAUDE.md
+# in the build context. The two exceptions are the baked champion artifacts
+# (data/processed/models/lightgbm/model_chosen.joblib and calibrator.joblib)
+# that the Dockerfile explicitly COPYs - everything else under data/ is
+# excluded below, including the other two models (scorecard, xgboost) and
+# the unconstrained-reference LightGBM artifact, none of which the API uses.
+data/raw/
+data/interim/
+data/processed/*.parquet
+data/processed/models/scorecard/
+data/processed/models/xgboost/
+data/processed/models/lightgbm/model_best_unconstrained.joblib
+data/processed/models/lightgbm/features.json
+
+mlruns/
+mlflow.db
+mlartifacts/
+
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+notebooks/
+docs/
+tests/
+
+CLAUDE.md
+.env
+kaggle.json
+.DS_Store
+*.egg-info/
+
+reports/figures/
+reports/drift/

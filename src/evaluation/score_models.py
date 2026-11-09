@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.models.gbm import logit
+from src.models.math_utils import logit
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 

@@ -40,6 +40,8 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
 
+from src.models.math_utils import logit
+
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
@@ -227,11 +229,6 @@ def tune_xgboost(train, validation, feats, y_train, y_validation, log_to_mlflow=
                 mlflow.log_metric("best_iteration", booster.best_iteration)
 
     return best, trials
-
-
-def logit(p: np.ndarray, eps: float = 1e-6) -> np.ndarray:
-    p_clipped = np.clip(p, eps, 1 - eps)
-    return np.log(p_clipped / (1 - p_clipped))
 
 
 def fit_isotonic(fit_pred: np.ndarray, fit_y: np.ndarray) -> IsotonicRegression:

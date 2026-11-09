@@ -47,73 +47,46 @@ import duckdb
 
 from src.data.target import labelled_population_query, replay_population_query
 from src.features.allow_list import ALLOW_LIST, check_completeness, feature_columns
+from src.features.feature_engineering import (
+    ENGINEERED_FEATURE_NAMES,
+    REQUIRED_RAW_COLUMNS,
+    engineer_features,
+)
 
 CLEANED_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_cleaned.parquet")
 PROCESSED_DIR = Path("data/processed")
 
-NEVER_FLAG_SOURCE_COLUMNS = [
-    "mths_since_last_delinq",
-    "mths_since_last_major_derog",
-    "mths_since_last_record",
-    "mths_since_recent_bc_dlq",
-    "mths_since_recent_revol_delinq",
-    "mths_since_recent_inq",
-]
-
-# Source columns gated on another row's nullness (same bureau-data refresh,
-# verified: tot_cur_bal IS NULL implies these are always null too).
-ROW_LEVEL_GATED_FLAG_SOURCES = {
-    "mths_since_recent_bc_dlq": "tot_cur_bal",
-    "mths_since_last_major_derog": "tot_cur_bal",
-}
-
-# Source columns gated on a date cutoff (rolled out earlier, March 2012;
-# first non-null row-level proxy not available, so a calendar cutoff is used).
-DATE_GATED_FLAG_SOURCES = {
-    "mths_since_recent_inq": "2012-04-01",
-    "mths_since_recent_revol_delinq": "2012-04-01",
-}
-
-
-def engineered_feature_exprs() -> list[str]:
-    exprs = [
-        "(fico_range_low + fico_range_high) / 2.0 AS fico_mean",
-        "date_diff('month', earliest_cr_line, issue_d) AS credit_history_months",
-        "CASE WHEN annual_inc > 0 THEN loan_amnt / annual_inc ELSE NULL END AS loan_to_income",
-        "CASE WHEN annual_inc > 0 THEN revol_bal / annual_inc ELSE NULL END AS revol_bal_to_income",
-    ]
-    for src in NEVER_FLAG_SOURCE_COLUMNS:
-        flag_name = f"never_flag__{src}"
-        if src in ROW_LEVEL_GATED_FLAG_SOURCES:
-            gate_col = ROW_LEVEL_GATED_FLAG_SOURCES[src]
-            expr = (
-                f'CASE WHEN "{gate_col}" IS NULL THEN NULL '
-                f'WHEN "{src}" IS NULL THEN 1 ELSE 0 END AS "{flag_name}"'
-            )
-        elif src in DATE_GATED_FLAG_SOURCES:
-            cutoff = DATE_GATED_FLAG_SOURCES[src]
-            expr = (
-                f"CASE WHEN issue_d < DATE '{cutoff}' THEN NULL "
-                f'WHEN "{src}" IS NULL THEN 1 ELSE 0 END AS "{flag_name}"'
-            )
-        else:
-            expr = f'CASE WHEN "{src}" IS NULL THEN 1 ELSE 0 END AS "{flag_name}"'
-        exprs.append(expr)
-    return exprs
-
 
 def engineered_feature_names() -> list[str]:
-    names = ["fico_mean", "credit_history_months", "loan_to_income", "revol_bal_to_income"]
-    names += [f"never_flag__{src}" for src in NEVER_FLAG_SOURCE_COLUMNS]
-    return names
+    return list(ENGINEERED_FEATURE_NAMES)
+
+
+ALWAYS_SELECTED_COLUMNS = {"id", "issue_d", "split", "target"}
+
+
+def derivation_only_columns() -> list[str]:
+    """Raw columns needed to compute engineered features but not
+    themselves model features (e.g. fico_range_low/high, which only
+    exist to build fico_mean) - selected in the SQL, dropped before the
+    table is written.
+
+    issue_d is deliberately excluded here even though it's in
+    REQUIRED_RAW_COLUMNS: it's already selected via the hardcoded
+    "id, issue_d, split, target" prefix in build_select_clause(), so
+    including it again would select it twice (DuckDB silently renames the
+    second copy to issue_d_1, which then leaks through as a bogus extra
+    "feature" - caught by rerunning gbm.py after this refactor and seeing
+    70 features instead of 69)."""
+    raw_feats = set(feature_columns())
+    return [c for c in REQUIRED_RAW_COLUMNS if c not in raw_feats and c not in ALWAYS_SELECTED_COLUMNS]
 
 
 def build_select_clause() -> str:
     check_completeness()
     raw_feats = feature_columns()
-    raw_select = ", ".join(f'"{c}"' for c in raw_feats)
-    eng_select = ", ".join(engineered_feature_exprs())
-    return f"id, issue_d, split, target, {raw_select}, {eng_select}"
+    all_cols = sorted(set(raw_feats) | set(derivation_only_columns()))
+    select = ", ".join(f'"{c}"' for c in all_cols)
+    return f"id, issue_d, split, target, {select}"
 
 
 def hard_excluded_columns() -> set[str]:
@@ -146,12 +119,15 @@ def assert_engineered_features_finite(con: duckdb.DuckDBPyConnection, parquet_pa
 
 
 def main() -> None:
+    import pandas as pd
+
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
 
     select_clause = build_select_clause()
+    drop_cols = derivation_only_columns()
 
     labelled_query = f"SELECT {select_clause} FROM ({labelled_population_query()})"
     replay_query = f"SELECT {select_clause} FROM ({replay_population_query()})"
@@ -164,7 +140,13 @@ def main() -> None:
         ("replay", replay_query),
     ]:
         out_path = PROCESSED_DIR / f"{split}.parquet"
-        con.execute(f"COPY ({query}) TO '{out_path.as_posix()}' (FORMAT PARQUET)")
+
+        raw_df = con.execute(query).fetchdf()
+        # engineer_features() is the SAME function serving imports (src/features/
+        # feature_engineering.py) - no copied logic between training and serving.
+        engineered = engineer_features(raw_df)
+        final_df = pd.concat([raw_df.drop(columns=drop_cols), engineered], axis=1)
+        final_df.to_parquet(out_path, index=False)
 
         cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{out_path.as_posix()}')").fetchall()]
         assert_no_banned_columns(set(cols))

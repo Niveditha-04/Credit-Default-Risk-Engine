@@ -1,0 +1,29 @@
+{
+  "n_rows_tested": 1000,
+  "tolerance": 1e-09,
+  "max_abs_diff": 0.0,
+  "mean_abs_diff": 0.0,
+  "n_exact_within_tolerance": 1000,
+  "n_mismatches": 0,
+  "mismatches": [],
+  "purpose_categories_covered": [
+    "car",
+    "credit_card",
+    "debt_consolidation",
+    "educational",
+    "home_improvement",
+    "house",
+    "major_purchase",
+    "medical",
+    "moving",
+    "other",
+    "renewable_energy",
+    "small_business",
+    "vacation",
+    "wedding"
+  ],
+  "n_purpose_categories_covered": 14,
+  "n_rows_with_missing_optional_field": 974,
+  "sent_one_at_a_time": true,
+  "verdict": "PASS"
+}
