@@ -1,31 +1,71 @@
 {
-  "methodology": "Swept the champion model's (LightGBM) calibrated PD on validation (2014) over its empirical distribution. For each candidate PD cut-off, approved = PD <= cut-off. Picked the cut-off that maximizes TOTAL expected net value (sum of (1-PD)*interest_income - PD*loan_amnt*LGD across approved loans) on validation. This fixed PD value is then applied unchanged to all three models on test - each model approves test loans with its OWN calibrated PD <= this value.",
+  "version": "v2",
+  "superseded_version": "v1 (reports/metrics/decision_policy_v1_superseded.json) - see decision_policy_changelog.json",
+  "methodology": "Swept the champion model's (LightGBM) calibrated PD on validation (2014) over its empirical distribution. For each candidate PD cut-off, approved = PD <= cut-off. Picked the cut-off that maximizes TOTAL expected net value (sum of (1-PD)*interest_income - PD*loan_amnt*LGD_cash_basis across approved loans) on validation. This fixed PD value is then applied unchanged to all three models on test - each model approves test loans with its OWN calibrated PD <= this value.",
   "lgd": {
     "n_charged_off_train_loans": 18281,
-    "lgd_mean": 0.3247,
-    "lgd_median": 0.2941,
-    "lgd_std": 0.2686,
-    "formula": "LGD_i = 1 - clip((total_pymnt_i + recoveries_i - collection_recovery_fee_i) / funded_amnt_i, 0, 1); LGD = mean(LGD_i) across train-year (2012-2013) charged-off, 36-month, individual loans"
+    "cash_basis": {
+      "formula": "1 - clip((total_pymnt - collection_recovery_fee) / funded_amnt, 0, 1)",
+      "used_for": "EV model",
+      "mean": 0.3803,
+      "median": 0.3725,
+      "std": 0.2737
+    },
+    "standard_outstanding_principal_basis": {
+      "formula": "1 - clip((recoveries - collection_recovery_fee) / (funded_amnt - total_rec_prncp), 0, 1)",
+      "used_for": "reference only, not used in EV model",
+      "n_valid": 18281,
+      "mean": 0.8906,
+      "median": 0.8796,
+      "std": 0.118
+    }
   },
+  "lgd_used_in_ev_model": 0.3803,
   "lgd_sensitivity_range": [
+    0.25,
+    0.3,
+    0.35,
+    0.3803,
     0.4,
+    0.45,
     0.5,
-    0.6,
-    0.65,
-    0.7,
-    0.75,
-    0.8,
-    0.9
+    0.6
   ],
-  "interest_income_formula": "interest_income_i = installment_i * 36 - loan_amnt_i",
-  "expected_net_value_formula": "EV_i = (1 - PD_i) * interest_income_i - PD_i * loan_amnt_i * LGD",
-  "chosen_pd_cutoff": 0.4429,
-  "validation_at_chosen_cutoff": {
-    "approval_rate_pct": 99.83,
-    "n_approved": 162301,
-    "actual_default_rate_approved_pct": 13.68,
-    "total_expected_net_value": 259493875.53,
-    "mean_expected_net_value_per_loan": 1598.84
+  "prepayment_adjusted_interest": {
+    "n_fully_paid_train_loans": 125581,
+    "formula": "sum(total_rec_int) / sum(installment*36 - loan_amnt), train Fully Paid loans only",
+    "ratio": 0.8262,
+    "interpretation": "Fully paid train loans realized 82.6% of the interest a full 36-month schedule would imply, due to early payoff."
   },
+  "interest_income_formula": "interest_income_i = (installment_i * 36 - loan_amnt_i) * prepayment_ratio",
+  "expected_net_value_formula": "EV_i = (1 - PD_i) * interest_income_i - PD_i * loan_amnt_i * LGD_cash_basis",
+  "chosen_pd_cutoff": 0.3998,
+  "validation_at_chosen_cutoff": {
+    "approval_rate_pct": 99.5,
+    "n_approved": 161760,
+    "actual_default_rate_approved_pct": 13.6,
+    "total_expected_net_value": 184435948.05,
+    "mean_expected_net_value_per_loan": 1140.18
+  },
+  "fixed_approval_rate_views_validation": [
+    {
+      "approval_rate_pct": 70,
+      "pd_cutoff": 0.1677,
+      "actual_default_rate_approved_pct": 9.53,
+      "total_expected_net_value": 145009651.04
+    },
+    {
+      "approval_rate_pct": 80,
+      "pd_cutoff": 0.1988,
+      "actual_default_rate_approved_pct": 10.68,
+      "total_expected_net_value": 161650667.34
+    },
+    {
+      "approval_rate_pct": 90,
+      "pd_cutoff": 0.2467,
+      "actual_default_rate_approved_pct": 12.01,
+      "total_expected_net_value": 176240421.02
+    }
+  ],
   "note": "Chosen entirely from validation (2014) and train (2012-2013). Test (2015) has not been read anywhere in this script. This cutoff, LGD, and interest-income formula are now FIXED and will be applied identically to test with no further adjustment."
 }
