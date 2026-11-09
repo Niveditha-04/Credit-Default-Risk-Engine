@@ -1,10 +1,18 @@
 {
-  "brier_uncalibrated": 0.11243,
-  "brier_isotonic": 0.11224,
-  "brier_platt": 0.11304,
-  "chosen_method": "isotonic",
-  "mean_predicted_pd_before_pct": 13.09,
-  "actual_default_rate_pct": 13.73,
-  "mean_predicted_pd_after_isotonic_pct": 13.73,
-  "mean_predicted_pd_after_platt_pct": 13.73
+  "fit_period": "2014-01 to 2014-09",
+  "holdout_period": "2014-10 to 2014-12",
+  "n_fit": 112550,
+  "n_holdout": 50020,
+  "brier_uncalibrated_holdout": 0.11781,
+  "brier_isotonic_holdout": 0.11777,
+  "brier_platt_holdout": 0.11771,
+  "chosen_method": "platt",
+  "mean_predicted_pd_before_holdout_pct": 13.73,
+  "actual_default_rate_holdout_pct": 14.53,
+  "mean_predicted_pd_after_isotonic_holdout_pct": 14.2,
+  "mean_predicted_pd_after_platt_holdout_pct": 14.22,
+  "mean_predicted_pd_before_full_2014_pct": 13.12,
+  "actual_default_rate_full_2014_pct": 13.73,
+  "mean_predicted_pd_after_full_2014_pct": 13.73,
+  "final_calibrator_refit_on": "full 2014 (Jan-Dec)"
 }

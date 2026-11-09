@@ -376,8 +376,6 @@ _add(
         "purpose",
         "dti",
         "delinq_2yrs",
-        "fico_range_low",
-        "fico_range_high",
         "inq_last_6mths",
         "open_acc",
         "pub_rec",
@@ -395,6 +393,17 @@ _add(
     "keep_feature",
     "Core applicant/credit-bureau attribute known at the time of underwriting. Verified ~0% missing in all "
     "modelling years.",
+    True,
+)
+
+_add(
+    ["fico_range_low", "fico_range_high"],
+    "keep_not_feature",
+    "Exact duplicate of the engineered fico_mean feature (fico_mean = (low+high)/2, and the low/high band is a "
+    "fixed-width pair in this data). Phase 3's own correlation reduction and Phase 4's gain table both confirmed "
+    "they carry no information fico_mean lacks (r=1.0, identical IV). Dropped at Nivi's request before freezing "
+    "the Phase 5 model, keeping fico_mean as the single representative so trees don't split importance across "
+    "exact clones.",
     True,
 )
 

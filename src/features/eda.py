@@ -63,7 +63,7 @@ def default_rate_by_feature(con: duckdb.DuckDBPyConnection, feature: str, fname:
 
 
 def distributions(con: duckdb.DuckDBPyConnection) -> None:
-    cols = ["loan_amnt", "log_annual_inc", "dti", "fico_mean", "revol_util", "credit_history_months"]
+    cols = ["loan_amnt", "annual_inc", "dti", "fico_mean", "revol_util", "credit_history_months"]
     df = con.execute(f"SELECT {', '.join(cols)} FROM read_parquet('{TRAIN_PARQUET}')").fetchdf()
 
     fig, axes = plt.subplots(2, 3, figsize=(14, 8))
@@ -80,11 +80,8 @@ def correlation_heatmap(con: duckdb.DuckDBPyConnection) -> None:
     cols = [
         "loan_amnt",
         "annual_inc",
-        "log_annual_inc",
         "dti",
         "fico_mean",
-        "fico_range_low",
-        "fico_range_high",
         "revol_bal",
         "revol_util",
         "open_acc",

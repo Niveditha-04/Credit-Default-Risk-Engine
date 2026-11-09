@@ -1,15 +1,35 @@
 {
   "model": "lightgbm",
-  "train_auc": 0.7568,
-  "train_gini": 0.5136,
-  "train_ks": 0.3765,
-  "validation_auc": 0.6846,
-  "validation_gini": 0.3692,
-  "validation_ks": 0.2689,
-  "train_minus_validation_auc_gap": 0.0722,
-  "gap_flagged": true,
-  "validation_auc_above_investigate_threshold": false,
+  "selection_rule": "simplest (fewest trees) trial within 0.002 validation AUC of the best",
+  "best": {
+    "label": "best",
+    "trial": "regularized_8",
+    "n_trees": 802,
+    "train_auc": 0.727,
+    "train_gini": 0.454,
+    "train_ks": 0.3299,
+    "validation_auc": 0.6848,
+    "validation_gini": 0.3696,
+    "validation_ks": 0.27,
+    "train_minus_validation_auc_gap": 0.0422,
+    "gap_flagged": false,
+    "validation_auc_above_investigate_threshold": false
+  },
+  "chosen": {
+    "label": "chosen",
+    "trial": "regularized_0",
+    "n_trees": 273,
+    "train_auc": 0.7324,
+    "train_gini": 0.4648,
+    "train_ks": 0.3395,
+    "validation_auc": 0.6834,
+    "validation_gini": 0.3668,
+    "validation_ks": 0.2693,
+    "train_minus_validation_auc_gap": 0.049,
+    "gap_flagged": false,
+    "validation_auc_above_investigate_threshold": false
+  },
   "scorecard_validation_auc": 0.665,
-  "lift_over_scorecard_auc": 0.0196,
-  "note": "Validation was used for early stopping AND hyperparameter selection AND calibration in this phase, so this validation AUC is optimistic as an out-of-sample estimate. Test (2015) is untouched and will give the honest read in Phase 5."
+  "chosen_lift_over_scorecard_auc": 0.0184,
+  "note": "Validation was used for early stopping, hyperparameter search, the best-vs-chosen selection rule, AND calibration in this phase, so this validation AUC is optimistic as an out-of-sample estimate. Test (2015) is untouched and will give the honest read in Phase 5."
 }

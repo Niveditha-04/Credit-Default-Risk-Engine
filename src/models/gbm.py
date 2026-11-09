@@ -1,18 +1,31 @@
 """Gradient boosting: LightGBM (main) and XGBoost (comparison).
 
-Uses the full allow-listed feature set (72 features: 61 raw + 11
-engineered), not the 17-feature scorecard subset - trees handle
-redundancy and missing values natively, so there is no need for the
-scorecard's WOE-space correlation/VIF pruning here.
+Uses the full allow-listed feature set (69 features: 59 raw + 10
+engineered - fico_range_low/high and log_annual_inc were dropped as exact
+duplicates of fico_mean/annual_inc before this freeze), not the
+17-feature scorecard subset - trees handle redundancy and missing values
+natively, so there is no need for the scorecard's WOE-space
+correlation/VIF pruning here.
 
 Fit on train (2012-2013), early-stopped and tuned on validation (2014).
-Calibrated on validation too. Test (2015) is never touched.
+Two LightGBM searches run: an unconstrained one (20 trials) and a small
+regularized one (10 trials, num_leaves <= 15, min_child_samples >= 500,
+lambda_l2 > 0). The final LightGBM model is the SIMPLEST config (fewest
+trees) within 0.002 validation AUC of the best trial found across both
+searches - a complexity-vs-performance tradeoff, not just "best AUC".
+XGBoost gets the same 20-trial budget as LightGBM's unconstrained search.
 
-IMPORTANT: validation is used for both early stopping/tuning AND
-calibration in this script. That means the validation AUC reported here
-is slightly optimistic as an estimate of out-of-sample performance - it
-was itself a target of model selection. The honest, once-only read on
-truly unseen data happens in Phase 5 against test (2015).
+Calibrated on an OUT-OF-SAMPLE split of validation itself: fit on
+Jan-Sep 2014, evaluate on Oct-Dec 2014 (never seen by the calibrator),
+then the winning method is refit on the full 2014 for deployment. Test
+(2015) is never touched anywhere in this script.
+
+IMPORTANT: validation is used for early stopping, hyperparameter search,
+model selection (the 0.002 rule), AND (a held-out slice of) calibration.
+That means the validation AUC reported here is optimistic as an estimate
+of out-of-sample performance - it was itself a target of model selection
+at every step. The honest, once-only read on truly unseen data happens in
+Phase 5 against test (2015).
 """
 
 import json
@@ -40,13 +53,15 @@ BANNED_COLUMNS = {
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 N_TUNING_TRIALS_LGB = 20
-N_TUNING_TRIALS_XGB = 10
+N_TUNING_TRIALS_LGB_REGULARIZED = 10
+N_TUNING_TRIALS_XGB = 20
 MAX_BOOST_ROUNDS = 3000
 EARLY_STOPPING_ROUNDS = 50
 
 TRAIN_VAL_AUC_GAP_FLAG = 0.05
 VALIDATION_AUC_INVESTIGATE_THRESHOLD = 0.75
 SCORECARD_VALIDATION_AUC = 0.665  # from Phase 3, reports/metrics/scorecard_validation_metrics.json
+SIMPLICITY_AUC_TOLERANCE = 0.002  # "simplest config within 0.002 AUC of the best"
 
 
 def feature_list(train_columns: list[str]) -> list[str]:
@@ -89,6 +104,20 @@ def sample_lgb_params(rng: random.Random) -> dict:
     }
 
 
+def sample_lgb_regularized_params(rng: random.Random) -> dict:
+    """Constrained search: shallow trees, large leaves, non-zero L2."""
+    return {
+        "num_leaves": rng.choice([7, 10, 15]),
+        "learning_rate": rng.choice([0.02, 0.05, 0.08]),
+        "min_child_samples": rng.choice([500, 750, 1000, 1500]),
+        "feature_fraction": rng.choice([0.6, 0.8, 1.0]),
+        "bagging_fraction": rng.choice([0.6, 0.8, 1.0]),
+        "bagging_freq": rng.choice([0, 1, 5]),
+        "lambda_l1": rng.choice([0.0, 0.1, 1.0]),
+        "lambda_l2": rng.choice([0.1, 0.5, 1.0, 2.0]),
+    }
+
+
 def sample_xgb_params(rng: random.Random) -> dict:
     return {
         "max_depth": rng.choice([3, 4, 6, 8]),
@@ -101,8 +130,8 @@ def sample_xgb_params(rng: random.Random) -> dict:
     }
 
 
-def tune_lightgbm(train, validation, feats, y_train, y_validation):
-    rng = random.Random(SEED)
+def tune_lightgbm(train, validation, feats, y_train, y_validation, search_name, param_sampler, n_trials, seed):
+    rng = random.Random(seed)
     # feature_pre_filter=False: each trial tries a different min_child_samples
     # (min_data_in_leaf), but this Dataset is built once and reused across
     # all trials. Without this, LightGBM pre-filters features based on
@@ -125,9 +154,9 @@ def tune_lightgbm(train, validation, feats, y_train, y_validation):
     }
 
     trials = []
-    best = {"auc": -1.0, "params": None, "booster": None, "best_iteration": None}
-    for trial_id in range(N_TUNING_TRIALS_LGB):
-        params = {**base_params, **sample_lgb_params(rng)}
+    boosters = {}
+    for trial_id in range(n_trials):
+        params = {**base_params, **param_sampler(rng)}
         booster = lgb.train(
             params,
             lgb_train,
@@ -137,14 +166,14 @@ def tune_lightgbm(train, validation, feats, y_train, y_validation):
         )
         val_pred = booster.predict(validation[feats], num_iteration=booster.best_iteration)
         auc = roc_auc_score(y_validation, val_pred)
-        trial_log = {"trial": trial_id, "model": "lightgbm", "auc": round(auc, 5),
+        global_trial_id = f"{search_name}_{trial_id}"
+        trial_log = {"trial": global_trial_id, "model": "lightgbm", "search": search_name, "auc": round(auc, 5),
                      "best_iteration": booster.best_iteration, **params}
         trials.append(trial_log)
-        print(f"  [lgb trial {trial_id}] auc={auc:.5f} best_iter={booster.best_iteration}")
-        if auc > best["auc"]:
-            best = {"auc": auc, "params": params, "booster": booster, "best_iteration": booster.best_iteration}
+        boosters[global_trial_id] = booster
+        print(f"  [lgb {search_name} trial {trial_id}] auc={auc:.5f} best_iter={booster.best_iteration}")
 
-    return best, trials
+    return trials, boosters
 
 
 def tune_xgboost(train, validation, feats, y_train, y_validation):
@@ -184,31 +213,81 @@ def tune_xgboost(train, validation, feats, y_train, y_validation):
     return best, trials
 
 
-def calibrate_and_compare(y_validation, val_pred_raw):
-    """Fit isotonic and Platt (sigmoid) calibration on validation, compare
-    by Brier score, return whichever is better plus before/after PD stats."""
-    isotonic = IsotonicRegression(out_of_bounds="clip")
-    iso_pred = isotonic.fit_transform(val_pred_raw, y_validation)
-    brier_iso = brier_score_loss(y_validation, iso_pred)
+def logit(p: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    p_clipped = np.clip(p, eps, 1 - eps)
+    return np.log(p_clipped / (1 - p_clipped))
 
-    platt = LogisticRegression()
-    platt.fit(val_pred_raw.reshape(-1, 1), y_validation)
-    platt_pred = platt.predict_proba(val_pred_raw.reshape(-1, 1))[:, 1]
-    brier_platt = brier_score_loss(y_validation, platt_pred)
 
-    brier_uncalibrated = brier_score_loss(y_validation, val_pred_raw)
+def fit_isotonic(fit_pred: np.ndarray, fit_y: np.ndarray) -> IsotonicRegression:
+    model = IsotonicRegression(out_of_bounds="clip")
+    model.fit(fit_pred, fit_y)
+    return model
+
+
+def fit_platt(fit_pred: np.ndarray, fit_y: np.ndarray) -> LogisticRegression:
+    # Platt scaling is logistic regression on the LOGIT of the raw predicted
+    # probability, not the raw probability itself - using raw probability as
+    # the single feature is the common implementation shortcut, but the
+    # textbook definition calibrates on the model's score in logit space.
+    model = LogisticRegression()
+    model.fit(logit(fit_pred).reshape(-1, 1), fit_y)
+    return model
+
+
+def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, y_validation: np.ndarray):
+    """Time-split calibration, evaluated out-of-sample within 2014 itself:
+    fit calibrators on Jan-Sep 2014, score the held-out Oct-Dec 2014 slice
+    (never seen by the calibrator), compare by Brier score there. Then
+    refit the winning method on the FULL 2014 for deployment, since the
+    time-split was only to get an honest comparison, not to shrink the
+    final calibrator's training data."""
+    issue_month = validation["issue_d"].values
+    fit_mask = issue_month < np.datetime64("2014-10-01")
+    holdout_mask = ~fit_mask
+
+    fit_pred, fit_y = val_pred_raw[fit_mask], y_validation[fit_mask]
+    holdout_pred, holdout_y = val_pred_raw[holdout_mask], y_validation[holdout_mask]
+
+    isotonic = fit_isotonic(fit_pred, fit_y)
+    platt = fit_platt(fit_pred, fit_y)
+
+    iso_holdout_pred = isotonic.predict(holdout_pred)
+    platt_holdout_pred = platt.predict_proba(logit(holdout_pred).reshape(-1, 1))[:, 1]
+
+    brier_uncalibrated = brier_score_loss(holdout_y, holdout_pred)
+    brier_iso = brier_score_loss(holdout_y, iso_holdout_pred)
+    brier_platt = brier_score_loss(holdout_y, platt_holdout_pred)
+    chosen_method = "isotonic" if brier_iso < brier_platt else "platt"
 
     result = {
-        "brier_uncalibrated": round(float(brier_uncalibrated), 5),
-        "brier_isotonic": round(float(brier_iso), 5),
-        "brier_platt": round(float(brier_platt), 5),
-        "chosen_method": "isotonic" if brier_iso < brier_platt else "platt",
-        "mean_predicted_pd_before_pct": round(float(val_pred_raw.mean()) * 100, 2),
-        "actual_default_rate_pct": round(float(y_validation.mean()) * 100, 2),
-        "mean_predicted_pd_after_isotonic_pct": round(float(iso_pred.mean()) * 100, 2),
-        "mean_predicted_pd_after_platt_pct": round(float(platt_pred.mean()) * 100, 2),
+        "fit_period": "2014-01 to 2014-09",
+        "holdout_period": "2014-10 to 2014-12",
+        "n_fit": int(fit_mask.sum()),
+        "n_holdout": int(holdout_mask.sum()),
+        "brier_uncalibrated_holdout": round(float(brier_uncalibrated), 5),
+        "brier_isotonic_holdout": round(float(brier_iso), 5),
+        "brier_platt_holdout": round(float(brier_platt), 5),
+        "chosen_method": chosen_method,
+        "mean_predicted_pd_before_holdout_pct": round(float(holdout_pred.mean()) * 100, 2),
+        "actual_default_rate_holdout_pct": round(float(holdout_y.mean()) * 100, 2),
+        "mean_predicted_pd_after_isotonic_holdout_pct": round(float(iso_holdout_pred.mean()) * 100, 2),
+        "mean_predicted_pd_after_platt_holdout_pct": round(float(platt_holdout_pred.mean()) * 100, 2),
     }
-    return result, isotonic, platt
+
+    # Refit the winner on the FULL 2014 for the deployed calibrator.
+    if chosen_method == "isotonic":
+        final_calibrator = fit_isotonic(val_pred_raw, y_validation)
+        final_pred_full = final_calibrator.predict(val_pred_raw)
+    else:
+        final_calibrator = fit_platt(val_pred_raw, y_validation)
+        final_pred_full = final_calibrator.predict_proba(logit(val_pred_raw).reshape(-1, 1))[:, 1]
+
+    result["mean_predicted_pd_before_full_2014_pct"] = round(float(val_pred_raw.mean()) * 100, 2)
+    result["actual_default_rate_full_2014_pct"] = round(float(y_validation.mean()) * 100, 2)
+    result["mean_predicted_pd_after_full_2014_pct"] = round(float(final_pred_full.mean()) * 100, 2)
+    result["final_calibrator_refit_on"] = "full 2014 (Jan-Dec)"
+
+    return result, chosen_method, final_calibrator
 
 
 def main() -> None:
@@ -224,8 +303,19 @@ def main() -> None:
     y_train = train["target"].values
     y_validation = validation["target"].values
 
-    print(f"\n=== Tuning LightGBM ({N_TUNING_TRIALS_LGB} trials, seed={SEED}) ===")
-    best_lgb, lgb_trials = tune_lightgbm(train, validation, feats, y_train, y_validation)
+    print(f"\n=== Tuning LightGBM, unconstrained ({N_TUNING_TRIALS_LGB} trials, seed={SEED}) ===")
+    unconstrained_trials, unconstrained_boosters = tune_lightgbm(
+        train, validation, feats, y_train, y_validation, "unconstrained", sample_lgb_params, N_TUNING_TRIALS_LGB, SEED
+    )
+
+    print(f"\n=== Tuning LightGBM, regularized ({N_TUNING_TRIALS_LGB_REGULARIZED} trials, seed={SEED + 100}) ===")
+    regularized_trials, regularized_boosters = tune_lightgbm(
+        train, validation, feats, y_train, y_validation, "regularized", sample_lgb_regularized_params,
+        N_TUNING_TRIALS_LGB_REGULARIZED, SEED + 100,
+    )
+
+    lgb_trials = unconstrained_trials + regularized_trials
+    lgb_boosters = {**unconstrained_boosters, **regularized_boosters}
 
     print(f"\n=== Tuning XGBoost ({N_TUNING_TRIALS_XGB} trials, seed={SEED}) ===")
     best_xgb, xgb_trials = tune_xgboost(train, validation, feats, y_train, y_validation)
@@ -235,50 +325,81 @@ def main() -> None:
         json.dump(all_trials, f, indent=2, default=str)
     pd.DataFrame(all_trials).to_csv(METRICS_DIR / "gbm_tuning_trials.csv", index=False)
 
-    print(f"\nBest LightGBM: AUC={best_lgb['auc']:.5f}, best_iteration={best_lgb['best_iteration']}")
+    # Model selection: best AUC across both LightGBM searches, then the
+    # SIMPLEST (fewest trees) trial within SIMPLICITY_AUC_TOLERANCE of it.
+    lgb_trials_by_id = {t["trial"]: t for t in lgb_trials}
+    best_trial = max(lgb_trials, key=lambda t: t["auc"])
+    best_auc = best_trial["auc"]
+    within_tolerance = [t for t in lgb_trials if t["auc"] >= best_auc - SIMPLICITY_AUC_TOLERANCE]
+    chosen_trial = min(within_tolerance, key=lambda t: t["best_iteration"])
+
+    print(f"\nBest LightGBM trial: {best_trial['trial']}, AUC={best_trial['auc']:.5f}, "
+          f"n_trees={best_trial['best_iteration']}")
+    print(f"Chosen LightGBM trial (simplest within {SIMPLICITY_AUC_TOLERANCE} AUC): {chosen_trial['trial']}, "
+          f"AUC={chosen_trial['auc']:.5f}, n_trees={chosen_trial['best_iteration']}")
     print(f"Best XGBoost:  AUC={best_xgb['auc']:.5f}, best_iteration={best_xgb['best_iteration']}")
     print(f"Scorecard validation AUC (Phase 3): {SCORECARD_VALIDATION_AUC}")
 
-    booster = best_lgb["booster"]
-    train_pred_raw = booster.predict(train[feats], num_iteration=booster.best_iteration)
-    val_pred_raw = booster.predict(validation[feats], num_iteration=booster.best_iteration)
+    def model_metrics(booster, trial, label):
+        train_pred = booster.predict(train[feats], num_iteration=booster.best_iteration)
+        val_pred = booster.predict(validation[feats], num_iteration=booster.best_iteration)
+        train_auc = roc_auc_score(y_train, train_pred)
+        val_auc = roc_auc_score(y_validation, val_pred)
+        gap = train_auc - val_auc
+        metrics = {
+            "label": label,
+            "trial": trial["trial"],
+            "n_trees": trial["best_iteration"],
+            "train_auc": round(train_auc, 4),
+            "train_gini": round(2 * train_auc - 1, 4),
+            "train_ks": round(ks_statistic(y_train, train_pred), 4),
+            "validation_auc": round(val_auc, 4),
+            "validation_gini": round(2 * val_auc - 1, 4),
+            "validation_ks": round(ks_statistic(y_validation, val_pred), 4),
+            "train_minus_validation_auc_gap": round(gap, 4),
+            "gap_flagged": bool(gap > TRAIN_VAL_AUC_GAP_FLAG),
+            "validation_auc_above_investigate_threshold": bool(val_auc > VALIDATION_AUC_INVESTIGATE_THRESHOLD),
+        }
+        return metrics, train_pred, val_pred
 
-    train_auc = roc_auc_score(y_train, train_pred_raw)
-    val_auc = roc_auc_score(y_validation, val_pred_raw)
-    gap = train_auc - val_auc
+    best_metrics, _, _ = model_metrics(lgb_boosters[best_trial["trial"]], best_trial, "best")
+    chosen_metrics, chosen_train_pred, chosen_val_pred = model_metrics(
+        lgb_boosters[chosen_trial["trial"]], chosen_trial, "chosen"
+    )
 
     eval_metrics = {
         "model": "lightgbm",
-        "train_auc": round(train_auc, 4),
-        "train_gini": round(2 * train_auc - 1, 4),
-        "train_ks": round(ks_statistic(y_train, train_pred_raw), 4),
-        "validation_auc": round(val_auc, 4),
-        "validation_gini": round(2 * val_auc - 1, 4),
-        "validation_ks": round(ks_statistic(y_validation, val_pred_raw), 4),
-        "train_minus_validation_auc_gap": round(gap, 4),
-        "gap_flagged": bool(gap > TRAIN_VAL_AUC_GAP_FLAG),
-        "validation_auc_above_investigate_threshold": bool(val_auc > VALIDATION_AUC_INVESTIGATE_THRESHOLD),
+        "selection_rule": f"simplest (fewest trees) trial within {SIMPLICITY_AUC_TOLERANCE} validation AUC of the best",
+        "best": best_metrics,
+        "chosen": chosen_metrics,
         "scorecard_validation_auc": SCORECARD_VALIDATION_AUC,
-        "lift_over_scorecard_auc": round(val_auc - SCORECARD_VALIDATION_AUC, 4),
+        "chosen_lift_over_scorecard_auc": round(chosen_metrics["validation_auc"] - SCORECARD_VALIDATION_AUC, 4),
         "note": (
-            "Validation was used for early stopping AND hyperparameter "
-            "selection AND calibration in this phase, so this validation "
-            "AUC is optimistic as an out-of-sample estimate. Test (2015) "
-            "is untouched and will give the honest read in Phase 5."
+            "Validation was used for early stopping, hyperparameter search, "
+            "the best-vs-chosen selection rule, AND calibration in this "
+            "phase, so this validation AUC is optimistic as an "
+            "out-of-sample estimate. Test (2015) is untouched and will "
+            "give the honest read in Phase 5."
         ),
     }
     with open(METRICS_DIR / "gbm_validation_metrics.json", "w") as f:
         json.dump(eval_metrics, f, indent=2)
     print(json.dumps(eval_metrics, indent=2))
 
-    if gap > TRAIN_VAL_AUC_GAP_FLAG:
-        print(f"\n!!! FLAG: train-validation AUC gap {gap:.4f} exceeds {TRAIN_VAL_AUC_GAP_FLAG} !!!")
-    if val_auc > VALIDATION_AUC_INVESTIGATE_THRESHOLD:
-        print(f"\n!!! FLAG: validation AUC {val_auc:.4f} exceeds {VALIDATION_AUC_INVESTIGATE_THRESHOLD}, investigate for leakage !!!")
+    for label, m in [("best", best_metrics), ("chosen", chosen_metrics)]:
+        if m["gap_flagged"]:
+            print(f"\n!!! FLAG: {label} model train-validation AUC gap {m['train_minus_validation_auc_gap']:.4f} "
+                  f"exceeds {TRAIN_VAL_AUC_GAP_FLAG} !!!")
+        if m["validation_auc_above_investigate_threshold"]:
+            print(f"\n!!! FLAG: {label} model validation AUC {m['validation_auc']:.4f} exceeds "
+                  f"{VALIDATION_AUC_INVESTIGATE_THRESHOLD}, investigate for leakage !!!")
 
-    print("\n=== Feature importance (gain), top 15 ===")
+    # The CHOSEN model is what gets frozen and carried into Phase 5.
+    chosen_booster = lgb_boosters[chosen_trial["trial"]]
+
+    print("\n=== Feature importance (gain), top 15, chosen model ===")
     importance = pd.DataFrame(
-        {"feature": booster.feature_name(), "gain": booster.feature_importance(importance_type="gain")}
+        {"feature": chosen_booster.feature_name(), "gain": chosen_booster.feature_importance(importance_type="gain")}
     ).sort_values("gain", ascending=False)
     importance["gain_pct_of_total"] = round(100 * importance["gain"] / importance["gain"].sum(), 2)
     importance.to_csv(METRICS_DIR / "gbm_feature_importance.csv", index=False)
@@ -288,28 +409,42 @@ def main() -> None:
         "mths_since_recent_bc_dlq", "mths_since_last_major_derog", "mths_since_recent_inq",
         "mths_since_recent_revol_delinq", "never_flag__mths_since_recent_bc_dlq",
         "never_flag__mths_since_last_major_derog", "never_flag__mths_since_recent_inq",
-        "never_flag__mths_since_recent_revol_delinq",
+        "never_flag__mths_since_recent_revol_delinq", "acc_open_past_24mths", "bc_open_to_buy",
+        "mths_since_recent_bc", "bc_util", "total_bc_limit",
     ]
     top15_names = set(importance.head(15)["feature"])
     rollout_in_top15 = top15_names & set(rollout_related)
     print(f"\nRollout-affected columns in top 15 by gain: {rollout_in_top15 or 'none'}")
 
-    print("\n=== Calibration: isotonic vs Platt (validation) ===")
-    calib_result, isotonic_model, platt_model = calibrate_and_compare(y_validation, val_pred_raw)
+    print("\n=== Calibration: out-of-sample time-split (fit Jan-Sep 2014, evaluate Oct-Dec 2014) ===")
+    calib_result, chosen_calib_method, final_calibrator = calibrate_out_of_sample(
+        validation, chosen_val_pred, y_validation
+    )
     with open(METRICS_DIR / "gbm_calibration.json", "w") as f:
         json.dump(calib_result, f, indent=2)
     print(json.dumps(calib_result, indent=2))
 
     import joblib
 
-    joblib.dump(booster, MODELS_DIR / "lightgbm_model.joblib")
+    joblib.dump(chosen_booster, MODELS_DIR / "lightgbm_model.joblib")
+    joblib.dump(lgb_boosters[best_trial["trial"]], MODELS_DIR / "lightgbm_model_best_unconstrained.joblib")
     joblib.dump(best_xgb["booster"], MODELS_DIR / "xgboost_model.joblib")
-    joblib.dump(isotonic_model, MODELS_DIR / "lightgbm_isotonic_calibrator.joblib")
-    joblib.dump(platt_model, MODELS_DIR / "lightgbm_platt_calibrator.joblib")
+    joblib.dump(final_calibrator, MODELS_DIR / "lightgbm_calibrator.joblib")
     with open(MODELS_DIR / "gbm_feature_list.json", "w") as f:
         json.dump(feats, f, indent=2)
 
     print("\nDone.")
+
+    return {
+        "feats": feats,
+        "chosen_trial": chosen_trial,
+        "chosen_metrics": chosen_metrics,
+        "best_trial": best_trial,
+        "best_metrics": best_metrics,
+        "best_xgb": best_xgb,
+        "calib_result": calib_result,
+        "chosen_calib_method": chosen_calib_method,
+    }
 
 
 if __name__ == "__main__":

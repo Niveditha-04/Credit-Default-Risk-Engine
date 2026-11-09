@@ -1,6 +1,6 @@
 {
-  "n_candidates": 66,
-  "n_after_iv_filter": 30,
+  "n_candidates": 63,
+  "n_after_iv_filter": 27,
   "n_after_correlation_filter": 19,
   "n_after_vif_filter": 19,
   "n_final_after_sign_correction": 17,
@@ -46,27 +46,6 @@
     "verification_status"
   ],
   "dropped_by_correlation": [
-    {
-      "dropped": "log_annual_inc",
-      "kept": "annual_inc",
-      "correlation": 1.0,
-      "dropped_iv": 0.0986,
-      "kept_iv": 0.0986
-    },
-    {
-      "dropped": "fico_range_low",
-      "kept": "fico_range_high",
-      "correlation": 1.0,
-      "dropped_iv": 0.1298,
-      "kept_iv": 0.1298
-    },
-    {
-      "dropped": "fico_mean",
-      "kept": "fico_range_high",
-      "correlation": 1.0,
-      "dropped_iv": 0.1298,
-      "kept_iv": 0.1298
-    },
     {
       "dropped": "num_actv_rev_tl",
       "kept": "num_rev_tl_bal_gt_0",
@@ -142,7 +121,6 @@
     "annual_inc",
     "bc_open_to_buy",
     "dti",
-    "fico_range_high",
     "home_ownership",
     "inq_last_6mths",
     "mo_sin_old_il_acct",
@@ -154,6 +132,7 @@
     "purpose",
     "revol_util",
     "tot_hi_cred_lim",
+    "fico_mean",
     "loan_to_income"
   ]
 }

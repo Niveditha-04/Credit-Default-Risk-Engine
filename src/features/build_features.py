@@ -5,11 +5,16 @@ and assert no banned column ever reaches the output.
 Engineered features (all computed from origination-time data only):
     fico_mean               = (fico_range_low + fico_range_high) / 2
     credit_history_months   = months between earliest_cr_line and issue_d
-    log_annual_inc          = log1p(annual_inc)
     loan_to_income          = loan_amnt / annual_inc
     revol_bal_to_income     = revol_bal / annual_inc
     never_flag__<source>    = 1 if <source> is missing, 0 if present, for the
                                6 mths_since_* columns.
+
+log_annual_inc was dropped (2026-11, pre-Phase-5 freeze): it is a strictly
+monotonic transform of annual_inc, so it is an exact duplicate for any
+tree split boundary and had byte-identical IV to annual_inc in Phase 3.
+fico_range_low/fico_range_high are similarly dropped from the feature set
+(see allow_list.py) in favor of the single fico_mean representative.
 
 Four of those six source columns (mths_since_recent_bc_dlq,
 mths_since_recent_inq, mths_since_recent_revol_delinq,
@@ -74,7 +79,6 @@ def engineered_feature_exprs() -> list[str]:
     exprs = [
         "(fico_range_low + fico_range_high) / 2.0 AS fico_mean",
         "date_diff('month', earliest_cr_line, issue_d) AS credit_history_months",
-        "log(1 + annual_inc) AS log_annual_inc",
         "CASE WHEN annual_inc > 0 THEN loan_amnt / annual_inc ELSE NULL END AS loan_to_income",
         "CASE WHEN annual_inc > 0 THEN revol_bal / annual_inc ELSE NULL END AS revol_bal_to_income",
     ]
@@ -99,7 +103,7 @@ def engineered_feature_exprs() -> list[str]:
 
 
 def engineered_feature_names() -> list[str]:
-    names = ["fico_mean", "credit_history_months", "log_annual_inc", "loan_to_income", "revol_bal_to_income"]
+    names = ["fico_mean", "credit_history_months", "loan_to_income", "revol_bal_to_income"]
     names += [f"never_flag__{src}" for src in NEVER_FLAG_SOURCE_COLUMNS]
     return names
 
@@ -127,7 +131,6 @@ def assert_no_banned_columns(columns_present: set[str]) -> None:
 NUMERIC_ENGINEERED_FEATURES = [
     "fico_mean",
     "credit_history_months",
-    "log_annual_inc",
     "loan_to_income",
     "revol_bal_to_income",
 ]
