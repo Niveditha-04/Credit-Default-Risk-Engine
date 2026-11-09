@@ -477,13 +477,11 @@ def run_with_mlflow() -> None:
     main() is identical whether this wrapper or main() directly is
     called."""
     import mlflow
-    from mlflow import MlflowClient
-    from mlflow.models import infer_signature
 
     from src.models.mlflow_utils import (
-        LightGBMChampionModel,
         log_common_context,
         log_file_if_exists,
+        register_champion,
         setup_mlflow,
     )
 
@@ -541,35 +539,7 @@ def run_with_mlflow() -> None:
         # chained as one deployable pyfunc model, with a real signature
         # and input example (plain string dtype for categoricals - see
         # LightGBMChampionModel docstring for why).
-        validation = pd.read_parquet(VALIDATION_PARQUET)
-        sample_input = validation[feats].head(5).copy()
-
-        lgb_dir = MODELS_DIR / "lightgbm"
-        model_instance = LightGBMChampionModel()
-
-        class _FakeContext:
-            artifacts = {
-                "booster": str(lgb_dir / "model_chosen.joblib"),
-                "calibrator": str(lgb_dir / "calibrator.joblib"),
-                "features": str(lgb_dir / "features.json"),
-            }
-
-        model_instance.load_context(_FakeContext())
-        sample_output = model_instance.predict(None, sample_input)
-        signature = infer_signature(sample_input, sample_output)
-
-        model_info = mlflow.pyfunc.log_model(
-            name="lightgbm_champion",
-            python_model=model_instance,
-            artifacts=_FakeContext.artifacts,
-            signature=signature,
-            input_example=sample_input,
-            registered_model_name="credit_default_lightgbm_champion",
-        )
-        client = MlflowClient()
-        client.set_registered_model_alias(
-            "credit_default_lightgbm_champion", "champion", model_info.registered_model_version
-        )
+        model_info = register_champion(feats, MODELS_DIR / "lightgbm", VALIDATION_PARQUET)
         print(f"\nRegistered credit_default_lightgbm_champion v{model_info.registered_model_version}, "
               f"alias 'champion' set.")
         print(f"MLflow run logged: {mlflow.active_run().info.run_id}")

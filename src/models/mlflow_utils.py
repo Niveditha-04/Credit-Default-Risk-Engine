@@ -48,6 +48,99 @@ def log_file_if_exists(path: str) -> None:
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 
+def register_champion(feats: list[str], lgb_dir, validation_parquet: str):
+    """Register the LightGBM booster + Platt calibrator as one deployable
+    pyfunc model, with a signature inferred from a sample that actually
+    contains the missing values the real feature columns have (see
+    build_signature_sample). Must be called inside an active mlflow run.
+    Returns the registered ModelVersion. Shared by gbm.py's own training
+    run and by a one-off re-registration (e.g. to fix a bad signature
+    without re-running the whole tuning search)."""
+    import pandas as pd
+    from mlflow import MlflowClient
+    from mlflow.models import infer_signature
+
+    validation = pd.read_parquet(validation_parquet)
+    sample_input = build_signature_sample(validation, feats)
+
+    model_instance = LightGBMChampionModel()
+    artifacts = {
+        "booster": str(Path(lgb_dir) / "model_chosen.joblib"),
+        "calibrator": str(Path(lgb_dir) / "calibrator.joblib"),
+        "features": str(Path(lgb_dir) / "features.json"),
+    }
+
+    class _FakeContext:
+        pass
+
+    ctx = _FakeContext()
+    ctx.artifacts = artifacts
+    model_instance.load_context(ctx)
+    sample_output = model_instance.predict(None, sample_input)
+    signature = infer_signature(sample_input, sample_output)
+
+    model_info = mlflow.pyfunc.log_model(
+        name="lightgbm_champion",
+        python_model=model_instance,
+        artifacts=artifacts,
+        signature=signature,
+        input_example=sample_input,
+        registered_model_name="credit_default_lightgbm_champion",
+    )
+    client = MlflowClient()
+    client.set_registered_model_alias(
+        "credit_default_lightgbm_champion", "champion", model_info.registered_model_version
+    )
+    return model_info
+
+
+def build_signature_sample(df, feats: list[str]):
+    """A small input example for mlflow.models.infer_signature() that is
+    guaranteed to contain a missing value in every feature column that has
+    one anywhere in df - not just df.head(5), which only covers whatever
+    happens to be in the first 5 rows. A column with real-world missingness
+    (e.g. emp_length, ~6% missing in validation) can easily have zero NaN
+    in 5 arbitrary rows, and MLflow then infers a non-nullable integer
+    type for it. That inferred type is then baked into the registered
+    model's signature, and schema enforcement later rejects any NaN in
+    that column - even though the actual booster handles missing values
+    natively and would score it fine.
+
+    Including a null row (above) is necessary but not sufficient: a column
+    like emp_length is stored as pandas' nullable "Int32" extension dtype,
+    and MLflow infers "integer" from that dtype regardless of whether a
+    NaN is present in the particular sample - then "optional: true" still
+    doesn't help, because schema enforcement casts with plain numpy
+    astype(int64), which raises on pd.NA no matter what the declared
+    nullability says. So every numeric column is also forced to float64
+    here, matching how the booster already receives it at predict time
+    (LightGBM converts every column to a common float dtype internally
+    regardless of the DataFrame's original integer/float split - see
+    lightgbm/basic.py's _data_from_pandas). This makes "double" the
+    inferred type everywhere, which both enforces and round-trips NaN
+    correctly.
+
+    Found by rerunning gbm.py (registering a second, otherwise-identical
+    model version) and then seeing verify_champion_alias.py fail with
+    "cannot convert NA to integer" on the full validation set - the
+    original 5-row sample happened to have no missing emp_length, so
+    MLflow silently inferred a type that could never survive real data.
+    Pre-existing Phase 7 code; not something any model change caused."""
+    import pandas as pd
+
+    rows = [df[feats].head(5)]
+    for col in feats:
+        null_mask = df[col].isna()
+        if null_mask.any():
+            rows.append(df.loc[null_mask, feats].head(1))
+    sample = pd.concat(rows).drop_duplicates().reset_index(drop=True)
+
+    for col in feats:
+        if col not in CATEGORICAL_COLUMNS:
+            sample[col] = sample[col].astype("float64")
+    return sample
+
+
 class LightGBMChampionModel(mlflow.pyfunc.PythonModel):
     """LightGBM booster + Platt calibrator, chained as one deployable unit.
     predict() takes a plain DataFrame (string dtype for categoricals - NOT
