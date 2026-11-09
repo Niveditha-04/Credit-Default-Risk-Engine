@@ -39,6 +39,7 @@
     "bug": "Fixed 70/80/90% approval-rate cut-offs were picked by sorting TEST's own PD distribution, not validation's.",
     "detail": "Each model's cut-off for a target approval rate (e.g. 80%) must be determined from validation only, then applied as a fixed PD value to test - sorting test itself to hit an exact approval rate on test is implicitly using test to set the policy, even though it looks like a harmless descriptive table.",
     "replacement_file": "test_fixed_approval_rate_comparison.csv",
-    "fix": "Cut-offs now computed once on validation (per score: LightGBM, XGBoost, scorecard, sub_grade map), then applied unchanged to test. Actual resulting test approval rate is reported alongside the target rate and will not land exactly on 70/80/90% as a result - that is expected and correct."
+    "fix": "Cut-offs now computed once on validation (per score: LightGBM, XGBoost, scorecard, sub_grade map), then applied unchanged to test. Actual resulting test approval rate is reported alongside the target rate and will not land exactly on 70/80/90% as a result - that is expected and correct.",
+    "sub_grade_discreteness_note": "sub_grade_map's actual_approval_rate_on_test_pct is further from its target than the other three scores (e.g. 75.57% actual vs 70% target) because sub_grade only has 35 discrete levels (A1-G5). Many loans share the exact same mapped PD, so the cut-off found on validation can only land between discrete buckets, not at an arbitrary percentile - a coarser instrument than a continuous model score, by construction."
   }
 }

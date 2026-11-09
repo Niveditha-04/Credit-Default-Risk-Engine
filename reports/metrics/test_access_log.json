@@ -28,5 +28,11 @@
     "script": "economics_v2.py",
     "row_count": 282787,
     "action": "Re-read saved test_scored.parquet (no new raw test data read) to apply corrected v2 LGD/interest/ex-post formulas; model PDs unchanged from original score_test.py run"
+  },
+  {
+    "timestamp_utc": "2026-11-09T15:13:39.038753+00:00",
+    "script": "gap_remainder_diagnostic.py",
+    "row_count": 282787,
+    "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
   }
 ]

@@ -1,0 +1,21 @@
+{
+  "diagnostic": {
+    "test_realized_interest_ratio_fully_paid": 0.8024,
+    "train_realized_interest_ratio_fully_paid": 0.8262,
+    "test_cash_basis_loss_charged_off_mean": 0.3947,
+    "train_cash_basis_loss_charged_off_mean": 0.3803
+  },
+  "remainder_decomposition": {
+    "ev_scaled_baseline_train_assumptions": 254282486.08,
+    "ex_post_realized": 231563567.21,
+    "remainder_gap": 22718918.88,
+    "explained_by_interest_ratio_mismatch": 12945771.83,
+    "explained_by_interest_ratio_mismatch_pct": 57.0,
+    "explained_by_lgd_mismatch": 7336260.28,
+    "explained_by_lgd_mismatch_pct": 32.3,
+    "explained_by_both_combined": 20282032.11,
+    "explained_by_both_combined_pct": 89.3,
+    "still_unexplained_after_both": 2436886.77,
+    "still_unexplained_after_both_pct": 10.7
+  }
+}
