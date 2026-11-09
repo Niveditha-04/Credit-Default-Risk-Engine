@@ -1,0 +1,7 @@
+{
+  "population": "term=36, application_type=Individual, all issue years",
+  "total_rows": 1539983,
+  "rows_with_payment_after_month_36": 52413,
+  "pct_with_payment_after_month_36": 3.4,
+  "note": "last_pymnt_d is the date of the last payment LendingClub recorded, not a recorded default event date. It only approximates when a charged-off loan actually stopped paying."
+}

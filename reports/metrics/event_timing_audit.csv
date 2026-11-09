@@ -1,0 +1,10 @@
+loan_status,n,n_no_last_pymnt_d,mean_months_to_last_pymnt,median_months_to_last_pymnt,min_months_to_last_pymnt,max_months_to_last_pymnt,n_payments_after_month_36
+Charged Off,159848,1609.0,15.03,14.0,0,62,547.0
+Current,515143,0.0,15.7,14.0,2,41,328.0
+Default,23,0.0,21.65,20.0,8,36,0.0
+Does not meet the credit policy. Status:Charged Off,649,12.0,14.82,13.0,1,46,3.0
+Does not meet the credit policy. Status:Fully Paid,1789,0.0,28.39,36.0,1,62,382.0
+Fully Paid,844629,0.0,22.05,22.0,0,70,51019.0
+In Grace Period,4243,0.0,18.53,18.0,2,41,29.0
+Late (16-30 days),2278,0.0,17.75,17.0,2,41,20.0
+Late (31-120 days),11381,81.0,17.24,17.0,1,42,85.0

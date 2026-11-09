@@ -1,0 +1,14 @@
+value,n,default_rate_pct
+car,1630,10.0
+credit_card,35244,10.85
+debt_consolidation,81875,13.08
+home_improvement,7754,11.08
+house,801,13.23
+major_purchase,2970,10.24
+medical,1351,16.21
+moving,945,15.56
+other,7091,16.73
+renewable_energy,107,17.76
+small_business,2106,21.98
+vacation,855,15.44
+wedding,1163,12.81
