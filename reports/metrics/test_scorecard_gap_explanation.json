@@ -1,0 +1,20 @@
+{
+  "lightgbm_approved_n": 281109,
+  "scorecard_approved_n": 282292,
+  "approved_by_both_n": 280828,
+  "approved_by_both_pct_of_lightgbm_set": 99.9,
+  "approved_by_both_pct_of_scorecard_set": 99.48,
+  "only_lightgbm_approved_n": 281,
+  "only_scorecard_approved_n": 1464,
+  "pd_std_full_test": {
+    "lightgbm": 0.0806,
+    "scorecard": 0.0706
+  },
+  "on_commonly_approved_loans": {
+    "mean_pd_lightgbm": 0.1354,
+    "mean_pd_scorecard": 0.1319,
+    "std_pd_lightgbm": 0.0771,
+    "std_pd_scorecard": 0.0687
+  },
+  "interpretation": "Approval sets are nearly identical (see overlap percentages). The ex-ante EV difference comes from the scorecard assigning systematically lower/less dispersed PDs to the SAME commonly-approved loans (see mean/std PD on commonly-approved loans), which mechanically inflates its computed EV - not from the scorecard approving a different, better-risk set of loans."
+}
