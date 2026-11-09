@@ -1,0 +1,53 @@
+{
+  "splits": {
+    "train": {
+      "issue_years": [
+        2012,
+        2013
+      ],
+      "n_fully_paid": 125611,
+      "n_default": 18281,
+      "n_excluded_unresolved": 0,
+      "n_total_in_population_before_target_filter": 143892,
+      "n_labelled": 143892,
+      "default_rate_pct": 12.7
+    },
+    "validation": {
+      "issue_years": [
+        2014,
+        2014
+      ],
+      "n_fully_paid": 140255,
+      "n_default": 22315,
+      "n_excluded_unresolved": 0,
+      "n_total_in_population_before_target_filter": 162570,
+      "n_labelled": 162570,
+      "default_rate_pct": 13.73
+    },
+    "test": {
+      "issue_years": [
+        2015,
+        2015
+      ],
+      "n_fully_paid": 240698,
+      "n_default": 42089,
+      "n_excluded_unresolved": 147,
+      "n_total_in_population_before_target_filter": 282934,
+      "n_labelled": 282787,
+      "default_rate_pct": 14.88
+    }
+  },
+  "exclusions_by_status": {
+    "Current": 72,
+    "Late (31-120 days)": 61,
+    "In Grace Period": 9,
+    "Late (16-30 days)": 5
+  },
+  "replay": {
+    "issue_years": [
+      2016,
+      2018
+    ],
+    "n_rows": 919053
+  }
+}

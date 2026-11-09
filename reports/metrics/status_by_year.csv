@@ -1,0 +1,100 @@
+issue_year,term,loan_status,n
+2007,36,Charged Off,45
+2007,36,Does not meet the credit policy. Status:Charged Off,113
+2007,36,Does not meet the credit policy. Status:Fully Paid,239
+2007,36,Fully Paid,206
+2008,36,Charged Off,247
+2008,36,Does not meet the credit policy. Status:Charged Off,249
+2008,36,Does not meet the credit policy. Status:Fully Paid,582
+2008,36,Fully Paid,1315
+2009,36,Charged Off,594
+2009,36,Does not meet the credit policy. Status:Charged Off,129
+2009,36,Does not meet the credit policy. Status:Fully Paid,436
+2009,36,Fully Paid,4122
+2010,36,Charged Off,842
+2010,36,Does not meet the credit policy. Status:Charged Off,158
+2010,36,Does not meet the credit policy. Status:Fully Paid,532
+2010,36,Fully Paid,7624
+2010,60,Charged Off,645
+2010,60,Does not meet the credit policy. Status:Charged Off,112
+2010,60,Does not meet the credit policy. Status:Fully Paid,199
+2010,60,Fully Paid,2425
+2011,36,Charged Off,1499
+2011,36,Fully Paid,12602
+2011,60,Charged Off,1798
+2011,60,Fully Paid,5822
+2012,36,Charged Off,5903
+2012,36,Fully Paid,37567
+2012,60,Charged Off,2741
+2012,60,Fully Paid,7156
+2013,36,Charged Off,12378
+2013,36,Fully Paid,88044
+2013,60,Charged Off,8646
+2013,60,Current,6
+2013,60,Fully Paid,25736
+2013,60,In Grace Period,1
+2013,60,Late (31-120 days),3
+2014,36,Charged Off,22315
+2014,36,Fully Paid,140255
+2014,60,Charged Off,18846
+2014,60,Current,11919
+2014,60,Default,1
+2014,60,Fully Paid,41686
+2014,60,In Grace Period,200
+2014,60,Late (16-30 days),73
+2014,60,Late (31-120 days),334
+2015,36,Charged Off,42132
+2015,36,Current,72
+2015,36,Fully Paid,240894
+2015,36,In Grace Period,9
+2015,36,Late (16-30 days),5
+2015,36,Late (31-120 days),61
+2015,60,Charged Off,33671
+2015,60,Current,43227
+2015,60,Default,1
+2015,60,Fully Paid,58848
+2015,60,In Grace Period,603
+2015,60,Late (16-30 days),274
+2015,60,Late (31-120 days),1298
+2016,36,Charged Off,46112
+2016,36,Current,86623
+2016,36,Default,8
+2016,36,Fully Paid,186241
+2016,36,In Grace Period,1096
+2016,36,Late (16-30 days),584
+2016,36,Late (31-120 days),2831
+2016,60,Charged Off,22130
+2016,60,Current,47438
+2016,60,Default,2
+2016,60,Fully Paid,38612
+2016,60,In Grace Period,697
+2016,60,Late (16-30 days),318
+2016,60,Late (31-120 days),1715
+2017,36,Charged Off,25721
+2017,36,Current,183950
+2017,36,Default,13
+2017,36,Fully Paid,102817
+2017,36,In Grace Period,1860
+2017,36,Late (16-30 days),957
+2017,36,Late (31-120 days),5101
+2017,60,Charged Off,13427
+2017,60,Current,77901
+2017,60,Default,8
+2017,60,Fully Paid,27335
+2017,60,In Grace Period,1051
+2017,60,Late (16-30 days),535
+2017,60,Late (31-120 days),2903
+2018,36,Charged Off,5464
+2018,36,Current,296050
+2018,36,Default,4
+2018,36,Fully Paid,35804
+2018,36,In Grace Period,1869
+2018,36,Late (16-30 days),999
+2018,36,Late (31-120 days),4481
+2018,60,Charged Off,3403
+2018,60,Current,131131
+2018,60,Default,3
+2018,60,Fully Paid,11640
+2018,60,In Grace Period,1050
+2018,60,Late (16-30 days),604
+2018,60,Late (31-120 days),2740

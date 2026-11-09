@@ -17,3 +17,8 @@ matplotlib==3.11.2
 pytest==9.2.0
 ruff==0.17.3
 httpx==0.28.1
+
+# Notebook execution (notebooks/ EDA viewing). Not in the original pinned
+nbformat==5.11.1
+nbclient==0.11.0
+ipykernel==7.4.0

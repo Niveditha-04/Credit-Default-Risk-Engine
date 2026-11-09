@@ -1,0 +1,25 @@
+{
+  "train": {
+    "rows": 143892,
+    "columns": 76,
+    "default_rate_pct": 12.7
+  },
+  "validation": {
+    "rows": 162570,
+    "columns": 76,
+    "default_rate_pct": 13.73
+  },
+  "test": {
+    "rows": 282787,
+    "columns": 76,
+    "default_rate_pct": 14.88
+  },
+  "replay": {
+    "rows": 919053,
+    "columns": 76,
+    "target_entirely_null": true
+  },
+  "n_raw_features": 61,
+  "n_engineered_features": 11,
+  "n_hard_excluded_columns_defined": 80
+}

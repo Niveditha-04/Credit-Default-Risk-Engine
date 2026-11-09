@@ -1,0 +1,14 @@
+{
+  "raw_row_count": 2260701,
+  "footer_rows_removed": 33,
+  "cleaned_row_count": 2260668,
+  "distinct_ids": 2260668,
+  "null_ids": 0,
+  "duplicate_ids": 0,
+  "term_distinct_values_after_parsing": [
+    36,
+    60
+  ],
+  "n_columns": 151,
+  "negative_dti_rows_set_to_null": 2
+}
