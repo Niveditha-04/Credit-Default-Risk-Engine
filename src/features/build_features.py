@@ -15,13 +15,24 @@ Four of those six source columns (mths_since_recent_bc_dlq,
 mths_since_recent_inq, mths_since_recent_revol_delinq,
 mths_since_last_major_derog) are 100% missing in January 2012: the field
 did not exist yet in LendingClub's schema, confirmed at month granularity
-in reports/metrics/field_rollout.csv. For loans issued before Aug 2012
-(the first month any of them has a non-null value), a missing value does
-not mean "this never happened" - it means "not recorded yet". The flag is
-NULL for those loans rather than 1. The other two source columns
-(mths_since_last_delinq, mths_since_last_record) were already non-null in
-January 2012, so their missingness is true MNAR throughout and the flag
-stays a plain 1/0 for every row.
+in reports/metrics/field_rollout.csv. For loans issued before the field
+existed, a missing value does not mean "this never happened" - it means
+"not recorded yet". The flag is NULL for those loans rather than 1.
+Two different gates are used, because August 2012 (the first calendar
+month with any non-null data) was itself a partial rollout month -
+tot_cur_bal, which rolled out alongside the bureau-data refresh, is still
+~84% missing in August and only ~1% missing by September:
+  - mths_since_recent_bc_dlq, mths_since_last_major_derog: gated on
+    tot_cur_bal IS NULL for that row (same bureau-data refresh, verified
+    row-level: whenever tot_cur_bal is null, these two are always null
+    too, in every month of 2012 - so this gate never nulls a flag that
+    had real signal).
+  - mths_since_recent_inq, mths_since_recent_revol_delinq: these rolled
+    out earlier (first non-null March 2012), so gated on a date cutoff,
+    issue_d < 2012-04-01.
+The other two source columns (mths_since_last_delinq, mths_since_last_record)
+were already non-null in January 2012, so their missingness is true MNAR
+throughout and the flag stays a plain 1/0 for every row.
 """
 
 import json
@@ -44,16 +55,19 @@ NEVER_FLAG_SOURCE_COLUMNS = [
     "mths_since_recent_inq",
 ]
 
-# Source columns that were 100% missing in January 2012 (field not yet
-# collected), verified at month granularity in field_rollout.py. For loans
-# issued before this cutoff, "missing" is unknown, not "never happened".
-ROLLOUT_AFFECTED_FLAG_SOURCES = {
-    "mths_since_recent_bc_dlq",
-    "mths_since_recent_inq",
-    "mths_since_recent_revol_delinq",
-    "mths_since_last_major_derog",
+# Source columns gated on another row's nullness (same bureau-data refresh,
+# verified: tot_cur_bal IS NULL implies these are always null too).
+ROW_LEVEL_GATED_FLAG_SOURCES = {
+    "mths_since_recent_bc_dlq": "tot_cur_bal",
+    "mths_since_last_major_derog": "tot_cur_bal",
 }
-ROLLOUT_CUTOFF_DATE = "2012-08-01"  # first month any of the above has a non-null value
+
+# Source columns gated on a date cutoff (rolled out earlier, March 2012;
+# first non-null row-level proxy not available, so a calendar cutoff is used).
+DATE_GATED_FLAG_SOURCES = {
+    "mths_since_recent_inq": "2012-04-01",
+    "mths_since_recent_revol_delinq": "2012-04-01",
+}
 
 
 def engineered_feature_exprs() -> list[str]:
@@ -66,9 +80,16 @@ def engineered_feature_exprs() -> list[str]:
     ]
     for src in NEVER_FLAG_SOURCE_COLUMNS:
         flag_name = f"never_flag__{src}"
-        if src in ROLLOUT_AFFECTED_FLAG_SOURCES:
+        if src in ROW_LEVEL_GATED_FLAG_SOURCES:
+            gate_col = ROW_LEVEL_GATED_FLAG_SOURCES[src]
             expr = (
-                f"CASE WHEN issue_d < DATE '{ROLLOUT_CUTOFF_DATE}' THEN NULL "
+                f'CASE WHEN "{gate_col}" IS NULL THEN NULL '
+                f'WHEN "{src}" IS NULL THEN 1 ELSE 0 END AS "{flag_name}"'
+            )
+        elif src in DATE_GATED_FLAG_SOURCES:
+            cutoff = DATE_GATED_FLAG_SOURCES[src]
+            expr = (
+                f"CASE WHEN issue_d < DATE '{cutoff}' THEN NULL "
                 f'WHEN "{src}" IS NULL THEN 1 ELSE 0 END AS "{flag_name}"'
             )
         else:

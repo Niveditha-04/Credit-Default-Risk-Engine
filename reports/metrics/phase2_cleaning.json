@@ -10,5 +10,6 @@
     60
   ],
   "n_columns": 151,
-  "negative_dti_rows_set_to_null": 2
+  "negative_dti_rows_set_to_null": 2,
+  "dti_over_100_rows_set_to_null": 2561
 }
