@@ -1,0 +1,33 @@
+{
+  "n_original_test": 282787,
+  "n_excluded_slow_chargeoffs": 9474,
+  "n_alt_population": 273313,
+  "alt_default_rate_pct": 11.93,
+  "metrics": {
+    "lightgbm": {
+      "auc": 0.6967
+    },
+    "xgboost": {
+      "auc": 0.6984
+    },
+    "scorecard": {
+      "auc": 0.6786
+    },
+    "sub_grade": {
+      "auc": 0.6922
+    }
+  },
+  "original_ranking_by_auc": [
+    "xgboost",
+    "lightgbm",
+    "sub_grade",
+    "scorecard"
+  ],
+  "alt_label_ranking_by_auc": [
+    "xgboost",
+    "lightgbm",
+    "sub_grade",
+    "scorecard"
+  ],
+  "ranking_holds": true
+}

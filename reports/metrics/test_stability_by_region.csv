@@ -1,0 +1,5 @@
+region,n,lightgbm_auc,xgboost_auc,scorecard_auc
+Midwest,50381,0.6893,0.6921,0.6799
+Northeast,57070,0.6825,0.6837,0.6673
+South,100903,0.6855,0.6863,0.667
+West,74433,0.6924,0.6938,0.6748
