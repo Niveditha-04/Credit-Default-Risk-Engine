@@ -383,10 +383,11 @@ def main() -> None:
 
     import joblib
 
-    Path("data/processed/models").mkdir(parents=True, exist_ok=True)
-    joblib.dump(bp, "data/processed/models/binning_process.joblib")
-    joblib.dump(clf, "data/processed/models/scorecard_logreg.joblib")
-    with open("data/processed/models/final_features.json", "w") as f:
+    model_dir = Path("data/processed/models/scorecard")
+    model_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(bp, model_dir / "binning_process.joblib")
+    joblib.dump(clf, model_dir / "model.joblib")
+    with open(model_dir / "features.json", "w") as f:
         json.dump(final_features, f, indent=2)
 
     print("\nDone.")

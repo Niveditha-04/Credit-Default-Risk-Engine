@@ -1,7 +1,11 @@
 {
-  "frozen_at_utc": "2026-11-09T14:10:14.673424+00:00",
-  "git_hash_at_freeze": "3cdf5c9518564ec9fcbdea4cdc559ad57abd4349",
+  "frozen_at_utc": "2026-11-09T14:18:37.074538+00:00",
+  "git_hash_at_freeze": "23b2d311b2d05f37ac1ea4f86d92477c0b2b3dd7",
+  "git_status_clean_at_freeze": false,
   "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
+  "champion": "lightgbm_chosen",
+  "champion_reason": "lightgbm_chosen is the champion: within 0.0021 validation AUC of XGBoost (the best alternative) while using 273 trees instead of 2122 - a much simpler model for a negligible performance difference. XGBoost and the scorecard are carried forward as comparison models in Phase 5, not candidates for champion.",
+  "champion_vs_xgboost_validation_auc_gap": 0.0021,
   "seeds": {
     "global": 42,
     "lightgbm_unconstrained_search": 42,
@@ -11,6 +15,7 @@
   "test_touch_policy": "Phase 5 touches test (2015) exactly once, scoring ONLY the frozen artifacts listed in this file. No retraining, no feature changes, no re-tuning, no re-selection of calibration method in Phase 5.",
   "scorecard": {
     "model_type": "logistic_regression_on_woe",
+    "role": "comparison",
     "n_features": 17,
     "features": [
       "acc_open_past_24mths",
@@ -31,8 +36,8 @@
       "fico_mean",
       "loan_to_income"
     ],
-    "binning_process_path": "data/processed/models/binning_process.joblib",
-    "model_path": "data/processed/models/scorecard_logreg.joblib",
+    "binning_process_path": "data/processed/models/scorecard/binning_process.joblib",
+    "model_path": "data/processed/models/scorecard/model.joblib",
     "points_scaling": {
       "base_points": 600,
       "base_odds": 50,
@@ -63,10 +68,32 @@
         "actual_default_rate_pct": 13.73,
         "test_touched": false
       }
+    },
+    "calibrator": {
+      "method": "platt",
+      "path": "data/processed/models/scorecard/calibrator.joblib",
+      "fit_on": "full 2014 (Jan-Dec)",
+      "out_of_sample_selection_evidence": {
+        "method": "platt",
+        "fit_period": "2014-01 to 2014-09",
+        "holdout_period": "2014-10 to 2014-12",
+        "n_fit": 112550,
+        "n_holdout": 50020,
+        "brier_uncalibrated_holdout": 0.11905,
+        "brier_platt_holdout": 0.11898,
+        "mean_predicted_pd_before_holdout_pct": 13.433,
+        "actual_default_rate_holdout_pct": 14.5282,
+        "mean_predicted_pd_after_holdout_pct": 13.7852,
+        "final_calibrator_refit_on": "full 2014 (Jan-Dec)",
+        "mean_predicted_pd_before_full_2014_pct": 13.1365,
+        "actual_default_rate_full_2014_pct": 13.7264,
+        "mean_predicted_pd_after_full_2014_pct": 13.7262
+      }
     }
   },
   "lightgbm_chosen": {
     "model_type": "lightgbm",
+    "role": "champion",
     "selection_rule": "simplest (fewest trees) trial within 0.002 validation AUC of the best",
     "n_features": 69,
     "features": [
@@ -158,17 +185,21 @@
       "lambda_l2": 1.0
     },
     "n_trees": 273,
-    "model_path": "data/processed/models/lightgbm_model.joblib",
+    "num_leaves": 15,
+    "total_leaves": 4095,
+    "model_path": "data/processed/models/lightgbm/model_chosen.joblib",
     "calibrator": {
       "method": "platt",
-      "path": "data/processed/models/lightgbm_calibrator.joblib",
+      "path": "data/processed/models/lightgbm/calibrator.joblib",
       "fit_on": "full 2014 (Jan-Dec)",
       "out_of_sample_selection_evidence": {
         "fit_period": "2014-01 to 2014-09",
         "holdout_period": "2014-10 to 2014-12",
         "brier_uncalibrated_holdout": 0.11781,
         "brier_isotonic_holdout": 0.11777,
-        "brier_platt_holdout": 0.11771
+        "brier_platt_holdout": 0.11771,
+        "mean_predicted_pd_before_holdout_pct": 13.7257,
+        "actual_default_rate_holdout_pct": 14.5282
       }
     },
     "train_validation_metrics": {
@@ -187,7 +218,7 @@
     }
   },
   "lightgbm_best_unconstrained_reference_only": {
-    "note": "Not used in Phase 5. Kept only to show what the selection rule traded away.",
+    "note": "Not used in Phase 5. Kept only to show what the simplicity-selection rule traded away.",
     "hyperparameters": {
       "objective": "binary",
       "metric": "auc",
@@ -206,7 +237,9 @@
       "lambda_l2": 0.1
     },
     "n_trees": 802,
-    "model_path": "data/processed/models/lightgbm_model_best_unconstrained.joblib",
+    "num_leaves": 15,
+    "total_leaves": 12030,
+    "model_path": "data/processed/models/lightgbm/model_best_unconstrained.joblib",
     "train_validation_metrics": {
       "label": "best",
       "trial": "regularized_8",
@@ -224,6 +257,7 @@
   },
   "xgboost": {
     "model_type": "xgboost",
+    "role": "comparison",
     "n_features": 69,
     "features": [
       "acc_now_delinq",
@@ -312,6 +346,27 @@
     },
     "n_trees": 2122,
     "validation_auc": 0.6855,
-    "model_path": "data/processed/models/xgboost_model.joblib"
+    "model_path": "data/processed/models/xgboost/model.joblib",
+    "calibrator": {
+      "method": "platt",
+      "path": "data/processed/models/xgboost/calibrator.joblib",
+      "fit_on": "full 2014 (Jan-Dec)",
+      "out_of_sample_selection_evidence": {
+        "method": "platt",
+        "fit_period": "2014-01 to 2014-09",
+        "holdout_period": "2014-10 to 2014-12",
+        "n_fit": 112550,
+        "n_holdout": 50020,
+        "brier_uncalibrated_holdout": 0.11773,
+        "brier_platt_holdout": 0.11765,
+        "mean_predicted_pd_before_holdout_pct": 13.7383,
+        "actual_default_rate_holdout_pct": 14.5282,
+        "mean_predicted_pd_after_holdout_pct": 14.3037,
+        "final_calibrator_refit_on": "full 2014 (Jan-Dec)",
+        "mean_predicted_pd_before_full_2014_pct": 13.0907,
+        "actual_default_rate_full_2014_pct": 13.7264,
+        "mean_predicted_pd_after_full_2014_pct": 13.7267
+      }
+    }
   }
 }

@@ -268,10 +268,10 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
         "brier_isotonic_holdout": round(float(brier_iso), 5),
         "brier_platt_holdout": round(float(brier_platt), 5),
         "chosen_method": chosen_method,
-        "mean_predicted_pd_before_holdout_pct": round(float(holdout_pred.mean()) * 100, 2),
-        "actual_default_rate_holdout_pct": round(float(holdout_y.mean()) * 100, 2),
-        "mean_predicted_pd_after_isotonic_holdout_pct": round(float(iso_holdout_pred.mean()) * 100, 2),
-        "mean_predicted_pd_after_platt_holdout_pct": round(float(platt_holdout_pred.mean()) * 100, 2),
+        "mean_predicted_pd_before_holdout_pct": round(float(holdout_pred.mean()) * 100, 4),
+        "actual_default_rate_holdout_pct": round(float(holdout_y.mean()) * 100, 4),
+        "mean_predicted_pd_after_isotonic_holdout_pct": round(float(iso_holdout_pred.mean()) * 100, 4),
+        "mean_predicted_pd_after_platt_holdout_pct": round(float(platt_holdout_pred.mean()) * 100, 4),
     }
 
     # Refit the winner on the FULL 2014 for the deployed calibrator.
@@ -282,9 +282,9 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
         final_calibrator = fit_platt(val_pred_raw, y_validation)
         final_pred_full = final_calibrator.predict_proba(logit(val_pred_raw).reshape(-1, 1))[:, 1]
 
-    result["mean_predicted_pd_before_full_2014_pct"] = round(float(val_pred_raw.mean()) * 100, 2)
-    result["actual_default_rate_full_2014_pct"] = round(float(y_validation.mean()) * 100, 2)
-    result["mean_predicted_pd_after_full_2014_pct"] = round(float(final_pred_full.mean()) * 100, 2)
+    result["mean_predicted_pd_before_full_2014_pct"] = round(float(val_pred_raw.mean()) * 100, 4)
+    result["actual_default_rate_full_2014_pct"] = round(float(y_validation.mean()) * 100, 4)
+    result["mean_predicted_pd_after_full_2014_pct"] = round(float(final_pred_full.mean()) * 100, 4)
     result["final_calibrator_refit_on"] = "full 2014 (Jan-Dec)"
 
     return result, chosen_method, final_calibrator
@@ -426,11 +426,19 @@ def main() -> None:
 
     import joblib
 
-    joblib.dump(chosen_booster, MODELS_DIR / "lightgbm_model.joblib")
-    joblib.dump(lgb_boosters[best_trial["trial"]], MODELS_DIR / "lightgbm_model_best_unconstrained.joblib")
-    joblib.dump(best_xgb["booster"], MODELS_DIR / "xgboost_model.joblib")
-    joblib.dump(final_calibrator, MODELS_DIR / "lightgbm_calibrator.joblib")
-    with open(MODELS_DIR / "gbm_feature_list.json", "w") as f:
+    lgb_dir = MODELS_DIR / "lightgbm"
+    xgb_dir = MODELS_DIR / "xgboost"
+    lgb_dir.mkdir(parents=True, exist_ok=True)
+    xgb_dir.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(chosen_booster, lgb_dir / "model_chosen.joblib")
+    joblib.dump(lgb_boosters[best_trial["trial"]], lgb_dir / "model_best_unconstrained.joblib")
+    joblib.dump(final_calibrator, lgb_dir / "calibrator.joblib")
+    with open(lgb_dir / "features.json", "w") as f:
+        json.dump(feats, f, indent=2)
+
+    joblib.dump(best_xgb["booster"], xgb_dir / "model.joblib")
+    with open(xgb_dir / "features.json", "w") as f:
         json.dump(feats, f, indent=2)
 
     print("\nDone.")
