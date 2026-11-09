@@ -372,8 +372,6 @@ _add(
         "purpose",
         "dti",
         "delinq_2yrs",
-        "fico_range_low",
-        "fico_range_high",
         "inq_last_6mths",
         "open_acc",
         "pub_rec",
@@ -391,6 +389,14 @@ _add(
     "keep_feature",
     "Core applicant/credit-bureau attribute known at the time of underwriting. Verified ~0% missing in all "
     "modelling years.",
+    True,
+)
+
+_add(
+    ["fico_range_low", "fico_range_high"],
+    "keep_not_feature",
+    "Exact duplicate of the engineered fico_mean feature (fico_mean = (low+high)/2, and the low/high band is a "
+    "exact clones.",
     True,
 )
 

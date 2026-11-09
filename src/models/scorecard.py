@@ -23,7 +23,6 @@ CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 ENGINEERED_NUMERIC = [
     "fico_mean",
     "credit_history_months",
-    "log_annual_inc",
     "loan_to_income",
     "revol_bal_to_income",
 ]

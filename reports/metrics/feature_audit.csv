@@ -23,8 +23,6 @@ dti_joint,drop,,Joint-application fields. 100% missing in the modelling populati
 earliest_cr_line,keep_not_feature,True,Used only to derive credit_history_months (issue_d minus earliest_cr_line) in build_features.py. The raw date itself is not fed to the model.
 emp_length,keep_feature,True,Core applicant/credit-bureau attribute known at the time of underwriting. Verified ~0% missing in all modelling years.
 emp_title,drop,True,"Free text, not a structured feature. Would need NLP to use and risks encoding leakage-prone or identifying information."
-fico_range_high,keep_feature,True,Core applicant/credit-bureau attribute known at the time of underwriting. Verified ~0% missing in all modelling years.
-fico_range_low,keep_feature,True,Core applicant/credit-bureau attribute known at the time of underwriting. Verified ~0% missing in all modelling years.
 funded_amnt_inv,drop,True,"Investor-side funding amount, not a borrower-risk signal known at the underwriting decision."
 hardship_amount,drop,False,Hardship-plan fields: only exist for loans that already hit financial trouble after origination. Pure post-origination leakage.
 hardship_dpd,drop,False,Hardship-plan fields: only exist for loans that already hit financial trouble after origination. Pure post-origination leakage.
