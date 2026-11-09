@@ -1,0 +1,11 @@
+{
+  "income_reversal": {
+    "grouped_shap_monotonic_across_buckets": false,
+    "note": "annual_inc alone reverses clearly (SHAP rises from -0.237 at $90-110K back toward -0.14 at $500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward zero - the other income-scaled features partly offset annual_inc's own reversal, since a very high earner's loan_to_income and revol_bal_to_income are mechanically very low.",
+    "raw_train_default_rate_shows_uptick": true
+  },
+  "dti_dip": {
+    "raw_train_default_rate_shows_dip": true,
+    "note": "Both the SHAP dip and the raw train default rate dip in the dti=3-8 region before rising."
+  }
+}

@@ -132,7 +132,7 @@ def main() -> None:
     # --- Dependence plots + direction check ---
     print("\n=== Dependence check: direction per feature ===")
     direction_rows = []
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
     for ax, feat in zip(axes.flat, top6):
         vals = X[feat]
         sv = shap_values[:, feats.index(feat)]
@@ -151,7 +151,7 @@ def main() -> None:
             for i, cat in enumerate(sorted(cats.unique())):
                 ax.scatter(np.full((cats == cat).sum(), i), sv[cats == cat], s=4, alpha=0.3)
             ax.set_xticks(range(len(sorted(cats.unique()))))
-            ax.set_xticklabels(sorted(cats.unique()), rotation=45)
+            ax.set_xticklabels(sorted(cats.unique()), rotation=45, ha="right", fontsize=8)
             direction = "categorical - see plot"
         ax.axhline(0, color="gray", linewidth=0.5)
         ax.set_title(feat)
@@ -283,9 +283,19 @@ def main() -> None:
             "percentile": p, "calibrated_pd_pct": round(float(calibrated_pd[idx]) * 100, 2),
             "top_3_risk_increasing_drivers_illustrative_only": drivers,
         })
+    reason_codes_output = {
+        "pd_note": (
+            "calibrated_pd_pct is the CALIBRATED probability (raw LightGBM log-odds passed through the "
+            "frozen Platt calibrator, via score_lightgbm() - the exact same function used everywhere else "
+            "in this project to score a loan). It is NOT the raw/uncalibrated model output. The SHAP values "
+            "and 'drivers' themselves are on the raw log-odds scale (see module docstring); only the PD shown "
+            "per applicant is calibrated."
+        ),
+        "examples": reason_codes,
+    }
     with open(METRICS_DIR / "shap_reason_codes_examples.json", "w") as f:
-        json.dump(reason_codes, f, indent=2)
-    print(json.dumps(reason_codes, indent=2))
+        json.dump(reason_codes_output, f, indent=2)
+    print(json.dumps(reason_codes_output, indent=2))
 
     # --- Missing values in rollout-era features ---
     print("\n=== Missing values in rollout-era features, test sample ===")
