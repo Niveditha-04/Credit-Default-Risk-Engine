@@ -1,7 +1,7 @@
 {
-  "frozen_at_utc": "2026-11-09T14:18:37.074538+00:00",
-  "git_hash_at_freeze": "23b2d311b2d05f37ac1ea4f86d92477c0b2b3dd7",
-  "git_status_clean_at_freeze": false,
+  "frozen_at_utc": "2026-11-09T14:19:04.754417+00:00",
+  "git_hash_at_freeze": "87e0003c083fd53832d7803d766214a6f42d1e42",
+  "git_status_clean_at_freeze": true,
   "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
   "champion": "lightgbm_chosen",
   "champion_reason": "lightgbm_chosen is the champion: within 0.0021 validation AUC of XGBoost (the best alternative) while using 273 trees instead of 2122 - a much simpler model for a negligible performance difference. XGBoost and the scorecard are carried forward as comparison models in Phase 5, not candidates for champion.",
