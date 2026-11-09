@@ -1,0 +1,24 @@
+{
+  "train": {
+    "split": "train",
+    "issue_years": "2012-2013",
+    "n_rows": 143892,
+    "auc": 0.6678,
+    "gini": 0.3357,
+    "ks": 0.2406,
+    "mean_predicted_pd_pct": 12.71,
+    "actual_default_rate_pct": 12.7,
+    "auc_minus_validation_auc": 0.0028
+  },
+  "validation": {
+    "split": "validation",
+    "issue_years": "2014",
+    "n_rows": 162570,
+    "auc": 0.665,
+    "gini": 0.3299,
+    "ks": 0.2379,
+    "mean_predicted_pd_pct": 13.14,
+    "actual_default_rate_pct": 13.73,
+    "test_touched": false
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "n_candidates": 66,
+  "n_after_iv_filter": 30,
+  "n_after_correlation_filter": 19,
+  "n_after_vif_filter": 19,
+  "n_final_after_sign_correction": 17,
+  "iv_threshold": 0.02,
+  "correlation_threshold": 0.7,
+  "vif_threshold": 5.0,
+  "dropped_by_iv": [
+    "acc_now_delinq",
+    "chargeoff_within_12_mths",
+    "collections_12_mths_ex_med",
+    "delinq_2yrs",
+    "delinq_amnt",
+    "emp_length",
+    "loan_amnt",
+    "mths_since_last_delinq",
+    "mths_since_last_record",
+    "never_flag__mths_since_last_major_derog",
+    "never_flag__mths_since_recent_bc_dlq",
+    "never_flag__mths_since_recent_inq",
+    "never_flag__mths_since_recent_revol_delinq",
+    "num_accts_ever_120_pd",
+    "num_actv_bc_tl",
+    "num_bc_sats",
+    "num_bc_tl",
+    "num_il_tl",
+    "num_op_rev_tl",
+    "num_rev_accts",
+    "num_sats",
+    "num_tl_120dpd_2m",
+    "num_tl_30dpd",
+    "num_tl_90g_dpd_24m",
+    "open_acc",
+    "pct_tl_nvr_dlq",
+    "pub_rec",
+    "pub_rec_bankruptcies",
+    "revol_bal",
+    "revol_bal_to_income",
+    "tax_liens",
+    "tot_coll_amt",
+    "total_acc",
+    "total_bal_ex_mort",
+    "total_il_high_credit_limit",
+    "verification_status"
+  ],
+  "dropped_by_correlation": [
+    {
+      "dropped": "log_annual_inc",
+      "kept": "annual_inc",
+      "correlation": 1.0,
+      "dropped_iv": 0.0986,
+      "kept_iv": 0.0986
+    },
+    {
+      "dropped": "fico_range_low",
+      "kept": "fico_range_high",
+      "correlation": 1.0,
+      "dropped_iv": 0.1298,
+      "kept_iv": 0.1298
+    },
+    {
+      "dropped": "fico_mean",
+      "kept": "fico_range_high",
+      "correlation": 1.0,
+      "dropped_iv": 0.1298,
+      "kept_iv": 0.1298
+    },
+    {
+      "dropped": "num_actv_rev_tl",
+      "kept": "num_rev_tl_bal_gt_0",
+      "correlation": 0.997,
+      "dropped_iv": 0.0211,
+      "kept_iv": 0.0213
+    },
+    {
+      "dropped": "tot_cur_bal",
+      "kept": "tot_hi_cred_lim",
+      "correlation": 0.965,
+      "dropped_iv": 0.0577,
+      "kept_iv": 0.0703
+    },
+    {
+      "dropped": "avg_cur_bal",
+      "kept": "tot_hi_cred_lim",
+      "correlation": 0.869,
+      "dropped_iv": 0.0635,
+      "kept_iv": 0.0703
+    },
+    {
+      "dropped": "total_rev_hi_lim",
+      "kept": "total_bc_limit",
+      "correlation": 0.814,
+      "dropped_iv": 0.0507,
+      "kept_iv": 0.0685
+    },
+    {
+      "dropped": "credit_history_months",
+      "kept": "mo_sin_old_rev_tl_op",
+      "correlation": 0.797,
+      "dropped_iv": 0.0214,
+      "kept_iv": 0.0297
+    },
+    {
+      "dropped": "total_bc_limit",
+      "kept": "bc_open_to_buy",
+      "correlation": 0.785,
+      "dropped_iv": 0.0685,
+      "kept_iv": 0.0844
+    },
+    {
+      "dropped": "bc_util",
+      "kept": "percent_bc_gt_75",
+      "correlation": 0.769,
+      "dropped_iv": 0.0386,
+      "kept_iv": 0.0387
+    },
+    {
+      "dropped": "mo_sin_rcnt_tl",
+      "kept": "mo_sin_rcnt_rev_tl_op",
+      "correlation": 0.741,
+      "dropped_iv": 0.0362,
+      "kept_iv": 0.0363
+    }
+  ],
+  "dropped_by_vif": [],
+  "dropped_by_sign_correction": [
+    {
+      "dropped": "mort_acc",
+      "coefficient": 0.0148,
+      "reason": "positive coefficient (sign mismatch)"
+    },
+    {
+      "dropped": "mo_sin_rcnt_rev_tl_op",
+      "coefficient": 0.1237,
+      "reason": "positive coefficient (sign mismatch)"
+    }
+  ],
+  "final_features": [
+    "acc_open_past_24mths",
+    "annual_inc",
+    "bc_open_to_buy",
+    "dti",
+    "fico_range_high",
+    "home_ownership",
+    "inq_last_6mths",
+    "mo_sin_old_il_acct",
+    "mo_sin_old_rev_tl_op",
+    "mths_since_recent_bc",
+    "num_rev_tl_bal_gt_0",
+    "num_tl_op_past_12m",
+    "percent_bc_gt_75",
+    "purpose",
+    "revol_util",
+    "tot_hi_cred_lim",
+    "loan_to_income"
+  ]
+}
