@@ -1,0 +1,46 @@
+{
+  "methodology": "Quintiles (20% each) of the champion's calibrated PD on validation (2014).",
+  "defined_on": "validation",
+  "bands": [
+    {
+      "band": "Very Low",
+      "pd_min": 0.008027,
+      "pd_max": 0.068563,
+      "pd_max_inclusive": false,
+      "validation_n": 32514,
+      "validation_default_rate_pct": 4.41
+    },
+    {
+      "band": "Low",
+      "pd_min": 0.068563,
+      "pd_max": 0.10384,
+      "pd_max_inclusive": false,
+      "validation_n": 32514,
+      "validation_default_rate_pct": 8.67
+    },
+    {
+      "band": "Medium",
+      "pd_min": 0.10384,
+      "pd_max": 0.142921,
+      "pd_max_inclusive": false,
+      "validation_n": 32514,
+      "validation_default_rate_pct": 12.29
+    },
+    {
+      "band": "High",
+      "pd_min": 0.142921,
+      "pd_max": 0.198809,
+      "pd_max_inclusive": false,
+      "validation_n": 32514,
+      "validation_default_rate_pct": 17.34
+    },
+    {
+      "band": "Very High",
+      "pd_min": 0.198809,
+      "pd_max": 0.582343,
+      "pd_max_inclusive": true,
+      "validation_n": 32514,
+      "validation_default_rate_pct": 25.92
+    }
+  ]
+}
