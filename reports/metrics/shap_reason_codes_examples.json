@@ -1,0 +1,122 @@
+[
+  {
+    "percentile": 5,
+    "calibrated_pd_pct": 3.48,
+    "top_3_risk_increasing_drivers_illustrative_only": [
+      {
+        "feature": "purpose",
+        "plain_english": "stated loan purpose",
+        "shap_value_log_odds": 0.5046,
+        "feature_value": "other"
+      },
+      {
+        "feature": "credit_history_months",
+        "plain_english": "length of credit history (months)",
+        "shap_value_log_odds": 0.1459,
+        "feature_value": "363"
+      },
+      {
+        "feature": "emp_length",
+        "plain_english": "years employed",
+        "shap_value_log_odds": 0.0771,
+        "feature_value": "0.0"
+      }
+    ]
+  },
+  {
+    "percentile": 25,
+    "calibrated_pd_pct": 7.46,
+    "top_3_risk_increasing_drivers_illustrative_only": [
+      {
+        "feature": "mths_since_recent_bc",
+        "plain_english": "months since most recent bankcard account opened",
+        "shap_value_log_odds": 0.1469,
+        "feature_value": "4.0"
+      },
+      {
+        "feature": "inq_last_6mths",
+        "plain_english": "number of recent credit inquiries",
+        "shap_value_log_odds": 0.1037,
+        "feature_value": "2.0"
+      },
+      {
+        "feature": "num_tl_op_past_12m",
+        "plain_english": "accounts opened in the last 12 months",
+        "shap_value_log_odds": 0.0558,
+        "feature_value": "3.0"
+      }
+    ]
+  },
+  {
+    "percentile": 50,
+    "calibrated_pd_pct": 12.05,
+    "top_3_risk_increasing_drivers_illustrative_only": [
+      {
+        "feature": "home_ownership",
+        "plain_english": "home ownership status",
+        "shap_value_log_odds": 0.1298,
+        "feature_value": "RENT"
+      },
+      {
+        "feature": "acc_open_past_24mths",
+        "plain_english": "accounts opened in the last 24 months",
+        "shap_value_log_odds": 0.1093,
+        "feature_value": "5.0"
+      },
+      {
+        "feature": "num_rev_tl_bal_gt_0",
+        "plain_english": "number of revolving accounts with a balance",
+        "shap_value_log_odds": 0.0861,
+        "feature_value": "11.0"
+      }
+    ]
+  },
+  {
+    "percentile": 75,
+    "calibrated_pd_pct": 18.18,
+    "top_3_risk_increasing_drivers_illustrative_only": [
+      {
+        "feature": "fico_mean",
+        "plain_english": "credit score (FICO)",
+        "shap_value_log_odds": 0.296,
+        "feature_value": "667.0"
+      },
+      {
+        "feature": "mths_since_recent_bc",
+        "plain_english": "months since most recent bankcard account opened",
+        "shap_value_log_odds": 0.2668,
+        "feature_value": "2.0"
+      },
+      {
+        "feature": "acc_open_past_24mths",
+        "plain_english": "accounts opened in the last 24 months",
+        "shap_value_log_odds": 0.1446,
+        "feature_value": "6.0"
+      }
+    ]
+  },
+  {
+    "percentile": 95,
+    "calibrated_pd_pct": 29.38,
+    "top_3_risk_increasing_drivers_illustrative_only": [
+      {
+        "feature": "acc_open_past_24mths",
+        "plain_english": "accounts opened in the last 24 months",
+        "shap_value_log_odds": 0.3428,
+        "feature_value": "11.0"
+      },
+      {
+        "feature": "loan_to_income",
+        "plain_english": "loan amount relative to income",
+        "shap_value_log_odds": 0.3334,
+        "feature_value": "0.35990918803418803"
+      },
+      {
+        "feature": "fico_mean",
+        "plain_english": "credit score (FICO)",
+        "shap_value_log_odds": 0.3225,
+        "feature_value": "662.0"
+      }
+    ]
+  }
+]

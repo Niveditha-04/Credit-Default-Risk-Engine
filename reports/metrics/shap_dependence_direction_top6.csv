@@ -1,0 +1,7 @@
+feature,pearson_corr_value_vs_shap,direction
+fico_mean,-0.98,negative (higher value -> lower predicted risk)
+annual_inc,-0.489,negative (higher value -> lower predicted risk)
+loan_to_income,0.963,positive (higher value -> higher predicted risk)
+acc_open_past_24mths,0.952,positive (higher value -> higher predicted risk)
+dti,0.954,positive (higher value -> higher predicted risk)
+purpose,,categorical - see plot

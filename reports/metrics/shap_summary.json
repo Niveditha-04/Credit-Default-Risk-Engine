@@ -1,0 +1,20 @@
+{
+  "sample_size": 10000,
+  "seed": 42,
+  "shap_scale": "raw model log-odds (margin), not calibrated probability",
+  "additivity_max_abs_diff": 1.0658141036401503e-14,
+  "additivity_tolerance": 1e-06,
+  "additivity_check_passed": true,
+  "counterintuitive_directions": [],
+  "local_non_monotonic_features": [
+    "dti",
+    "annual_inc"
+  ],
+  "shap_vs_woe_disagreements": [],
+  "rollout_feature_missing_count_in_sample": {
+    "never_flag__mths_since_recent_bc_dlq": 0,
+    "never_flag__mths_since_last_major_derog": 0,
+    "never_flag__mths_since_recent_inq": 0,
+    "never_flag__mths_since_recent_revol_delinq": 0
+  }
+}
