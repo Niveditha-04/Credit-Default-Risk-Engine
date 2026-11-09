@@ -1,0 +1,16 @@
+{
+  "method": "platt",
+  "fit_period": "2014-01 to 2014-09",
+  "holdout_period": "2014-10 to 2014-12",
+  "n_fit": 112550,
+  "n_holdout": 50020,
+  "brier_uncalibrated_holdout": 0.11773,
+  "brier_platt_holdout": 0.11765,
+  "mean_predicted_pd_before_holdout_pct": 13.7383,
+  "actual_default_rate_holdout_pct": 14.5282,
+  "mean_predicted_pd_after_holdout_pct": 14.3037,
+  "final_calibrator_refit_on": "full 2014 (Jan-Dec)",
+  "mean_predicted_pd_before_full_2014_pct": 13.0907,
+  "actual_default_rate_full_2014_pct": 13.7264,
+  "mean_predicted_pd_after_full_2014_pct": 13.7267
+}
