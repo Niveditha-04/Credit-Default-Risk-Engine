@@ -1,0 +1,7 @@
+source_column,is_rollout_affected,missing_bin_count,missing_bin_pct_of_train,missing_bin_default_rate_pct,missing_bin_woe,train_overall_default_rate_pct
+mths_since_recent_bc_dlq,True,115886,80.54,12.78,-0.0071,12.7
+mths_since_last_major_derog,True,118875,82.61,12.63,0.0064,12.7
+mths_since_recent_inq,True,22204,15.43,10.54,0.2114,12.7
+mths_since_recent_revol_delinq,True,102184,71.01,12.76,-0.0052,12.7
+mths_since_last_delinq,False,82403,57.27,12.79,-0.0079,12.7
+mths_since_last_record,False,130048,90.38,12.69,0.0011,12.7
