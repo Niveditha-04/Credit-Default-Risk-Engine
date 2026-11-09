@@ -6,6 +6,7 @@ scaling -> evaluation on validation (2014). Test (2015) is never touched.
 import json
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 from optbinning import BinningProcess
@@ -13,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from src.features.allow_list import feature_columns
+from src.models.mlflow_utils import log_common_context, log_file_if_exists, setup_mlflow
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -393,5 +395,65 @@ def main() -> None:
     print("\nDone.")
 
 
+def run_with_mlflow() -> None:
+    """Runs the unchanged main() pipeline, then logs params/metrics/
+    artifacts from the files it just wrote - logging never touches the
+    computation itself, so outputs are identical whether this wrapper or
+    main() directly is called."""
+    setup_mlflow()
+    with mlflow.start_run(run_name="scorecard"):
+        log_common_context()
+        mlflow.log_params({
+            "iv_min_threshold": IV_MIN_THRESHOLD,
+            "correlation_threshold": CORR_THRESHOLD,
+            "vif_threshold": VIF_THRESHOLD,
+            "pdo": PDO,
+            "base_points": BASE_POINTS,
+            "base_odds": BASE_ODDS,
+        })
+
+        main()
+
+        with open(METRICS_DIR / "feature_selection_log.json") as f:
+            selection_log = json.load(f)
+        mlflow.log_params({
+            "n_candidates": selection_log["n_candidates"],
+            "n_final_features": len(selection_log["final_features"]),
+        })
+
+        with open(METRICS_DIR / "scorecard_validation_metrics.json") as f:
+            val_metrics = json.load(f)
+        mlflow.log_metrics({
+            "train_auc": val_metrics["train"]["auc"],
+            "train_gini": val_metrics["train"]["gini"],
+            "train_ks": val_metrics["train"]["ks"],
+            "validation_auc": val_metrics["validation"]["auc"],
+            "validation_gini": val_metrics["validation"]["gini"],
+            "validation_ks": val_metrics["validation"]["ks"],
+        })
+
+        # Test (2015) is NOT rescored here - these metrics are read from
+        # the file score_test.py / test_evaluation.py already committed
+        # in Phase 5, attached for reference only.
+        test_metrics_path = METRICS_DIR / "test_core_metrics.json"
+        if test_metrics_path.exists():
+            with open(test_metrics_path) as f:
+                test_metrics = json.load(f).get("scorecard", {})
+            mlflow.log_metrics({
+                f"test_{k}": v for k, v in test_metrics.items() if isinstance(v, (int, float))
+            })
+
+        for fname in [
+            "scorecard_validation_metrics.json", "feature_selection_log.json",
+            "logistic_regression_coefficients.csv", "iv_table.csv", "scorecard_points.json",
+            "scorecard_calibration_validation.csv", "scorecard_score_bands_validation.csv",
+            "scorecard_score_summary.json", "missing_bin_diagnostic.csv",
+            "scorecard_calibration.json", "frozen_model_config.json",
+        ]:
+            log_file_if_exists(str(METRICS_DIR / fname))
+
+        print(f"\nMLflow run logged: {mlflow.active_run().info.run_id}")
+
+
 if __name__ == "__main__":
-    main()
+    run_with_mlflow()

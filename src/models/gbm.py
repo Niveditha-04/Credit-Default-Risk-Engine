@@ -130,7 +130,8 @@ def sample_xgb_params(rng: random.Random) -> dict:
     }
 
 
-def tune_lightgbm(train, validation, feats, y_train, y_validation, search_name, param_sampler, n_trials, seed):
+def tune_lightgbm(train, validation, feats, y_train, y_validation, search_name, param_sampler, n_trials, seed,
+                   log_to_mlflow=False):
     rng = random.Random(seed)
     # feature_pre_filter=False: each trial tries a different min_child_samples
     # (min_data_in_leaf), but this Dataset is built once and reused across
@@ -173,10 +174,18 @@ def tune_lightgbm(train, validation, feats, y_train, y_validation, search_name, 
         boosters[global_trial_id] = booster
         print(f"  [lgb {search_name} trial {trial_id}] auc={auc:.5f} best_iter={booster.best_iteration}")
 
+        if log_to_mlflow:
+            import mlflow
+            with mlflow.start_run(run_name=f"lgb_{global_trial_id}", nested=True):
+                mlflow.log_params({k: v for k, v in params.items() if k not in ("deterministic", "force_row_wise")})
+                mlflow.log_param("search", search_name)
+                mlflow.log_metric("validation_auc", auc)
+                mlflow.log_metric("best_iteration", booster.best_iteration)
+
     return trials, boosters
 
 
-def tune_xgboost(train, validation, feats, y_train, y_validation):
+def tune_xgboost(train, validation, feats, y_train, y_validation, log_to_mlflow=False):
     rng = random.Random(SEED + 1)
     dtrain = xgb.DMatrix(train[feats], label=y_train, enable_categorical=True)
     dval = xgb.DMatrix(validation[feats], label=y_validation, enable_categorical=True)
@@ -209,6 +218,13 @@ def tune_xgboost(train, validation, feats, y_train, y_validation):
         print(f"  [xgb trial {trial_id}] auc={auc:.5f} best_iter={booster.best_iteration}")
         if auc > best["auc"]:
             best = {"auc": auc, "params": params, "booster": booster, "best_iteration": booster.best_iteration}
+
+        if log_to_mlflow:
+            import mlflow
+            with mlflow.start_run(run_name=f"xgb_{trial_id}", nested=True):
+                mlflow.log_params(params)
+                mlflow.log_metric("validation_auc", auc)
+                mlflow.log_metric("best_iteration", booster.best_iteration)
 
     return best, trials
 
@@ -290,7 +306,7 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
     return result, chosen_method, final_calibrator
 
 
-def main() -> None:
+def main(log_to_mlflow: bool = False) -> None:
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -305,20 +321,21 @@ def main() -> None:
 
     print(f"\n=== Tuning LightGBM, unconstrained ({N_TUNING_TRIALS_LGB} trials, seed={SEED}) ===")
     unconstrained_trials, unconstrained_boosters = tune_lightgbm(
-        train, validation, feats, y_train, y_validation, "unconstrained", sample_lgb_params, N_TUNING_TRIALS_LGB, SEED
+        train, validation, feats, y_train, y_validation, "unconstrained", sample_lgb_params, N_TUNING_TRIALS_LGB, SEED,
+        log_to_mlflow=log_to_mlflow,
     )
 
     print(f"\n=== Tuning LightGBM, regularized ({N_TUNING_TRIALS_LGB_REGULARIZED} trials, seed={SEED + 100}) ===")
     regularized_trials, regularized_boosters = tune_lightgbm(
         train, validation, feats, y_train, y_validation, "regularized", sample_lgb_regularized_params,
-        N_TUNING_TRIALS_LGB_REGULARIZED, SEED + 100,
+        N_TUNING_TRIALS_LGB_REGULARIZED, SEED + 100, log_to_mlflow=log_to_mlflow,
     )
 
     lgb_trials = unconstrained_trials + regularized_trials
     lgb_boosters = {**unconstrained_boosters, **regularized_boosters}
 
     print(f"\n=== Tuning XGBoost ({N_TUNING_TRIALS_XGB} trials, seed={SEED}) ===")
-    best_xgb, xgb_trials = tune_xgboost(train, validation, feats, y_train, y_validation)
+    best_xgb, xgb_trials = tune_xgboost(train, validation, feats, y_train, y_validation, log_to_mlflow=log_to_mlflow)
 
     all_trials = lgb_trials + xgb_trials
     with open(METRICS_DIR / "gbm_tuning_trials.json", "w") as f:
@@ -455,5 +472,111 @@ def main() -> None:
     }
 
 
+def run_with_mlflow() -> None:
+    """Runs the unchanged main() pipeline (with per-trial child-run
+    logging switched on), then logs the parent run's params/metrics/
+    artifacts and registers the champion model. Logging never changes the
+    computation - every training call, prediction, and file write in
+    main() is identical whether this wrapper or main() directly is
+    called."""
+    import mlflow
+    from mlflow import MlflowClient
+    from mlflow.models import infer_signature
+
+    from src.models.mlflow_utils import (
+        LightGBMChampionModel,
+        log_common_context,
+        log_file_if_exists,
+        setup_mlflow,
+    )
+
+    setup_mlflow()
+    with mlflow.start_run(run_name="gbm"):
+        log_common_context()
+        mlflow.log_params({
+            "n_tuning_trials_lgb_unconstrained": N_TUNING_TRIALS_LGB,
+            "n_tuning_trials_lgb_regularized": N_TUNING_TRIALS_LGB_REGULARIZED,
+            "n_tuning_trials_xgb": N_TUNING_TRIALS_XGB,
+            "simplicity_auc_tolerance": SIMPLICITY_AUC_TOLERANCE,
+            "seed": SEED,
+        })
+
+        result = main(log_to_mlflow=True)
+        feats = result["feats"]
+
+        with open(METRICS_DIR / "gbm_validation_metrics.json") as f:
+            val_metrics = json.load(f)
+        chosen = val_metrics["chosen"]
+        mlflow.log_params({
+            "chosen_trial": chosen["trial"],
+            "chosen_n_trees": chosen["n_trees"],
+        })
+        mlflow.log_metrics({
+            "chosen_train_auc": chosen["train_auc"],
+            "chosen_validation_auc": chosen["validation_auc"],
+            "chosen_validation_gini": chosen["validation_gini"],
+            "chosen_validation_ks": chosen["validation_ks"],
+            "chosen_train_validation_gap": chosen["train_minus_validation_auc_gap"],
+            "xgboost_validation_auc": result["best_xgb"]["auc"],
+        })
+
+        # Test (2015) is NOT rescored here - attached from the already
+        # committed Phase 5 files for reference only.
+        test_metrics_path = METRICS_DIR / "test_core_metrics.json"
+        if test_metrics_path.exists():
+            with open(test_metrics_path) as f:
+                test_metrics = json.load(f)
+            for model_key, prefix in [("lightgbm", "test_lightgbm"), ("xgboost", "test_xgboost")]:
+                m = test_metrics.get(model_key, {})
+                mlflow.log_metrics({
+                    f"{prefix}_{k}": v for k, v in m.items() if isinstance(v, (int, float))
+                })
+
+        for fname in [
+            "gbm_feature_list.json", "gbm_tuning_trials.csv", "gbm_validation_metrics.json",
+            "gbm_feature_importance.csv", "gbm_calibration.json", "frozen_model_config.json",
+            "shap_summary.json", "shap_global_importance.csv",
+        ]:
+            log_file_if_exists(str(METRICS_DIR / fname))
+        log_file_if_exists("reports/figures/shap_dependence_top6.png")
+
+        # --- Register the champion: LightGBM booster + Platt calibrator,
+        # chained as one deployable pyfunc model, with a real signature
+        # and input example (plain string dtype for categoricals - see
+        # LightGBMChampionModel docstring for why).
+        validation = pd.read_parquet(VALIDATION_PARQUET)
+        sample_input = validation[feats].head(5).copy()
+
+        lgb_dir = MODELS_DIR / "lightgbm"
+        model_instance = LightGBMChampionModel()
+
+        class _FakeContext:
+            artifacts = {
+                "booster": str(lgb_dir / "model_chosen.joblib"),
+                "calibrator": str(lgb_dir / "calibrator.joblib"),
+                "features": str(lgb_dir / "features.json"),
+            }
+
+        model_instance.load_context(_FakeContext())
+        sample_output = model_instance.predict(None, sample_input)
+        signature = infer_signature(sample_input, sample_output)
+
+        model_info = mlflow.pyfunc.log_model(
+            name="lightgbm_champion",
+            python_model=model_instance,
+            artifacts=_FakeContext.artifacts,
+            signature=signature,
+            input_example=sample_input,
+            registered_model_name="credit_default_lightgbm_champion",
+        )
+        client = MlflowClient()
+        client.set_registered_model_alias(
+            "credit_default_lightgbm_champion", "champion", model_info.registered_model_version
+        )
+        print(f"\nRegistered credit_default_lightgbm_champion v{model_info.registered_model_version}, "
+              f"alias 'champion' set.")
+        print(f"MLflow run logged: {mlflow.active_run().info.run_id}")
+
+
 if __name__ == "__main__":
-    main()
+    run_with_mlflow()

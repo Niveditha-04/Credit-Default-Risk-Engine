@@ -1,0 +1,6 @@
+{
+  "model_uri": "models:/credit_default_lightgbm_champion@champion",
+  "n_rows_compared": 162570,
+  "max_abs_diff": 0.0,
+  "exactly_equal": true
+}
