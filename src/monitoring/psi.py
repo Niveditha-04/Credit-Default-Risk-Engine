@@ -38,8 +38,8 @@ def fit_numeric_bins(train_values: pd.Series, n_bins: int = N_NUMERIC_BINS) -> n
     quantiles = np.linspace(0, 1, n_bins + 1)
     edges = np.unique(clean.quantile(quantiles).to_numpy())
     if len(edges) < 2:
-        # A constant (zero-variance) column in train: everything falls in
-        # one bin by construction, which is correct, not a bug.
+        # A constant (zero-variance) column in train: everything correctly
+        # falls in one bin by construction.
         return np.array([-np.inf, np.inf])
     edges[0] = -np.inf
     edges[-1] = np.inf

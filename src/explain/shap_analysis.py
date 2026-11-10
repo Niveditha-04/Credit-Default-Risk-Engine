@@ -199,6 +199,7 @@ def main() -> None:
         # Special/Missing rows always have a plain string Bin value;
         # interval/category bins have a string (numeric) or an array-like
         # (categorical) - check type directly rather than .isin(), which
+        # breaks on array-valued cells.
         is_special_or_missing = ordered["Bin"].apply(lambda b: isinstance(b, str) and b in ("Special", "Missing"))
         ordered = ordered[~is_special_or_missing]
         woe_numeric = pd.to_numeric(ordered["WoE"], errors="coerce")
