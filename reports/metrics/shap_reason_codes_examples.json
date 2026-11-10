@@ -1,123 +1,128 @@
 {
-  "pd_note": "calibrated_pd_pct is the CALIBRATED probability (raw LightGBM log-odds passed through the frozen Platt calibrator, via score_lightgbm() - the exact same function used everywhere else in this project to score a loan). It is NOT the raw/uncalibrated model output. The SHAP values and 'drivers' themselves are on the raw log-odds scale (see module docstring); only the PD shown per applicant is calibrated.",
+  "pd_note": "calibrated_pd_pct is the CALIBRATED probability (raw LightGBM log-odds passed through the frozen Platt calibrator, via score_lightgbm() - the exact same function used everywhere else in this project to score a loan). It is NOT the raw/uncalibrated model output. The per-feature contributions and 'drivers' themselves are on the raw log-odds scale (see module docstring); only the PD shown per applicant is calibrated. Ties for closest-to-percentile are broken by lowest loan id, so these examples are the same every time this script runs.",
   "examples": [
     {
       "percentile": 5,
-      "calibrated_pd_pct": 3.66,
+      "id": 61478678,
+      "calibrated_pd_pct": 3.59,
       "top_3_risk_increasing_drivers_illustrative_only": [
         {
-          "feature": "fico_mean",
-          "plain_english": "credit score (FICO)",
-          "shap_value_log_odds": 0.1247,
-          "feature_value": "682.0"
+          "feature": "dti",
+          "plain_english": "debt-to-income ratio",
+          "shap_value_log_odds": 0.1314,
+          "feature_value": "25.75"
         },
         {
-          "feature": "mths_since_last_major_derog",
-          "plain_english": "months since last major derogatory mark",
-          "shap_value_log_odds": 0.089,
-          "feature_value": "13.0"
+          "feature": "credit_history_months",
+          "plain_english": "length of credit history (months)",
+          "shap_value_log_odds": 0.0552,
+          "feature_value": "277"
         },
         {
-          "feature": "percent_bc_gt_75",
-          "plain_english": "percent of bankcard accounts over 75% of limit",
-          "shap_value_log_odds": 0.0404,
-          "feature_value": "50.0"
+          "feature": "mo_sin_rcnt_rev_tl_op",
+          "plain_english": "months since most recent revolving account opened",
+          "shap_value_log_odds": 0.0539,
+          "feature_value": "14.0"
         }
       ]
     },
     {
       "percentile": 25,
-      "calibrated_pd_pct": 7.67,
+      "id": 53544347,
+      "calibrated_pd_pct": 7.59,
       "top_3_risk_increasing_drivers_illustrative_only": [
         {
-          "feature": "dti",
-          "plain_english": "debt-to-income ratio",
-          "shap_value_log_odds": 0.1216,
-          "feature_value": "22.6"
+          "feature": "mths_since_recent_inq",
+          "plain_english": "months since most recent credit inquiry",
+          "shap_value_log_odds": 0.2584,
+          "feature_value": "0.0"
         },
         {
           "feature": "fico_mean",
           "plain_english": "credit score (FICO)",
-          "shap_value_log_odds": 0.101,
-          "feature_value": "692.0"
+          "shap_value_log_odds": 0.1353,
+          "feature_value": "682.0"
         },
         {
-          "feature": "percent_bc_gt_75",
-          "plain_english": "percent of bankcard accounts over 75% of limit",
-          "shap_value_log_odds": 0.062,
-          "feature_value": "100.0"
+          "feature": "dti",
+          "plain_english": "debt-to-income ratio",
+          "shap_value_log_odds": 0.1328,
+          "feature_value": "26.16"
         }
       ]
     },
     {
       "percentile": 50,
-      "calibrated_pd_pct": 12.22,
+      "id": 59250499,
+      "calibrated_pd_pct": 12.16,
       "top_3_risk_increasing_drivers_illustrative_only": [
         {
-          "feature": "fico_mean",
-          "plain_english": "credit score (FICO)",
-          "shap_value_log_odds": 0.2435,
-          "feature_value": "672.0"
-        },
-        {
-          "feature": "loan_to_income",
-          "plain_english": "loan amount relative to income",
-          "shap_value_log_odds": 0.1588,
-          "feature_value": "0.3"
+          "feature": "dti",
+          "plain_english": "debt-to-income ratio",
+          "shap_value_log_odds": 0.2376,
+          "feature_value": "34.45"
         },
         {
           "feature": "annual_inc",
           "plain_english": "annual income",
-          "shap_value_log_odds": 0.1392,
-          "feature_value": "40000.0"
+          "shap_value_log_odds": 0.1121,
+          "feature_value": "48000.0"
+        },
+        {
+          "feature": "loan_to_income",
+          "plain_english": "loan amount relative to income",
+          "shap_value_log_odds": 0.0843,
+          "feature_value": "0.2708333333333333"
         }
       ]
     },
     {
       "percentile": 75,
-      "calibrated_pd_pct": 18.25,
+      "id": 41052147,
+      "calibrated_pd_pct": 18.29,
       "top_3_risk_increasing_drivers_illustrative_only": [
         {
-          "feature": "emp_length",
-          "plain_english": "years employed",
-          "shap_value_log_odds": 0.2855,
-          "feature_value": "<NA>"
+          "feature": "acc_open_past_24mths",
+          "plain_english": "accounts opened in the last 24 months",
+          "shap_value_log_odds": 0.2981,
+          "feature_value": "11.0"
         },
         {
-          "feature": "annual_inc",
-          "plain_english": "annual income",
-          "shap_value_log_odds": 0.2004,
-          "feature_value": "36000.0"
+          "feature": "purpose",
+          "plain_english": "stated loan purpose",
+          "shap_value_log_odds": 0.2887,
+          "feature_value": "medical"
         },
         {
-          "feature": "loan_to_income",
-          "plain_english": "loan amount relative to income",
-          "shap_value_log_odds": 0.1528,
-          "feature_value": "0.2875"
+          "feature": "num_tl_op_past_12m",
+          "plain_english": "accounts opened in the last 12 months",
+          "shap_value_log_odds": 0.1663,
+          "feature_value": "4.0"
         }
       ]
     },
     {
       "percentile": 95,
-      "calibrated_pd_pct": 29.01,
+      "id": 55513371,
+      "calibrated_pd_pct": 29.34,
       "top_3_risk_increasing_drivers_illustrative_only": [
-        {
-          "feature": "loan_amnt",
-          "plain_english": "loan amount",
-          "shap_value_log_odds": 0.4251,
-          "feature_value": "35000.0"
-        },
-        {
-          "feature": "loan_to_income",
-          "plain_english": "loan amount relative to income",
-          "shap_value_log_odds": 0.3809,
-          "feature_value": "0.3888888888888889"
-        },
         {
           "feature": "fico_mean",
           "plain_english": "credit score (FICO)",
-          "shap_value_log_odds": 0.2054,
+          "shap_value_log_odds": 0.2695,
           "feature_value": "667.0"
+        },
+        {
+          "feature": "purpose",
+          "plain_english": "stated loan purpose",
+          "shap_value_log_odds": 0.21,
+          "feature_value": "moving"
+        },
+        {
+          "feature": "mths_since_recent_bc",
+          "plain_english": "months since most recent bankcard account opened",
+          "shap_value_log_odds": 0.1867,
+          "feature_value": "3.0"
         }
       ]
     }

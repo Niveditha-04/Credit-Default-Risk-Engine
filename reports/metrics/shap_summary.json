@@ -1,8 +1,9 @@
 {
-  "sample_size": 10000,
-  "seed": 42,
+  "sample_size": 282787,
+  "sampling": "none - full test set",
+  "contribution_source": "booster.predict(pred_contrib=True), LightGBM's exact TreeSHAP",
   "shap_scale": "raw model log-odds (margin), not calibrated probability",
-  "additivity_max_abs_diff": 9.769962616701378e-15,
+  "additivity_max_abs_diff": 1.2434497875801753e-14,
   "additivity_tolerance": 1e-06,
   "additivity_check_passed": true,
   "counterintuitive_directions": [],
