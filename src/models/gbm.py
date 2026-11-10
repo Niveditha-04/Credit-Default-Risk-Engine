@@ -54,7 +54,7 @@ CANDIDATES_DIR = MODELS_DIR / "candidates"
 
 # 2026-11-10 incident: a run meant only to verify that adding ORDER BY to
 # the data pipeline didn't change results (it did - see
-# diagnose_row_order_bagging.py, row order interacts with LightGBM's
+# stability.py, row order interacts with LightGBM's
 # seeded bagging/feature subsampling) silently overwrote the frozen,
 # already-verified model_chosen.joblib and xgboost/model.joblib with a
 # DIFFERENT model, with no backup. Every run now writes to its own

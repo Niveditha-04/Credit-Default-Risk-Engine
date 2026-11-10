@@ -1,16 +1,21 @@
-"""Phase 6 follow-up checks (no model changes):
+"""Phase 6 follow-up checks on the frozen champion (no model changes).
+
+shap_followup_checks():
   - Income reversal: does it survive when grouping all income-scaled
     features together, and does it show up in the raw train default rate?
   - dti dip: does it show up in the raw train default rate?
+  Every bucket's raw default rate is reported with n and a 95% Wilson
+  score confidence interval - some buckets are small (the $500K+ income
+  bucket has n=116, the dti 0-1 bucket has n=700), and a point-estimate
+  "dip" or "rise" that looks clean on a chart can be well within sampling
+  noise once you look at the interval.
 
-Every bucket's raw default rate is reported with n and a 95% Wilson score
-confidence interval - some of these buckets are small (the $500K+ income
-bucket has n=116, the dti 0-1 bucket has n=700), and a point-estimate
-"dip" or "rise" that looks clean on a chart can be well within sampling
-noise once you look at the interval. These checks distinguish "the model
-is picking up a real historical pattern" from "this is noise/overfitting
-on a sparse tail" - by comparing against the actual label with honest
-uncertainty, not just the model's own SHAP output or a bare point estimate.
+loan_to_income_cap_check():
+  Checks whether loan_to_income's pileup at exactly 0.5 is something our
+  pipeline clips, or a property of the raw data. No clip()/min()/max()
+  call exists anywhere in build_features.py's loan_to_income formula
+  (plain division: loan_amnt / annual_inc) - confirmed empirically across
+  all three splits.
 """
 
 import json
@@ -64,7 +69,7 @@ def cis_overlap(row_a: pd.Series, row_b: pd.Series) -> bool:
     return not (row_a["ci_high"] < row_b["ci_low"] or row_b["ci_high"] < row_a["ci_low"])
 
 
-def main() -> None:
+def shap_followup_checks() -> None:
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
     cfg = frozen["lightgbm_chosen"]
@@ -167,5 +172,46 @@ def main() -> None:
     print("\n" + json.dumps(summary, indent=2))
 
 
+def loan_to_income_cap_check() -> None:
+    """No clip()/min()/max() call exists anywhere in build_features.py's
+    loan_to_income formula (plain division: loan_amnt / annual_inc) -
+    this confirms that empirically across all three splits."""
+    rows = []
+    for name, path in [
+        ("train", "data/processed/train.parquet"),
+        ("validation", "data/processed/validation.parquet"),
+        ("test", "data/processed/test.parquet"),
+    ]:
+        df = pd.read_parquet(path)
+        lti = df["loan_to_income"]
+        rows.append(
+            {
+                "split": name,
+                "n": len(df),
+                "max": round(float(lti.max()), 4),
+                "pct_at_exactly_0_5": round(100 * (lti == 0.5).mean(), 3),
+                "pct_above_0_5": round(100 * (lti > 0.5).mean(), 3),
+            }
+        )
+    result = {
+        "clipped_in_our_code": False,
+        "formula": "loan_amnt / annual_inc (build_features.py), no clip/min/max applied anywhere in the pipeline",
+        "by_split": rows,
+        "interpretation": (
+            "Train (2012-2013) has loans above 0.5 (max 0.7125), with little mass exactly at 0.5 (0.065%). "
+            "Validation (2014) and test (2015) never exceed 0.5, and test shows 0.538% of loans landing "
+            "exactly at 0.5 (7x validation's rate). This looks like a LendingClub underwriting policy "
+            "(a hard loan-to-income cap around 50%) that tightened/became binding between the 2012-2013 and "
+            "2014-2015 vintages - a property of the raw data, not something introduced by our feature "
+            "engineering."
+        ),
+    }
+    with open(METRICS_DIR / "loan_to_income_cap_check.json", "w") as f:
+        json.dump(result, f, indent=2)
+    print(json.dumps(result, indent=2))
+
+
 if __name__ == "__main__":
-    main()
+    shap_followup_checks()
+    print()
+    loan_to_income_cap_check()
