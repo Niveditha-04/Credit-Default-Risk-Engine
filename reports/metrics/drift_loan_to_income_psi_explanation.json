@@ -1,0 +1,13 @@
+{
+  "question": "did loan_to_income cross any PSI threshold, and if not (or only mildly), why",
+  "answer": "loan_to_income reached watch level (max PSI 0.1202, first crossed 0.10 in 2017-05) but never reached alert (0.25) in any of the 48 months",
+  "why_the_cap_is_diluted": "The top decile bin edge (fit on train) is 0.3411, so the top bin covers [0.3411, inf). That one wide bin holds every value from an ordinary loan at 0.35 up to the capped spike at exactly 0.5, and, once the cap lifts in 2017, values up to 1.38. The cap affects only 0.0% of the train reference and 0.753% of 2015 rows (both within 0.005 of 0.5) - a small fraction sitting inside a bin that already holds about 10% of the population by construction. PSI compares bin proportions, not the shape within a bin, so a thin spike at one point inside a wide bin barely moves that bin's share.",
+  "top_decile_bin_edge": 0.3411,
+  "pct_of_train_ref_near_0.5": 0.0,
+  "pct_of_test_2015_near_0.5": 0.753,
+  "train_top_bin_share": 0.1,
+  "test_2015_top_bin_share": 0.1139,
+  "psi_train_vs_test_2015_only": 0.0122,
+  "first_month_crossed_0.10": "2017-05",
+  "note": "PSI rises later in 2017, once the cap starts lifting and the top bin genuinely gains mass above 0.5-1.3 - not from the capped spike itself."
+}

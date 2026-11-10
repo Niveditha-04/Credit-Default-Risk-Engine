@@ -1,0 +1,94 @@
+{
+  "question": "why did prediction (score) drift stay flat (max PSI 0.073) while 6 features reached alert-level data drift",
+  "checked_finding": "the 6 alert-level features are all mid-to-low SHAP importance (global ranks 11-62 of 69, none in the top 10); the top 10 SHAP-ranked features never exceeded 0.1513 max PSI (watch level, fico_mean) across all 48 months - the features that moved the most are not the features the model weights the most, and the features the model weights the most barely moved",
+  "alert_features_vs_shap_rank": [
+    {
+      "feature": "verification_status",
+      "first_month_crossed_0.25": "2015-06",
+      "peak_psi_2015_2018": 0.5223,
+      "shap_global_rank": 38
+    },
+    {
+      "feature": "bc_util",
+      "first_month_crossed_0.25": "2017-10",
+      "peak_psi_2015_2018": 0.4377,
+      "shap_global_rank": 18
+    },
+    {
+      "feature": "revol_util",
+      "first_month_crossed_0.25": "2017-09",
+      "peak_psi_2015_2018": 0.4332,
+      "shap_global_rank": 13
+    },
+    {
+      "feature": "percent_bc_gt_75",
+      "first_month_crossed_0.25": "2017-09",
+      "peak_psi_2015_2018": 0.4318,
+      "shap_global_rank": 14
+    },
+    {
+      "feature": "bc_open_to_buy",
+      "first_month_crossed_0.25": "2017-12",
+      "peak_psi_2015_2018": 0.3134,
+      "shap_global_rank": 11
+    },
+    {
+      "feature": "num_tl_120dpd_2m",
+      "first_month_crossed_0.25": "2016-11",
+      "peak_psi_2015_2018": 0.288,
+      "shap_global_rank": 62
+    }
+  ],
+  "top10_shap_features_vs_max_psi": [
+    {
+      "feature": "fico_mean",
+      "shap_rank": 1,
+      "max_psi_2015_2018": 0.1513
+    },
+    {
+      "feature": "annual_inc",
+      "shap_rank": 2,
+      "max_psi_2015_2018": 0.0882
+    },
+    {
+      "feature": "loan_to_income",
+      "shap_rank": 3,
+      "max_psi_2015_2018": 0.1202
+    },
+    {
+      "feature": "acc_open_past_24mths",
+      "shap_rank": 4,
+      "max_psi_2015_2018": 0.0953
+    },
+    {
+      "feature": "dti",
+      "shap_rank": 5,
+      "max_psi_2015_2018": 0.0726
+    },
+    {
+      "feature": "purpose",
+      "shap_rank": 6,
+      "max_psi_2015_2018": 0.1421
+    },
+    {
+      "feature": "num_tl_op_past_12m",
+      "shap_rank": 7,
+      "max_psi_2015_2018": 0.0941
+    },
+    {
+      "feature": "mths_since_recent_inq",
+      "shap_rank": 8,
+      "max_psi_2015_2018": 0.0189
+    },
+    {
+      "feature": "mths_since_recent_bc",
+      "shap_rank": 9,
+      "max_psi_2015_2018": 0.0405
+    },
+    {
+      "feature": "home_ownership",
+      "shap_rank": 10,
+      "max_psi_2015_2018": 0.0751
+    }
+  ]
+}
