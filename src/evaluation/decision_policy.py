@@ -41,7 +41,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.models.gbm import logit
+from src.models.math_utils import apply_calibrator
 
 METRICS_DIR = Path("reports/metrics")
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
@@ -129,7 +129,7 @@ def load_champion_predictions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
         validation[col] = validation[col].astype("category")
 
     raw_pred = booster.predict(validation[feats], num_iteration=booster.best_iteration)
-    calibrated_pd = calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+    calibrated_pd = apply_calibrator(calibrator, raw_pred)
 
     econ = con.execute(
         f"""

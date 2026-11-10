@@ -1,8 +1,10 @@
 """Full Phase 5 test (2015) evaluation. Reads ONLY from
 reports/metrics/test_scored.parquet (the one-time scoring pass saved by
-score_test.py) plus train.parquet (for the sub_grade-to-PD map) and
-decision_policy.json (the cutoff/LGD/formula fixed on validation before
-test was ever read). This script does not open test.parquet again.
+score_test.py) plus train.parquet (for the sub_grade-to-PD map). This
+script does not open test.parquet again. The approval economics
+(expected loss, expected net value, threshold table) are a separate
+concern, computed once by src.evaluation.economics from the same
+decision_policy.json and test_scored.parquet.
 """
 
 import json
@@ -117,9 +119,6 @@ def main() -> None:
     df = pd.read_parquet(TEST_SCORED)
     print(f"Loaded {len(df)} rows from {TEST_SCORED} (already scored, no new test read)")
     y = df["target"].values
-
-    with open(METRICS_DIR / "decision_policy.json") as f:
-        policy = json.load(f)
 
     # ---------------------------------------------------------------
     # 3. Core test metrics per model + sub_grade benchmark setup
@@ -265,72 +264,6 @@ def main() -> None:
     with open(METRICS_DIR / "test_robustness.json", "w") as f:
         json.dump(robustness_results, f, indent=2)
     print(json.dumps(robustness_results, indent=2))
-
-    # ---------------------------------------------------------------
-    # 8. Economics
-    # ---------------------------------------------------------------
-    print("\n=== Economics ===")
-    lgd = policy["lgd"]["lgd_mean"]
-    cutoff = policy["chosen_pd_cutoff"]
-
-    df["interest_income"] = df["installment"] * 36 - df["loan_amnt"]
-    df["realized_net_cash"] = df["total_pymnt"] - df["funded_amnt"]
-
-    econ_rows = []
-    for name, col in MODEL_COLS.items():
-        df["ev_per_loan"] = (1 - df[col]) * df["interest_income"] - df[col] * df["loan_amnt"] * lgd
-        approved = df[df[col] <= cutoff]
-        econ_rows.append(
-            {
-                "model": name,
-                "pd_cutoff": cutoff,
-                "approval_rate_pct": round(100 * len(approved) / len(df), 2),
-                "n_approved": len(approved),
-                "actual_default_rate_approved_pct": round(100 * approved["target"].mean(), 2),
-                "ex_ante_expected_loss_total": round(float((approved[col] * approved["loan_amnt"] * lgd).sum()), 2),
-                "ex_ante_total_expected_net_value": round(float(approved["ev_per_loan"].sum()), 2),
-                "ex_post_realized_net_cash_total": round(float(approved["realized_net_cash"].sum()), 2),
-                "ex_post_realized_net_cash_per_loan": round(float(approved["realized_net_cash"].mean()), 2),
-            }
-        )
-    econ_summary = pd.DataFrame(econ_rows)
-    econ_summary.to_csv(METRICS_DIR / "test_economics_at_fixed_cutoff.csv", index=False)
-    print(econ_summary.to_string(index=False))
-
-    print("\n=== LGD sensitivity (champion model, fixed PD cutoff) ===")
-    lgd_sens_rows = []
-    champion_approved = df[df["pd_lightgbm"] <= cutoff]
-    for lgd_val in policy["lgd_sensitivity_range"]:
-        expected_loss = float((champion_approved["pd_lightgbm"] * champion_approved["loan_amnt"] * lgd_val).sum())
-        ev = float(
-            ((1 - champion_approved["pd_lightgbm"]) * champion_approved["interest_income"]
-             - champion_approved["pd_lightgbm"] * champion_approved["loan_amnt"] * lgd_val).sum()
-        )
-        lgd_sens_rows.append({"lgd": lgd_val, "ex_ante_expected_loss_total": round(expected_loss, 2),
-                               "ex_ante_total_expected_net_value": round(ev, 2)})
-    lgd_sens_df = pd.DataFrame(lgd_sens_rows)
-    lgd_sens_df.to_csv(METRICS_DIR / "test_lgd_sensitivity.csv", index=False)
-    print(lgd_sens_df.to_string(index=False))
-
-    print("\n=== Threshold table (champion model, test) ===")
-    threshold_rows = []
-    pd_candidates = np.percentile(df["pd_lightgbm"], np.arange(10, 101, 10))
-    for cut in pd_candidates:
-        approved = df[df["pd_lightgbm"] <= cut]
-        ev = float(((1 - approved["pd_lightgbm"]) * approved["interest_income"]
-                     - approved["pd_lightgbm"] * approved["loan_amnt"] * lgd).sum())
-        threshold_rows.append(
-            {
-                "pd_cutoff": round(float(cut), 4),
-                "approval_rate_pct": round(100 * len(approved) / len(df), 2),
-                "actual_default_rate_approved_pct": round(100 * approved["target"].mean(), 2),
-                "ex_ante_total_expected_net_value": round(ev, 2),
-                "ex_post_realized_net_cash_total": round(float(approved["realized_net_cash"].sum()), 2),
-            }
-        )
-    threshold_df = pd.DataFrame(threshold_rows)
-    threshold_df.to_csv(METRICS_DIR / "test_threshold_table.csv", index=False)
-    print(threshold_df.to_string(index=False))
 
     print("\nDone.")
 

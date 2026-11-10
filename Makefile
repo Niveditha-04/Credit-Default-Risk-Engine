@@ -25,8 +25,13 @@ train: features
 	$(VENV)/python -m src.models.scorecard
 	$(VENV)/python -m src.models.gbm
 
+# Phase 5: set the approval policy on validation/train, score test once,
+# then compute metrics and economics from that one saved scoring pass.
 evaluate:
-	$(VENV)/python -m src.evaluation.evaluate
+	$(VENV)/python -m src.evaluation.decision_policy
+	$(VENV)/python -m src.evaluation.score_test
+	$(VENV)/python -m src.evaluation.test_evaluation
+	$(VENV)/python -m src.evaluation.economics
 
 serve:
 	$(VENV)/uvicorn src.api.main:app --reload

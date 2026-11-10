@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.models.math_utils import logit
+from src.models.math_utils import apply_calibrator
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
@@ -27,7 +27,7 @@ def score_lightgbm(df: pd.DataFrame, cfg: dict) -> np.ndarray:
     for col in CATEGORICAL_COLUMNS:
         df2[col] = df2[col].astype("category")
     raw_pred = booster.predict(df2[feats], num_iteration=booster.best_iteration)
-    return calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+    return apply_calibrator(calibrator, raw_pred)
 
 
 def score_xgboost(df: pd.DataFrame, cfg: dict) -> np.ndarray:
@@ -41,7 +41,7 @@ def score_xgboost(df: pd.DataFrame, cfg: dict) -> np.ndarray:
         df2[col] = df2[col].astype("category")
     dmat = xgb.DMatrix(df2[feats], enable_categorical=True)
     raw_pred = booster.predict(dmat)
-    return calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+    return apply_calibrator(calibrator, raw_pred)
 
 
 def score_scorecard(df: pd.DataFrame, cfg: dict) -> np.ndarray:
@@ -55,7 +55,7 @@ def score_scorecard(df: pd.DataFrame, cfg: dict) -> np.ndarray:
         binning_process.transform(df[candidates], metric="woe"), columns=candidates, index=df.index
     )[final_feats]
     raw_pred = logreg.predict_proba(woe)[:, 1]
-    return calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+    return apply_calibrator(calibrator, raw_pred)
 
 
 def score_all(df: pd.DataFrame, frozen: dict) -> pd.DataFrame:

@@ -44,13 +44,19 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
 
-from src.models.math_utils import logit
+from src.models.math_utils import apply_calibrator, logit
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
 MODELS_DIR = Path("data/processed/models")
 CANDIDATES_DIR = MODELS_DIR / "candidates"
+
+# Isotonic is deployed only when it beats Platt by more than this much
+# holdout Brier score; a smaller edge stays on Platt, since Platt's
+# two-parameter curve generalizes more reliably than isotonic's
+# step function on a near-tie.
+ISOTONIC_SELECTION_MARGIN = 0.0005
 
 # 2026-11-10 incident: a run meant only to verify that adding ORDER BY to
 # the data pipeline didn't change results (it did - see
@@ -323,7 +329,13 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
     (never seen by the calibrator), compare by Brier score there. Then
     refit the winning method on the FULL 2014 for deployment, since the
     time-split was only to get an honest comparison, not to shrink the
-    final calibrator's training data."""
+    final calibrator's training data.
+
+    Isotonic is deployed only if its holdout Brier score beats Platt's by
+    more than ISOTONIC_SELECTION_MARGIN (0.0005); otherwise Platt is
+    deployed. Every downstream scoring path reads whichever calibrator
+    this picks through the shared apply_calibrator(), so either choice
+    scores correctly with no caller-side branching."""
     issue_month = validation["issue_d"].values
     fit_mask = issue_month < np.datetime64("2014-10-01")
     holdout_mask = ~fit_mask
@@ -334,13 +346,13 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
     isotonic = fit_isotonic(fit_pred, fit_y)
     platt = fit_platt(fit_pred, fit_y)
 
-    iso_holdout_pred = isotonic.predict(holdout_pred)
-    platt_holdout_pred = platt.predict_proba(logit(holdout_pred).reshape(-1, 1))[:, 1]
+    iso_holdout_pred = apply_calibrator(isotonic, holdout_pred)
+    platt_holdout_pred = apply_calibrator(platt, holdout_pred)
 
     brier_uncalibrated = brier_score_loss(holdout_y, holdout_pred)
     brier_iso = brier_score_loss(holdout_y, iso_holdout_pred)
     brier_platt = brier_score_loss(holdout_y, platt_holdout_pred)
-    chosen_method = "isotonic" if brier_iso < brier_platt else "platt"
+    chosen_method = "isotonic" if brier_platt - brier_iso > ISOTONIC_SELECTION_MARGIN else "platt"
 
     result = {
         "fit_period": "2014-01 to 2014-09",
@@ -360,10 +372,9 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
     # Refit the winner on the FULL 2014 for the deployed calibrator.
     if chosen_method == "isotonic":
         final_calibrator = fit_isotonic(val_pred_raw, y_validation)
-        final_pred_full = final_calibrator.predict(val_pred_raw)
     else:
         final_calibrator = fit_platt(val_pred_raw, y_validation)
-        final_pred_full = final_calibrator.predict_proba(logit(val_pred_raw).reshape(-1, 1))[:, 1]
+    final_pred_full = apply_calibrator(final_calibrator, val_pred_raw)
 
     result["mean_predicted_pd_before_full_2014_pct"] = round(float(val_pred_raw.mean()) * 100, 4)
     result["actual_default_rate_full_2014_pct"] = round(float(y_validation.mean()) * 100, 4)

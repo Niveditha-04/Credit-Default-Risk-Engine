@@ -22,7 +22,8 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import brier_score_loss
 
-from src.models.gbm import fit_platt, logit
+from src.models.gbm import fit_platt
+from src.models.math_utils import apply_calibrator
 
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
@@ -41,7 +42,7 @@ def calibrate_model(raw_pred: np.ndarray, y: np.ndarray, fit_mask: np.ndarray, h
     holdout_pred, holdout_y = raw_pred[holdout_mask], y[holdout_mask]
 
     platt = fit_platt(fit_pred, fit_y)
-    holdout_calibrated = platt.predict_proba(logit(holdout_pred).reshape(-1, 1))[:, 1]
+    holdout_calibrated = apply_calibrator(platt, holdout_pred)
 
     result = {
         "method": "platt",
@@ -58,7 +59,7 @@ def calibrate_model(raw_pred: np.ndarray, y: np.ndarray, fit_mask: np.ndarray, h
 
     # Refit on full 2014 for deployment.
     final_calibrator = fit_platt(raw_pred, y)
-    final_pred = final_calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+    final_pred = apply_calibrator(final_calibrator, raw_pred)
     result["final_calibrator_refit_on"] = "full 2014 (Jan-Dec)"
     result["mean_predicted_pd_before_full_2014_pct"] = round(float(raw_pred.mean()) * 100, 4)
     result["actual_default_rate_full_2014_pct"] = round(float(y.mean()) * 100, 4)

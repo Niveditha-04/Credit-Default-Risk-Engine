@@ -121,20 +121,21 @@ Every direction here matches intuition: higher FICO lowers risk, higher DTI rais
 
 ## Tests and coverage
 
-237 tests pass, all against small synthetic fixtures (no real data in the repo). Core-module coverage (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`, combined 55.39%):
+242 tests pass, all against small synthetic fixtures (no real data in the repo). Coverage per file, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
 
-| Module | Coverage |
+| File | Coverage |
 |---|---|
-| src/api/main.py, schemas.py, scoring.py, reason_codes.py | 100% |
+| src/api/main.py | 100% |
+| src/api/schemas.py | 100% |
+| src/api/scoring.py | 100% |
+| src/api/reason_codes.py | 100% |
 | src/features/feature_engineering.py | 100% |
 | src/monitoring/psi.py | 100% |
 | src/features/build_features.py | 98.51% |
 | src/features/allow_list.py | 83.93% |
 | src/data/target.py | 81.82% |
-| src/api/build_assets.py, checks.py, parity_test.py | 0% |
-| src/features/eda.py, field_rollout.py, missing_by_year.py | 0% |
 
-The 0% files are one-time scripts that need the real trained model or the real raw data to do anything meaningful. Since real data never goes in this repo, they are exercised by hand against real data, not by the automated suite.
+The rest of those four modules (`src/api/build_assets.py`, `src/api/checks.py`, `src/api/parity_test.py`, `src/features/eda.py`, `src/features/field_rollout.py`, `src/features/missing_by_year.py`) are one-time pipeline scripts, not covered by the automated suite: each needs the real trained model or the real raw data to do anything, and neither goes in this repo. `field_rollout.py` and `missing_by_year.py` run as part of `make features` below. I ran the rest by hand against the real data: their output already backs numbers elsewhere in this README (API latency, the served model-version check, the EDA figures in `reports/figures/`), and I reran `parity_test.py` directly while verifying this README, still 1,000/1,000 exact.
 
 ## How to run
 
@@ -154,6 +155,22 @@ make features
 make train
 ```
 
+`make train` only writes a candidate (`data/processed/models/candidates/<run_id>/`); it never overwrites an existing champion. To make a freshly trained LightGBM/XGBoost candidate the one everything else reads:
+
+```bash
+.venv/bin/python -m src.models.gbm --promote
+```
+
+```bash
+.venv/bin/python -m src.models.calibrate_comparison_models
+```
+
+```bash
+.venv/bin/python -m src.models.freeze_model
+```
+
+Note: `gbm.py` deploys isotonic calibration only if it beats Platt by more than 0.0005 Brier score on that run's own holdout; otherwise it deploys Platt. Every scoring path (`score_models.py`, `decision_policy.py`, the served `mlflow_utils.py` model, the API) applies whichever one it got through one shared function, `apply_calibrator()`, so either choice scores correctly.
+
 ```bash
 make evaluate
 ```
@@ -168,6 +185,35 @@ make test
 
 ```bash
 make drift
+```
+
+```bash
+docker build -t credit-default-risk-engine:latest .
+```
+
+```bash
+docker run -d --rm -p 8000:8000 --name cdre credit-default-risk-engine:latest
+```
+
+```bash
+curl -s http://localhost:8000/health
+```
+
+```bash
+curl -s -X POST http://localhost:8000/score -H "Content-Type: application/json" -d '{
+  "loan_amnt": 15000.0, "annual_inc": 65000.0, "dti": 18.5,
+  "fico_range_low": 680.0, "fico_range_high": 684.0,
+  "earliest_cr_line": "2005-03-01",
+  "home_ownership": "RENT", "purpose": "debt_consolidation",
+  "verification_status": "Verified", "emp_length": 5.0,
+  "revol_util": 45.0, "revol_bal": 8000.0, "open_acc": 10.0,
+  "total_acc": 20.0, "pub_rec": 0.0, "pub_rec_bankruptcies": 0.0,
+  "inq_last_6mths": 1.0, "mort_acc": 1.0, "acc_open_past_24mths": 3.0
+}'
+```
+
+```bash
+docker stop cdre
 ```
 
 `make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included, see Data above). On macOS, LightGBM needs `brew install libomp` first. The Docker image installs `libgomp1` for the same reason on Linux.
