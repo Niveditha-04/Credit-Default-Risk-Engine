@@ -3,6 +3,6 @@
   "registry_booster_sha256": "b8437eb84d6ad4ca8e1797225ccf4c1d0a06ae2ba11453423305bb2916d54e4e",
   "local_baked_booster_sha256": "b8437eb84d6ad4ca8e1797225ccf4c1d0a06ae2ba11453423305bb2916d54e4e",
   "registry_matches_local_artifact": true,
-  "served_model_version_string": "lightgbm_chosen@git:87e0003c083f+sha256:b8437eb84d6a",
+  "served_model_version_string": "lightgbm_chosen@git:8755c0b88c0f+sha256:b8437eb84d6a",
   "served_sha256_prefix_matches_local": true
 }

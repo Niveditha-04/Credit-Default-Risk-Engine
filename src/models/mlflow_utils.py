@@ -152,3 +152,34 @@ class LightGBMChampionModel(mlflow.pyfunc.PythonModel):
                 df[col] = df[col].astype("category")
         raw_pred = self.booster.predict(df[self.features], num_iteration=self.booster.best_iteration)
         return self.calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+
+
+def register_champion_standalone(
+    metrics_dir="reports/metrics", models_dir="data/processed/models", validation_parquet="data/processed/validation.parquet"
+):
+    """Registers the champion in MLflow using the already-trained,
+    already-frozen booster and calibrator on disk - no tuning search, no
+    retraining. Useful on its own (not just as part of gbm.py's full
+    run_with_mlflow()) whenever the registered model's signature needs
+    updating without re-running the tuning search - see
+    build_signature_sample() for why the signature sample matters:
+    MLflow infers a column's nullability from whether the sample happens
+    to contain a missing value in it, so the sample has to be built
+    carefully rather than just taking the first few rows."""
+    metrics_dir = Path(metrics_dir)
+    with open(metrics_dir / "frozen_model_config.json") as f:
+        frozen = json.load(f)
+    feats = frozen["lightgbm_chosen"]["features"]
+
+    setup_mlflow()
+    with mlflow.start_run(run_name="gbm_register_champion"):
+        log_common_context()
+        mlflow.set_tag("purpose", "register_champion_with_nullable_signature")
+        model_info = register_champion(feats, Path(models_dir) / "lightgbm", validation_parquet)
+        print(f"Registered credit_default_lightgbm_champion v{model_info.registered_model_version}, "
+              f"alias 'champion' set.")
+        print(f"MLflow run logged: {mlflow.active_run().info.run_id}")
+
+
+if __name__ == "__main__":
+    register_champion_standalone()
