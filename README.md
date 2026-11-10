@@ -121,16 +121,16 @@ Every direction here matches intuition: higher FICO lowers risk, higher DTI rais
 
 ## Tests and coverage
 
-233 tests pass, all against small synthetic fixtures (no real data in the repo). Core-module coverage:
+237 tests pass, all against small synthetic fixtures (no real data in the repo). Core-module coverage (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`, combined 55.39%):
 
 | Module | Coverage |
 |---|---|
 | src/api/main.py, schemas.py, scoring.py, reason_codes.py | 100% |
 | src/features/feature_engineering.py | 100% |
 | src/monitoring/psi.py | 100% |
-| src/features/build_features.py | 99% |
-| src/features/allow_list.py | 84% |
-| src/data/target.py | 82% |
+| src/features/build_features.py | 98.51% |
+| src/features/allow_list.py | 83.93% |
+| src/data/target.py | 81.82% |
 | src/api/build_assets.py, checks.py, parity_test.py | 0% |
 | src/features/eda.py, field_rollout.py, missing_by_year.py | 0% |
 
