@@ -51,7 +51,7 @@ CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 
 def register_champion(feats: list[str], lgb_dir, validation_parquet: str):
-    """Register the LightGBM booster + Platt calibrator as one deployable
+    """Register the LightGBM booster + calibrator as one deployable
     pyfunc model, with a signature inferred from a sample that actually
     contains the missing values the real feature columns have (see
     build_signature_sample). Must be called inside an active mlflow run.
@@ -130,7 +130,7 @@ def build_signature_sample(df, feats: list[str]):
 
 
 class LightGBMChampionModel(mlflow.pyfunc.PythonModel):
-    """LightGBM booster + Platt calibrator, chained as one deployable unit.
+    """LightGBM booster + calibrator (Platt or isotonic), chained as one deployable unit.
     predict() takes a plain DataFrame (string dtype for categoricals - NOT
     pandas 'category', which MLflow's schema enforcement cannot serialize)
     and returns the calibrated PD, matching score_lightgbm() exactly."""
@@ -144,14 +144,14 @@ class LightGBMChampionModel(mlflow.pyfunc.PythonModel):
             self.features = json.load(f)
 
     def predict(self, context, model_input, params=None):
-        from src.models.gbm import logit
+        from src.models.math_utils import apply_calibrator
 
         df = model_input.copy()
         for col in CATEGORICAL_COLUMNS:
             if col in df.columns:
                 df[col] = df[col].astype("category")
         raw_pred = self.booster.predict(df[self.features], num_iteration=self.booster.best_iteration)
-        return self.calibrator.predict_proba(logit(raw_pred).reshape(-1, 1))[:, 1]
+        return apply_calibrator(self.calibrator, raw_pred)
 
 
 def register_champion_standalone(
