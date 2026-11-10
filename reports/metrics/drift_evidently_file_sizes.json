@@ -1,0 +1,18 @@
+{
+  "2015": {
+    "path": "reports/drift/drift_train_vs_2015.html",
+    "size_kb": 8246.5
+  },
+  "2016": {
+    "path": "reports/drift/drift_train_vs_2016.html",
+    "size_kb": 8253.8
+  },
+  "2017": {
+    "path": "reports/drift/drift_train_vs_2017.html",
+    "size_kb": 7971.8
+  },
+  "2018": {
+    "path": "reports/drift/drift_train_vs_2018.html",
+    "size_kb": 7260.0
+  }
+}

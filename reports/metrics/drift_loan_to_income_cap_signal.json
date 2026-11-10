@@ -1,0 +1,250 @@
+{
+  "train_max_loan_to_income": 0.7125,
+  "train_has_hard_cap_at_0.5": false,
+  "n_months_2015_2018_with_max_exactly_0.5": 29,
+  "first_month_with_cap": "2015-01",
+  "last_month_with_cap": "2017-05",
+  "note": "train (2012-2013) has no hard ceiling (max above 0.5). A hard ceiling at exactly 0.5 is present for the months listed, consistent with an underwriting policy introduced partway through 2014 and loosened again in late 2017 (see monthly table).",
+  "monthly_detail": [
+    {
+      "month": "2015-01",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.656
+    },
+    {
+      "month": "2015-02",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.674
+    },
+    {
+      "month": "2015-03",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.698
+    },
+    {
+      "month": "2015-04",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.669
+    },
+    {
+      "month": "2015-05",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.887
+    },
+    {
+      "month": "2015-06",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.928
+    },
+    {
+      "month": "2015-07",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.768
+    },
+    {
+      "month": "2015-08",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.957
+    },
+    {
+      "month": "2015-09",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.815
+    },
+    {
+      "month": "2015-10",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.718
+    },
+    {
+      "month": "2015-11",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.672
+    },
+    {
+      "month": "2015-12",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.654
+    },
+    {
+      "month": "2016-01",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.726
+    },
+    {
+      "month": "2016-02",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.688
+    },
+    {
+      "month": "2016-03",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.767
+    },
+    {
+      "month": "2016-04",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.729
+    },
+    {
+      "month": "2016-05",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.863
+    },
+    {
+      "month": "2016-06",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.62
+    },
+    {
+      "month": "2016-07",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.67
+    },
+    {
+      "month": "2016-08",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.63
+    },
+    {
+      "month": "2016-09",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.655
+    },
+    {
+      "month": "2016-10",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.481
+    },
+    {
+      "month": "2016-11",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.604
+    },
+    {
+      "month": "2016-12",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.693
+    },
+    {
+      "month": "2017-01",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.549
+    },
+    {
+      "month": "2017-02",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.623
+    },
+    {
+      "month": "2017-03",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.49
+    },
+    {
+      "month": "2017-04",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.452
+    },
+    {
+      "month": "2017-05",
+      "max_value": 0.5,
+      "pct_near_0_5": 0.408
+    },
+    {
+      "month": "2017-06",
+      "max_value": 0.5556,
+      "pct_near_0_5": 0.391
+    },
+    {
+      "month": "2017-07",
+      "max_value": 0.5556,
+      "pct_near_0_5": 0.368
+    },
+    {
+      "month": "2017-08",
+      "max_value": 0.5405,
+      "pct_near_0_5": 0.317
+    },
+    {
+      "month": "2017-09",
+      "max_value": 0.5556,
+      "pct_near_0_5": 0.511
+    },
+    {
+      "month": "2017-10",
+      "max_value": 0.5556,
+      "pct_near_0_5": 0.536
+    },
+    {
+      "month": "2017-11",
+      "max_value": 1.1429,
+      "pct_near_0_5": 0.465
+    },
+    {
+      "month": "2017-12",
+      "max_value": 1.2,
+      "pct_near_0_5": 0.398
+    },
+    {
+      "month": "2018-01",
+      "max_value": 1.1429,
+      "pct_near_0_5": 0.474
+    },
+    {
+      "month": "2018-02",
+      "max_value": 1.2649,
+      "pct_near_0_5": 0.474
+    },
+    {
+      "month": "2018-03",
+      "max_value": 1.2767,
+      "pct_near_0_5": 0.6
+    },
+    {
+      "month": "2018-04",
+      "max_value": 1.2239,
+      "pct_near_0_5": 0.576
+    },
+    {
+      "month": "2018-05",
+      "max_value": 1.1986,
+      "pct_near_0_5": 0.486
+    },
+    {
+      "month": "2018-06",
+      "max_value": 1.2845,
+      "pct_near_0_5": 0.565
+    },
+    {
+      "month": "2018-07",
+      "max_value": 1.1833,
+      "pct_near_0_5": 0.532
+    },
+    {
+      "month": "2018-08",
+      "max_value": 1.3817,
+      "pct_near_0_5": 0.489
+    },
+    {
+      "month": "2018-09",
+      "max_value": 1.1996,
+      "pct_near_0_5": 0.522
+    },
+    {
+      "month": "2018-10",
+      "max_value": 1.3333,
+      "pct_near_0_5": 0.532
+    },
+    {
+      "month": "2018-11",
+      "max_value": 1.1111,
+      "pct_near_0_5": 0.427
+    },
+    {
+      "month": "2018-12",
+      "max_value": 1.2726,
+      "pct_near_0_5": 0.487
+    }
+  ]
+}
