@@ -34,5 +34,11 @@
     "script": "gap_remainder_diagnostic.py",
     "row_count": 282787,
     "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
+  },
+  {
+    "timestamp_utc": "2026-11-10T07:10:27.248932+00:00",
+    "script": "run_drift.py",
+    "row_count": 282787,
+    "action": "Read test.parquet (2015) for Phase 9 historical replay: feature values for data/prediction drift and the target for 2015-only performance drift. Explicitly authorized by this phase's instructions (separate from Phase 5's one-time evaluation pass). No model, feature, or policy change."
   }
 ]

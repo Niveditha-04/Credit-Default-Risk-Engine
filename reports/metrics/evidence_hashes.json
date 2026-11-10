@@ -1,0 +1,15 @@
+{
+  "test_scored_parquet": {
+    "path": "reports/metrics/test_scored.parquet",
+    "sha256": "83bacaf10b8775f8236f0999bd67f6bc07838a0608e8f638e1d036227086d67a",
+    "made_read_only": true,
+    "logged_as_mlflow_artifact_on_run": "f49885e7d05c41afa4a3a811defb5b6f"
+  },
+  "saved_validation_predictions": {
+    "exists": false,
+    "note": "no separate validation predictions file exists in this repo - validation is always rescored on the fly from the frozen artifacts, never cached to disk"
+  },
+  "xgboost_test_auc_recomputed_from_saved_predictions": 0.6886,
+  "xgboost_test_auc_frozen": 0.6886,
+  "match": true
+}

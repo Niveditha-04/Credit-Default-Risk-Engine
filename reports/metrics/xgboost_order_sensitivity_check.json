@@ -1,0 +1,9 @@
+{
+  "label": "validation-only row-order sensitivity check, not a replacement model - test was never scored",
+  "row_order": "id-sorted (ascending)",
+  "n_trees": 2122,
+  "validation_auc_this_run": 0.6856,
+  "validation_auc_frozen": 0.6855,
+  "diff": 0.0001,
+  "candidate_dir": "data/processed/models/candidates/20261110T123850/xgboost_validation_only_check"
+}

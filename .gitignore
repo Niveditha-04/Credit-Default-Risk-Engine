@@ -17,3 +17,4 @@ kaggle.json
 .ruff_cache/
 htmlcov/
 .coverage
+reports/drift/*.html
