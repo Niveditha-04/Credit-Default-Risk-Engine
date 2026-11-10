@@ -46,5 +46,17 @@
     "script": "economics_gap.py (gap_remainder_diagnostic)",
     "row_count": 282787,
     "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
+  },
+  {
+    "timestamp_utc": "2026-11-10T14:38:59.326212+00:00",
+    "script": "economics_gap.py (gap_remainder_diagnostic)",
+    "row_count": 282787,
+    "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
+  },
+  {
+    "timestamp_utc": "2026-11-10T14:39:18.541437+00:00",
+    "script": "economics_gap.py (gap_remainder_diagnostic)",
+    "row_count": 282787,
+    "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
   }
 ]

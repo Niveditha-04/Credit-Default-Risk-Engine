@@ -1,17 +1,20 @@
 """Phase 6: explain the FROZEN LightGBM champion only. No model changes.
 
-SHAP TreeExplainer on a seeded 10,000-row test sample. TreeExplainer's
-output here is on the raw model's log-odds (margin) scale, verified by
-matching booster.predict(..., raw_score=True) exactly (additivity check
-below). The champion's actual deployed output passes this log-odds value
-through a Platt calibrator, which is a strictly monotonic transform - it
-rescales every log-odds value through the same increasing function, so it
-can shift the numeric SHAP values but cannot change which direction any
-feature pushes a prediction, or the RANK order of driver importance for a
-given applicant. All SHAP analysis below is therefore done in log-odds
-space and its directional conclusions (positive/negative, feature
-ranking) carry over unchanged to the calibrated probability the model
-actually serves.
+Per-feature contributions come from booster.predict(pred_contrib=True),
+LightGBM's own built-in exact TreeSHAP (computed in C++ inside the
+library already used for prediction), on the full 282,787-row test set -
+not a sample, and not the separate shap package. This is the same call
+src/api/scoring.py uses for its reason codes, so the numbers here match
+what the served model actually returns. The output is on the raw
+model's log-odds (margin) scale. The champion's deployed output passes
+that log-odds value through a Platt calibrator, which is a strictly
+monotonic transform - it rescales every log-odds value through the same
+increasing function, so it can shift the numeric contribution values but
+cannot change which direction any feature pushes a prediction, or the
+RANK order of driver importance for a given applicant. All analysis
+below is therefore done in log-odds space and its directional
+conclusions (positive/negative, feature ranking) carry over unchanged to
+the calibrated probability the model actually serves.
 """
 
 import json
@@ -21,15 +24,12 @@ import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import shap
 
 from src.explain.labels import PLAIN_ENGLISH
 
 METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
 TEST_PARQUET = "data/processed/test.parquet"
-SAMPLE_SIZE = 10_000
-SEED = 42
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 ROLLOUT_FLAG_COLUMNS = [
@@ -52,7 +52,7 @@ def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
     return float(np.corrcoef(np.asarray(values)[mask], shap_vals[mask])[0, 1])
 
 
-def load_sample() -> tuple[pd.DataFrame, pd.DataFrame, list]:
+def load_test() -> tuple[pd.DataFrame, pd.DataFrame, list]:
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
     cfg = frozen["lightgbm_chosen"]
@@ -61,8 +61,7 @@ def load_sample() -> tuple[pd.DataFrame, pd.DataFrame, list]:
     test = pd.read_parquet(TEST_PARQUET)
     for col in CATEGORICAL_COLUMNS:
         test[col] = test[col].astype("category")
-    sample = test.sample(n=SAMPLE_SIZE, random_state=SEED).reset_index(drop=True)
-    return sample, sample[feats], feats
+    return test, test[feats], feats
 
 
 def main() -> None:
@@ -72,24 +71,24 @@ def main() -> None:
         frozen = json.load(f)
     booster = joblib.load(frozen["lightgbm_chosen"]["model_path"])
 
-    sample, X, feats = load_sample()
-    print(f"Sample: {len(sample)} rows (seed={SEED}), {len(feats)} features")
+    test, X, feats = load_test()
+    print(f"Test set: {len(test)} rows (no sampling), {len(feats)} features")
 
-    explainer = shap.TreeExplainer(booster)
-    shap_values = explainer.shap_values(X)
-    base_value = explainer.expected_value
+    contrib = booster.predict(X, pred_contrib=True, num_iteration=booster.best_iteration)
+    shap_values = contrib[:, :-1]
+    base_value = contrib[:, -1]
 
     # --- Additivity check ---
     raw_pred = booster.predict(X, raw_score=True, num_iteration=booster.best_iteration)
     reconstructed = shap_values.sum(axis=1) + base_value
     max_diff = float(np.max(np.abs(reconstructed - raw_pred)))
     additivity_ok = max_diff < 1e-6
-    print(f"\n=== Additivity check: max |SHAP sum + base - raw output| = {max_diff:.2e} "
+    print(f"\n=== Additivity check: max |contrib sum + base - raw output| = {max_diff:.2e} "
           f"(tolerance 1e-6: {'PASS' if additivity_ok else 'FAIL'}) ===")
     assert additivity_ok, "Additivity check failed"
 
     # --- Global importance ---
-    print("\n=== Global importance: mean |SHAP|, top 15 ===")
+    print("\n=== Global importance: mean |contribution|, top 15 ===")
     mean_abs_shap = pd.Series(np.abs(shap_values).mean(axis=0), index=feats).sort_values(ascending=False)
     gain_importance = pd.read_csv(METRICS_DIR / "gbm_feature_importance.csv").set_index("feature")["gain"]
 
@@ -112,10 +111,10 @@ def main() -> None:
         sv = shap_values[:, feats.index(feat)]
         if pd.api.types.is_numeric_dtype(vals):
             corr = nan_safe_corr(vals, sv)
-            ax.scatter(vals, sv, s=4, alpha=0.3, color="#4C72B0")
+            ax.scatter(vals, sv, s=2, alpha=0.05, color="#4C72B0")
             # annual_inc is heavily right-skewed (a handful of very high
             # earners stretch the axis); log scale makes the shape legible
-            # without changing any underlying SHAP value.
+            # without changing any underlying contribution value.
             if vals.min() > 0 and (vals.max() / vals.median()) > 20:
                 ax.set_xscale("log")
             direction = "positive (higher value -> higher predicted risk)" if corr > 0 else "negative (higher value -> lower predicted risk)"
@@ -123,16 +122,16 @@ def main() -> None:
             corr = np.nan
             cats = vals.astype(str)
             for i, cat in enumerate(sorted(cats.unique())):
-                ax.scatter(np.full((cats == cat).sum(), i), sv[cats == cat], s=4, alpha=0.3)
+                ax.scatter(np.full((cats == cat).sum(), i), sv[cats == cat], s=2, alpha=0.05)
             ax.set_xticks(range(len(sorted(cats.unique()))))
             ax.set_xticklabels(sorted(cats.unique()), rotation=45, ha="right", fontsize=8)
             direction = "categorical - see plot"
         ax.axhline(0, color="gray", linewidth=0.5)
         ax.set_title(feat)
         ax.set_xlabel(feat)
-        ax.set_ylabel("SHAP value (log-odds)")
+        ax.set_ylabel("Contribution (log-odds)")
         direction_rows.append({"feature": feat, "pearson_corr_value_vs_shap": round(float(corr), 3) if not np.isnan(corr) else None, "direction": direction})
-    fig.suptitle("SHAP dependence, top 6 features (log-odds scale)")
+    fig.suptitle("Per-feature contribution, top 6 features, full test set (log-odds scale)")
     fig.tight_layout()
     fig.savefig(FIG_DIR / "shap_dependence_top6.png", dpi=150)
     plt.close(fig)
@@ -156,7 +155,7 @@ def main() -> None:
     # --- Local non-monotonicity check: a simple linear correlation can
     # miss a dip or reversal that still exists within an overall trend.
     # Bucket means for the two features where the scatter plot showed one.
-    print("\n=== Local non-monotonicity: bucketed mean SHAP ===")
+    print("\n=== Local non-monotonicity: bucketed mean contribution ===")
     non_monotonic_notes = []
     bucket_defs = {
         "dti": [-0.01, 1, 3, 5, 8, 12, 16, 20, 25, 30, 100],
@@ -179,7 +178,7 @@ def main() -> None:
     print(f"\nFeatures with a local (bucket-level) non-monotonic pattern: {non_monotonic_notes or 'none'}")
 
     # --- SHAP vs scorecard WOE direction, shared features ---
-    print("\n=== SHAP direction vs scorecard WOE direction, shared features ===")
+    print("\n=== Contribution direction vs scorecard WOE direction, shared features ===")
     coef_df = pd.read_csv(METRICS_DIR / "logistic_regression_coefficients.csv")
     final_scorecard_feats = set(coef_df["feature"])
     shared_final = [f for f in feats if f in final_scorecard_feats]
@@ -239,12 +238,19 @@ def main() -> None:
     print("\n=== Per-applicant illustrative reason codes (NOT legal adverse action notices) ===")
     from src.evaluation.score_models import score_lightgbm
 
-    calibrated_pd = score_lightgbm(sample, frozen["lightgbm_chosen"])
+    calibrated_pd = score_lightgbm(test, frozen["lightgbm_chosen"])
+    ids = test["id"].to_numpy()
     percentiles = [5, 25, 50, 75, 95]
     reason_codes = []
     for p in percentiles:
         target_pd = np.percentile(calibrated_pd, p)
-        idx = int(np.argmin(np.abs(calibrated_pd - target_pd)))
+        abs_diff = np.abs(calibrated_pd - target_pd)
+        min_diff = abs_diff.min()
+        # Several loans can be equally close to the target percentile -
+        # break the tie by lowest id, so the chosen example is the same
+        # every time this script runs, independent of row order.
+        tied = np.flatnonzero(abs_diff == min_diff)
+        idx = tied[np.argmin(ids[tied])]
         row_shap = shap_values[idx]
         top3_idx = np.argsort(row_shap)[::-1][:3]  # most risk-increasing
         drivers = []
@@ -254,16 +260,17 @@ def main() -> None:
             drivers.append({"feature": feat, "plain_english": label, "shap_value_log_odds": round(float(row_shap[i]), 4),
                              "feature_value": str(X.iloc[idx][feat])})
         reason_codes.append({
-            "percentile": p, "calibrated_pd_pct": round(float(calibrated_pd[idx]) * 100, 2),
+            "percentile": p, "id": int(ids[idx]), "calibrated_pd_pct": round(float(calibrated_pd[idx]) * 100, 2),
             "top_3_risk_increasing_drivers_illustrative_only": drivers,
         })
     reason_codes_output = {
         "pd_note": (
             "calibrated_pd_pct is the CALIBRATED probability (raw LightGBM log-odds passed through the "
             "frozen Platt calibrator, via score_lightgbm() - the exact same function used everywhere else "
-            "in this project to score a loan). It is NOT the raw/uncalibrated model output. The SHAP values "
-            "and 'drivers' themselves are on the raw log-odds scale (see module docstring); only the PD shown "
-            "per applicant is calibrated."
+            "in this project to score a loan). It is NOT the raw/uncalibrated model output. The per-feature "
+            "contributions and 'drivers' themselves are on the raw log-odds scale (see module docstring); "
+            "only the PD shown per applicant is calibrated. Ties for closest-to-percentile are broken by "
+            "lowest loan id, so these examples are the same every time this script runs."
         ),
         "examples": reason_codes,
     }
@@ -272,7 +279,7 @@ def main() -> None:
     print(json.dumps(reason_codes_output, indent=2))
 
     # --- Missing values in rollout-era features ---
-    print("\n=== Missing values in rollout-era features, test sample ===")
+    print("\n=== Missing values in rollout-era features, full test set ===")
     missing_check = {}
     for col in ROLLOUT_FLAG_COLUMNS:
         if col in X.columns:
@@ -282,8 +289,9 @@ def main() -> None:
         json.dump(missing_check, f, indent=2)
 
     summary = {
-        "sample_size": SAMPLE_SIZE,
-        "seed": SEED,
+        "sample_size": len(test),
+        "sampling": "none - full test set",
+        "contribution_source": "booster.predict(pred_contrib=True), LightGBM's exact TreeSHAP",
         "shap_scale": "raw model log-odds (margin), not calibrated probability",
         "additivity_max_abs_diff": max_diff,
         "additivity_tolerance": 1e-6,

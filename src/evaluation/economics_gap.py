@@ -3,10 +3,15 @@ reading from the already-saved reports/metrics/test_scored.parquet
 rather than touching raw test rows again.
 
 fixed_approval_rate_and_gap_analysis():
-  1. Fixed approval-rate (70/80/90%) comparison on test, for all 4 scores
-     (LightGBM, XGBoost, scorecard, sub_grade map). Cut-offs are set on
-     VALIDATION per score, then applied as a fixed value to test - test's
-     own distribution is never used to pick a cut-off.
+  1. Fixed approval-rate (70/80/90%) comparison on test, for 3 scores
+     (LightGBM, scorecard, sub_grade map). XGBoost is not part of this
+     table: it has no saved validation-set predictions, and the frozen
+     xgboost model artifact is quarantined (see
+     data/processed/models/quarantine/README_note.txt), so there is no
+     way to re-score validation with it to set a cut-off. Cut-offs for
+     the 3 scores shown are set on VALIDATION per score, then applied as
+     a fixed value to test - test's own distribution is never used to
+     pick a cut-off.
   2. Ex-ante/ex-post gap decomposition for LightGBM: how much of the gap is
      just the model's mean predicted PD (13.74%) being below the actual
      test default rate (14.88%), vs how much is left over. Plus a check of
@@ -49,15 +54,10 @@ def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     for col in ["home_ownership", "purpose", "verification_status"]:
         validation[col] = validation[col].astype("category")
 
-    from src.evaluation.score_models import (
-        score_lightgbm,
-        score_scorecard,
-        score_xgboost,
-    )
+    from src.evaluation.score_models import score_lightgbm, score_scorecard
 
     out = validation[["id", "target"]].copy()
     out["pd_lightgbm"] = score_lightgbm(validation, frozen["lightgbm_chosen"])
-    out["pd_xgboost"] = score_xgboost(validation, frozen["xgboost"])
     out["pd_scorecard"] = score_scorecard(validation, frozen["scorecard"])
 
     train_cleaned = con.execute(
@@ -105,7 +105,7 @@ def fixed_approval_rate_and_gap_analysis() -> None:
     test["realized_net_cash"] = test["total_pymnt"] - test["collection_recovery_fee"] - test["funded_amnt"]
 
     score_cols = {
-        "lightgbm": "pd_lightgbm", "xgboost": "pd_xgboost",
+        "lightgbm": "pd_lightgbm",
         "scorecard": "pd_scorecard", "sub_grade_map": "pd_sub_grade_mapped",
     }
 
