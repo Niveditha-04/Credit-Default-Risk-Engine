@@ -104,7 +104,7 @@ def main() -> None:
     threshold_df.to_csv(METRICS_DIR / "test_threshold_table.csv", index=False)
     print(threshold_df.to_string(index=False))
 
-    print(f"\n=== Fixed approval-rate views (70/80/90%), all 3 models, test (v2) ===")
+    print("\n=== Fixed approval-rate views (70/80/90%), all 3 models, test (v2) ===")
     fixed_rows = []
     for name, col in MODEL_COLS.items():
         sorted_df = df.sort_values(col).reset_index(drop=True)

@@ -2,7 +2,7 @@
 is touched exactly once, and every touch is logged here."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 LOG_PATH = Path("reports/metrics/test_access_log.json")
@@ -16,7 +16,7 @@ def log_access(script: str, row_count: int, action: str) -> None:
             entries = json.load(f)
     entries.append(
         {
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "timestamp_utc": datetime.now(UTC).isoformat(),
             "script": script,
             "row_count": row_count,
             "action": action,

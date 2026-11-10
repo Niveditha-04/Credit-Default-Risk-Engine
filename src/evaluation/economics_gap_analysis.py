@@ -22,11 +22,7 @@ import json
 from pathlib import Path
 
 import duckdb
-import joblib
-import numpy as np
 import pandas as pd
-
-from src.models.gbm import logit
 
 METRICS_DIR = Path("reports/metrics")
 TEST_SCORED = METRICS_DIR / "test_scored.parquet"
@@ -45,7 +41,11 @@ def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     for col in ["home_ownership", "purpose", "verification_status"]:
         validation[col] = validation[col].astype("category")
 
-    from src.evaluation.score_models import score_lightgbm, score_scorecard, score_xgboost
+    from src.evaluation.score_models import (
+        score_lightgbm,
+        score_scorecard,
+        score_xgboost,
+    )
 
     out = validation[["id", "target"]].copy()
     out["pd_lightgbm"] = score_lightgbm(validation, frozen["lightgbm_chosen"])

@@ -12,7 +12,7 @@ data/processed/models/: scorecard/, lightgbm/, xgboost/.
 
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 METRICS_DIR = Path("reports/metrics")
@@ -69,7 +69,7 @@ def main() -> None:
     champion_vs_xgb_auc_gap = round(best_xgb_trial["auc"] - gbm_metrics["chosen"]["validation_auc"], 4)
 
     config = {
-        "frozen_at_utc": datetime.now(timezone.utc).isoformat(),
+        "frozen_at_utc": datetime.now(UTC).isoformat(),
         "git_hash_at_freeze": git_hash(),
         "git_status_clean_at_freeze": git_status_clean(),
         "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
