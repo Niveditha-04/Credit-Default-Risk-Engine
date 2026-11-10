@@ -2,7 +2,7 @@
   "sample_size": 10000,
   "seed": 42,
   "shap_scale": "raw model log-odds (margin), not calibrated probability",
-  "additivity_max_abs_diff": 1.0658141036401503e-14,
+  "additivity_max_abs_diff": 9.769962616701378e-15,
   "additivity_tolerance": 1e-06,
   "additivity_check_passed": true,
   "counterintuitive_directions": [],
