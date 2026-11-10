@@ -29,7 +29,11 @@ Phase 5 against test (2015).
 """
 
 import json
+import os
 import random
+import stat
+import sys
+import time
 from pathlib import Path
 
 import lightgbm as lgb
@@ -46,12 +50,56 @@ TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
 MODELS_DIR = Path("data/processed/models")
+CANDIDATES_DIR = MODELS_DIR / "candidates"
+
+# 2026-11-10 incident: a run meant only to verify that adding ORDER BY to
+# the data pipeline didn't change results (it did - see
+# diagnose_row_order_bagging.py, row order interacts with LightGBM's
+# seeded bagging/feature subsampling) silently overwrote the frozen,
+# already-verified model_chosen.joblib and xgboost/model.joblib with a
+# DIFFERENT model, with no backup. Every run now writes to its own
+# data/processed/models/candidates/<run_id>/ directory instead of the
+# frozen data/processed/models/<model>/ paths. Only an explicit
+# --promote flag copies a candidate's artifacts over the frozen ones
+# (and only after confirming the files there aren't locked - see
+# promote_candidate_artifacts()). Nothing is lost by default: every run's
+# output survives under its own candidate directory even if never
+# promoted.
+
+
+def new_run_id() -> str:
+    return time.strftime("%Y%m%dT%H%M%S")
+
+
+def promote_requested() -> bool:
+    return "--promote" in sys.argv
+
+
+def lock_frozen_file(path: Path) -> None:
+    """Read-only for everyone - a plain joblib.dump()/open(...,'w') to
+    this exact path will now raise PermissionError instead of silently
+    overwriting a verified artifact."""
+    os.chmod(path, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+
+
+def promote_candidate_artifacts(candidate_dir: Path, frozen_dir: Path) -> None:
+    """Copies every file from a candidate run directory over the frozen
+    directory, unlocking (temporarily) and re-locking read-only
+    afterward. Only called when --promote was explicitly passed."""
+    import shutil
+
+    frozen_dir.mkdir(parents=True, exist_ok=True)
+    for src in candidate_dir.iterdir():
+        dst = frozen_dir / src.name
+        if dst.exists():
+            os.chmod(dst, stat.S_IWUSR | stat.S_IRUSR)
+        shutil.copy2(src, dst)
+        lock_frozen_file(dst)
+    print(f"PROMOTED: {candidate_dir} -> {frozen_dir} (frozen files are now read-only)")
 
 SEED = 42
-BANNED_COLUMNS = {
-    "id", "issue_d", "split", "target",
-    "addr_state", "zip_code", "grade", "sub_grade", "int_rate", "installment", "funded_amnt",
-}
+METADATA_COLUMNS = {"id", "issue_d", "split", "target"}
+FROZEN_CONFIG_PATH = METRICS_DIR / "frozen_model_config.json"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 N_TUNING_TRIALS_LGB = 20
@@ -67,11 +115,33 @@ SIMPLICITY_AUC_TOLERANCE = 0.002  # "simplest config within 0.002 AUC of the bes
 
 
 def feature_list(train_columns: list[str]) -> list[str]:
-    feats = [c for c in train_columns if c not in {"id", "issue_d", "split", "target"}]
-    leaked = BANNED_COLUMNS & set(feats)
-    assert not leaked, f"Banned columns present in GBM feature list: {leaked}"
-    assert "id" not in feats and "issue_d" not in feats and "split" not in feats and "target" not in feats
-    return sorted(feats)
+    """The model's feature list must equal the already-frozen allow-list
+    exactly - same 69 names, same (alphabetical) order - not just "none of
+    a handful of specifically-named banned columns are present." A
+    deny-list only catches columns someone thought to list in advance; it
+    would never have caught issue_d_1 (a stray duplicate column from a
+    SQL bug, not a leakage column anyone would think to ban by name). An
+    exact allow-list catches ANY unexpected column, named or not, because
+    anything not on the frozen list is rejected on sight.
+
+    This assumes a frozen champion config already exists (true from Phase
+    5 onward) - it is a regression guard for an established pipeline, not
+    a bootstrapping mechanism for the very first run."""
+    derived = sorted(c for c in train_columns if c not in METADATA_COLUMNS)
+
+    with open(FROZEN_CONFIG_PATH) as f:
+        frozen_features = json.load(f)["lightgbm_chosen"]["features"]
+
+    if derived != frozen_features:
+        extra = [c for c in derived if c not in frozen_features]
+        missing = [c for c in frozen_features if c not in derived]
+        raise AssertionError(
+            "Feature list does not exactly match the frozen allow-list "
+            f"(reports/metrics/frozen_model_config.json). Extra columns present now "
+            f"that are not in the frozen list: {extra}. Columns in the frozen list "
+            f"missing now: {missing}."
+        )
+    return derived
 
 
 def load_data():
@@ -303,13 +373,17 @@ def calibrate_out_of_sample(validation: pd.DataFrame, val_pred_raw: np.ndarray, 
     return result, chosen_method, final_calibrator
 
 
-def main(log_to_mlflow: bool = False) -> None:
+def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    run_id = run_id or new_run_id()
+    candidate_dir = CANDIDATES_DIR / run_id
+    candidate_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Training output for this run goes to {candidate_dir} - "
+          f"the frozen data/processed/models/ artifacts are not touched unless --promote is passed.")
 
     train, validation, feats = load_data()
     print(f"Feature list: {len(feats)} features")
-    print(f"Banned columns check passed: none of {sorted(BANNED_COLUMNS)} present")
+    print("Exact allow-list check passed: feature list matches frozen_model_config.json exactly")
     with open(METRICS_DIR / "gbm_feature_list.json", "w") as f:
         json.dump(feats, f, indent=2)
 
@@ -439,8 +513,8 @@ def main(log_to_mlflow: bool = False) -> None:
 
     import joblib
 
-    lgb_dir = MODELS_DIR / "lightgbm"
-    xgb_dir = MODELS_DIR / "xgboost"
+    lgb_dir = candidate_dir / "lightgbm"
+    xgb_dir = candidate_dir / "xgboost"
     lgb_dir.mkdir(parents=True, exist_ok=True)
     xgb_dir.mkdir(parents=True, exist_ok=True)
 
@@ -454,10 +528,12 @@ def main(log_to_mlflow: bool = False) -> None:
     with open(xgb_dir / "features.json", "w") as f:
         json.dump(feats, f, indent=2)
 
-    print("\nDone.")
+    print(f"\nDone. Candidate artifacts written to {candidate_dir} (frozen artifacts untouched).")
 
     return {
         "feats": feats,
+        "run_id": run_id,
+        "candidate_dir": str(candidate_dir),
         "chosen_trial": chosen_trial,
         "chosen_metrics": chosen_metrics,
         "best_trial": best_trial,
@@ -495,8 +571,12 @@ def run_with_mlflow() -> None:
             "seed": SEED,
         })
 
-        result = main(log_to_mlflow=True)
+        run_id = new_run_id()
+        mlflow.log_param("run_id", run_id)
+        mlflow.log_param("promote_requested", promote_requested())
+        result = main(log_to_mlflow=True, run_id=run_id)
         feats = result["feats"]
+        candidate_dir = Path(result["candidate_dir"])
 
         with open(METRICS_DIR / "gbm_validation_metrics.json") as f:
             val_metrics = json.load(f)
@@ -533,6 +613,16 @@ def run_with_mlflow() -> None:
         ]:
             log_file_if_exists(str(METRICS_DIR / fname))
         log_file_if_exists("reports/figures/shap_dependence_top6.png")
+
+        if not promote_requested():
+            print(f"\n--promote not passed: frozen data/processed/models/ artifacts are untouched. "
+                  f"This run's output is at {candidate_dir}. Rerun with --promote to make it champion.")
+            print(f"MLflow run logged: {mlflow.active_run().info.run_id}")
+            return
+
+        print(f"\n--promote passed: copying {candidate_dir} over the frozen artifacts...")
+        promote_candidate_artifacts(candidate_dir / "lightgbm", MODELS_DIR / "lightgbm")
+        promote_candidate_artifacts(candidate_dir / "xgboost", MODELS_DIR / "xgboost")
 
         # --- Register the champion: LightGBM booster + Platt calibrator,
         # chained as one deployable pyfunc model, with a real signature

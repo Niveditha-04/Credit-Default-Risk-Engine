@@ -132,12 +132,18 @@ def main() -> None:
     labelled_query = f"SELECT {select_clause} FROM ({labelled_population_query()})"
     replay_query = f"SELECT {select_clause} FROM ({replay_population_query()})"
 
+    # ORDER BY id on every query that actually gets materialized to parquet:
+    # without it, row order is an unspecified side effect of the query plan,
+    # which can silently change across unrelated code edits (see the
+    # emp_length MLflow signature bug - a refactor changed row order with
+    # no change to the actual rows/values, and anything relying on "the
+    # first N rows" broke). id is unique per loan, so this is a total order.
     summary = {}
     for split, query in [
-        ("train", f"{labelled_query} WHERE split = 'train' AND target IS NOT NULL"),
-        ("validation", f"{labelled_query} WHERE split = 'validation' AND target IS NOT NULL"),
-        ("test", f"{labelled_query} WHERE split = 'test' AND target IS NOT NULL"),
-        ("replay", replay_query),
+        ("train", f"{labelled_query} WHERE split = 'train' AND target IS NOT NULL ORDER BY id"),
+        ("validation", f"{labelled_query} WHERE split = 'validation' AND target IS NOT NULL ORDER BY id"),
+        ("test", f"{labelled_query} WHERE split = 'test' AND target IS NOT NULL ORDER BY id"),
+        ("replay", f"{replay_query} ORDER BY id"),
     ]:
         out_path = PROCESSED_DIR / f"{split}.parquet"
 

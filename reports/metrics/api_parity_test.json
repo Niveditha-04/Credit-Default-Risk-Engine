@@ -23,7 +23,7 @@
     "wedding"
   ],
   "n_purpose_categories_covered": 14,
-  "n_rows_with_missing_optional_field": 974,
+  "n_rows_with_missing_optional_field": 976,
   "sent_one_at_a_time": true,
   "verdict": "PASS"
 }

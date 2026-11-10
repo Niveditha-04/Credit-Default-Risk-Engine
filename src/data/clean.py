@@ -119,6 +119,7 @@ def main() -> None:
         {select_clause}
         FROM read_parquet('{RAW_PARQUET.as_posix()}')
         WHERE issue_d IS NOT NULL
+        ORDER BY id
     """
 
     con.execute(f"COPY ({query}) TO '{OUT_PARQUET.as_posix()}' (FORMAT PARQUET)")

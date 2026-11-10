@@ -68,6 +68,7 @@ def labelled_population_query() -> str:
         WHERE term = 36
           AND application_type = 'Individual'
           AND EXTRACT(year FROM issue_d) BETWEEN 2012 AND 2015
+        ORDER BY id
     """
 
 
@@ -88,6 +89,7 @@ def replay_population_query() -> str:
         WHERE term = 36
           AND application_type = 'Individual'
           AND EXTRACT(year FROM issue_d) BETWEEN 2016 AND 2018
+        ORDER BY id
     """
 
 
