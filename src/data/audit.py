@@ -62,10 +62,10 @@ def event_timing_audit(con: duckdb.DuckDBPyConnection) -> None:
     term), and documents that last_pymnt_d only approximates default
     timing (it is the last payment seen, not necessarily the exact
     default event date)."""
-    base_pop = """
-        FROM read_parquet('{p}')
+    base_pop = f"""
+        FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
         WHERE term = 36 AND application_type = 'Individual'
-    """.format(p=CLEANED_PARQUET.as_posix())
+    """
 
     months_expr = "date_diff('month', issue_d, last_pymnt_d)"
 
