@@ -6,9 +6,11 @@ rerunning the training scripts).
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import mlflow
 import mlflow.pyfunc
+import pandas as pd
 
 TRACKING_URI = "sqlite:///mlflow.db"
 ARTIFACT_LOCATION = "./mlartifacts"
@@ -54,9 +56,9 @@ def register_champion(feats: list[str], lgb_dir, validation_parquet: str):
     contains the missing values the real feature columns have (see
     build_signature_sample). Must be called inside an active mlflow run.
     Returns the registered ModelVersion. Shared by gbm.py's own training
-    run and by a one-off re-registration (e.g. to fix a bad signature
-    without re-running the whole tuning search)."""
-    import pandas as pd
+    run and by a standalone re-registration that reuses an already-
+    trained booster and calibrator, without re-running the tuning
+    search."""
     from mlflow import MlflowClient
     from mlflow.models import infer_signature
 
@@ -70,12 +72,7 @@ def register_champion(feats: list[str], lgb_dir, validation_parquet: str):
         "features": str(Path(lgb_dir) / "features.json"),
     }
 
-    class _FakeContext:
-        pass
-
-    ctx = _FakeContext()
-    ctx.artifacts = artifacts
-    model_instance.load_context(ctx)
+    model_instance.load_context(SimpleNamespace(artifacts=artifacts))
     sample_output = model_instance.predict(None, sample_input)
     signature = infer_signature(sample_input, sample_output)
 
@@ -118,16 +115,7 @@ def build_signature_sample(df, feats: list[str]):
     regardless of the DataFrame's original integer/float split - see
     lightgbm/basic.py's _data_from_pandas). This makes "double" the
     inferred type everywhere, which both enforces and round-trips NaN
-    correctly.
-
-    Found by rerunning gbm.py (registering a second, otherwise-identical
-    model version) and then seeing verify_champion_alias.py fail with
-    "cannot convert NA to integer" on the full validation set - the
-    original 5-row sample happened to have no missing emp_length, so
-    MLflow silently inferred a type that could never survive real data.
-    Pre-existing Phase 7 code; not something any model change caused."""
-    import pandas as pd
-
+    correctly."""
     rows = [df[feats].head(5)]
     for col in feats:
         null_mask = df[col].isna()

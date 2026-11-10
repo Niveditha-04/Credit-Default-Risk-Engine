@@ -1,4 +1,0 @@
-model,pd_cutoff,approval_rate_pct,n_approved,actual_default_rate_approved_pct,ex_ante_expected_loss_total,ex_ante_total_expected_net_value,ex_post_realized_net_cash_total,ex_post_realized_net_cash_per_loan
-lightgbm,0.4429,99.79,282205,14.81,154842258.57,398613323.51,238002178.93,843.37
-xgboost,0.4429,99.62,281706,14.76,154570611.89,396815852.31,238292485.05,845.89
-scorecard,0.4429,99.96,282681,14.87,146684464.56,415370640.89,237160278.2,838.97

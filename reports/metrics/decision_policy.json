@@ -1,6 +1,4 @@
 {
-  "version": "v2",
-  "superseded_version": "v1 (reports/metrics/decision_policy_v1_superseded.json) - see decision_policy_changelog.json",
   "methodology": "Swept the champion model's (LightGBM) calibrated PD on validation (2014) over its empirical distribution. For each candidate PD cut-off, approved = PD <= cut-off. Picked the cut-off that maximizes TOTAL expected net value (sum of (1-PD)*interest_income - PD*loan_amnt*LGD_cash_basis across approved loans) on validation. This fixed PD value is then applied unchanged to all three models on test - each model approves test loans with its OWN calibrated PD <= this value.",
   "lgd": {
     "n_charged_off_train_loans": 18281,

@@ -1,11 +1,8 @@
-"""Apply the corrected (v2) economics to test, once. Reads ONLY from the
+"""Apply the economics assumptions to test, once. Reads ONLY from the
 already-saved reports/metrics/test_scored.parquet (no new read of raw
-test data - model scores are unchanged from the original Test evaluation
-commit) and reports/metrics/decision_policy.json (the v2 cutoff/LGD/
-interest formula, fixed on validation+train before this script runs).
-
-See reports/metrics/decision_policy_changelog.json for what was wrong
-with v1 and why.
+test data) and reports/metrics/decision_policy.json (the cutoff, LGD,
+and interest formula, all set on validation and train before this
+script runs).
 """
 
 import json
@@ -20,7 +17,7 @@ MODEL_COLS = {"lightgbm": "pd_lightgbm", "xgboost": "pd_xgboost", "scorecard": "
 FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
 
 
-def add_v2_ev_columns(df: pd.DataFrame, lgd: float, prepayment_ratio: float) -> pd.DataFrame:
+def add_ev_columns(df: pd.DataFrame, lgd: float, prepayment_ratio: float) -> pd.DataFrame:
     df = df.copy()
     df["scheduled_interest"] = df["installment"] * 36 - df["loan_amnt"]
     df["interest_income"] = df["scheduled_interest"] * prepayment_ratio
@@ -38,9 +35,9 @@ def main() -> None:
     prepayment_ratio = policy["prepayment_adjusted_interest"]["ratio"]
     cutoff = policy["chosen_pd_cutoff"]
 
-    df = add_v2_ev_columns(df, lgd, prepayment_ratio)
+    df = add_ev_columns(df, lgd, prepayment_ratio)
 
-    print(f"\n=== v2 economics at fixed cutoff (PD <= {cutoff}) ===")
+    print(f"\n=== economics at fixed cutoff (PD <= {cutoff}) ===")
     econ_rows = []
     for name, col in MODEL_COLS.items():
         ev_per_loan = (1 - df[col]) * df["interest_income"] - df[col] * df["loan_amnt"] * lgd
@@ -69,7 +66,7 @@ def main() -> None:
     econ_summary.to_csv(METRICS_DIR / "test_economics_at_fixed_cutoff.csv", index=False)
     print(econ_summary.to_string(index=False))
 
-    print("\n=== v2 LGD sensitivity (champion model, fixed PD cutoff) ===")
+    print("\n=== LGD sensitivity (champion model, fixed PD cutoff) ===")
     lgd_sens_rows = []
     champion_approved = df[df["pd_lightgbm"] <= cutoff]
     for lgd_val in policy["lgd_sensitivity_range"]:
@@ -84,7 +81,7 @@ def main() -> None:
     lgd_sens_df.to_csv(METRICS_DIR / "test_lgd_sensitivity.csv", index=False)
     print(lgd_sens_df.to_string(index=False))
 
-    print("\n=== v2 threshold table (champion model, test) ===")
+    print("\n=== threshold table (champion model, test) ===")
     threshold_rows = []
     pd_candidates = np.percentile(df["pd_lightgbm"], np.arange(10, 101, 10))
     for cut in pd_candidates:
@@ -104,7 +101,7 @@ def main() -> None:
     threshold_df.to_csv(METRICS_DIR / "test_threshold_table.csv", index=False)
     print(threshold_df.to_string(index=False))
 
-    print("\n=== Fixed approval-rate views (70/80/90%), all 3 models, test (v2) ===")
+    print("\n=== Fixed approval-rate views (70/80/90%), all 3 models, test ===")
     fixed_rows = []
     for name, col in MODEL_COLS.items():
         sorted_df = df.sort_values(col).reset_index(drop=True)

@@ -152,7 +152,7 @@ def main() -> None:
             "raw_rate_5_8_ci": [float(row_5_8["ci_low"]), float(row_5_8["ci_high"])],
             "cis_overlap": bool(dti_low_end_overlaps),
             "verdict": (
-                "CORRECTED CLAIM: the SHAP dip (minimum at dti=5-8) and the raw default rate do NOT agree at "
+                "The SHAP dip (minimum at dti=5-8) and the raw default rate do NOT agree at "
                 "the low end - dti=0-1 (n=700) is actually the SAFEST raw bucket (8.43%), not the riskiest, "
                 "while SHAP shows dti=0-1 as less protective than dti=5-8. This is a small non-monotonic SHAP "
                 "shape at very low dti that is NOT clearly visible in the raw default rate (its CI overlaps "

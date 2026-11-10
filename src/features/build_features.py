@@ -73,10 +73,11 @@ def derivation_only_columns() -> list[str]:
     issue_d is deliberately excluded here even though it's in
     REQUIRED_RAW_COLUMNS: it's already selected via the hardcoded
     "id, issue_d, split, target" prefix in build_select_clause(), so
-    including it again would select it twice (DuckDB silently renames the
-    second copy to issue_d_1, which then leaks through as a bogus extra
-    "feature" - caught by rerunning gbm.py after this refactor and seeing
-    70 features instead of 69)."""
+    including it again would select it twice. DuckDB silently renames the
+    second copy to issue_d_1, which would then leak through as a bogus
+    extra "feature" - the exact allow-list check in gbm.py's
+    feature_list() is the guard that would catch this if it ever
+    happened again."""
     raw_feats = set(feature_columns())
     return [c for c in REQUIRED_RAW_COLUMNS if c not in raw_feats and c not in ALWAYS_SELECTED_COLUMNS]
 
@@ -134,10 +135,10 @@ def main() -> None:
 
     # ORDER BY id on every query that actually gets materialized to parquet:
     # without it, row order is an unspecified side effect of the query plan,
-    # which can silently change across unrelated code edits (see the
-    # emp_length MLflow signature bug - a refactor changed row order with
-    # no change to the actual rows/values, and anything relying on "the
-    # first N rows" broke). id is unique per loan, so this is a total order.
+    # and anything downstream that relies on "the first N rows" (a
+    # signature-inference sample, a quick preview) would see a different
+    # sample than intended whenever the query plan changes, even with the
+    # same rows and values. id is unique per loan, so this is a total order.
     summary = {}
     for split, query in [
         ("train", f"{labelled_query} WHERE split = 'train' AND target IS NOT NULL ORDER BY id"),

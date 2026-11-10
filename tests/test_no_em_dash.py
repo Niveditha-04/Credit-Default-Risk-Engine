@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-EM_DASH = "—"
+EM_DASH = chr(0x2014)  # built from the codepoint, not a literal character, so this file does not trip its own check
 TEXT_EXTENSIONS = {".md", ".py", ".csv", ".json", ".txt", ".ipynb"}
 
 

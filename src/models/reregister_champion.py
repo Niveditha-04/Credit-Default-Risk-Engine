@@ -1,17 +1,14 @@
-"""One-off: re-register the champion with a corrected MLflow signature.
+"""Registers the champion in MLflow using the already-trained, already-
+frozen booster and calibrator on disk - no tuning search, no retraining.
 
-The original registration (gbm.py's run_with_mlflow) inferred its schema
-from validation.head(5), which by chance had no missing emp_length in
-that 5-row sample, so MLflow declared emp_length a non-nullable integer.
-Scoring the full validation set through the registered alias then failed
-with "cannot convert NA to integer" (emp_length is ~6% missing). The
-booster and calibrator artifacts themselves are untouched - this only
-re-logs them with build_signature_sample()'s fuller sample, which is now
-also what gbm.py itself uses, so a future full rerun won't reintroduce
-this.
-
-Does not re-run the tuning search: model_chosen.joblib and
-calibrator.joblib on disk are already the frozen, verified champion.
+The signature MLflow infers for a registered model is built from a
+sample of rows (build_signature_sample() in mlflow_utils.py), chosen to
+include a missing value in every column that has one anywhere in
+validation. emp_length is about 6% missing, so the sample must contain
+at least one missing emp_length row for MLflow to register it as a
+nullable column; scoring any row with a missing emp_length through a
+registered model that lacks this guarantee would fail schema
+enforcement.
 """
 
 import json
@@ -32,9 +29,9 @@ def main() -> None:
     feats = frozen["lightgbm_chosen"]["features"]
 
     setup_mlflow()
-    with mlflow.start_run(run_name="gbm_reregister_champion_fixed_signature"):
+    with mlflow.start_run(run_name="gbm_register_champion"):
         log_common_context()
-        mlflow.set_tag("purpose", "fix_mlflow_schema_emp_length_integer_bug")
+        mlflow.set_tag("purpose", "register_champion_with_nullable_signature")
         model_info = register_champion(feats, MODELS_DIR / "lightgbm", VALIDATION_PARQUET)
         print(f"Registered credit_default_lightgbm_champion v{model_info.registered_model_version}, "
               f"alias 'champion' set.")

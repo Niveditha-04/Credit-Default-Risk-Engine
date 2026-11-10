@@ -20,9 +20,9 @@ def test_real_table_columns_pass():
 
 
 def test_injected_extra_column_is_caught():
-    """Prove the exact allow-list would have caught the issue_d_1 bug:
-    inject a stray extra column once, confirm the assertion fires, then
-    (implicitly, since nothing is mutated on disk) the check reverts -
+    """A stray extra column, however it got there, must be rejected:
+    inject one once, confirm the assertion fires, then (implicitly,
+    since nothing is mutated on disk) the check reverts -
     this test never writes to any file."""
     train_columns = ["id", "issue_d", "split", "target"] + FROZEN_FEATURES + ["issue_d_1"]
     with pytest.raises(AssertionError, match="issue_d_1"):

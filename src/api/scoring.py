@@ -45,6 +45,10 @@ def _sha256_of(path: str) -> str:
     return h.hexdigest()
 
 
+def _warning(field: str, reason: str, value) -> dict:
+    return {"field": field, "reason": reason, "value": str(value)}
+
+
 class ScoringEngine:
     """Loaded once at API startup; holds the frozen model, calibrator,
     risk bands, and training-range reference, all read from files
@@ -112,26 +116,13 @@ class ScoringEngine:
             ref = self.feature_ranges[field]
             if ref["type"] == "categorical":
                 if value not in ref["known_values"]:
-                    warnings.append({
-                        "field": field,
-                        "reason": "unseen_category_not_in_training_data",
-                        "value": str(value),
-                    })
-            elif ref["type"] == "date":
-                v = pd.Timestamp(value)
-                if v < pd.Timestamp(ref["min"]) or v > pd.Timestamp(ref["max"]):
-                    warnings.append({
-                        "field": field,
-                        "reason": f"outside_training_range_({ref['min']}_to_{ref['max']})",
-                        "value": str(value),
-                    })
-            else:
-                if value < ref["min"] or value > ref["max"]:
-                    warnings.append({
-                        "field": field,
-                        "reason": f"outside_training_range_({ref['min']}_to_{ref['max']})",
-                        "value": str(value),
-                    })
+                    warnings.append(_warning(field, "unseen_category_not_in_training_data", value))
+                continue
+            is_date = ref["type"] == "date"
+            v, lo, hi = (pd.Timestamp(value), pd.Timestamp(ref["min"]), pd.Timestamp(ref["max"])) if is_date \
+                else (value, ref["min"], ref["max"])
+            if v < lo or v > hi:
+                warnings.append(_warning(field, f"outside_training_range_({ref['min']}_to_{ref['max']})", value))
         return warnings
 
     def risk_band_for(self, pd_value: float) -> str:

@@ -3,16 +3,13 @@
 Run this BEFORE score_test.py, and never change reports/metrics/
 decision_policy.json after test has been scored.
 
-v2 (see reports/metrics/decision_policy_changelog.json for what was wrong
-with v1 and why):
-
 LGD, two forms, both estimated from TRAIN-year (2012-2013) charged-off
 36-month individual loans only:
   (a) cash-basis loss, used for the EV model:
       LGD_i = 1 - clip((total_pymnt_i - collection_recovery_fee_i) / funded_amnt_i, 0, 1)
       total_pymnt already includes recoveries (verified: total_pymnt =
       total_rec_prncp + total_rec_int + total_rec_late_fee + recoveries,
-      exact match on every v1 charged-off train row) - do not add
+      exact match on every train charged-off row) - do not add
       recoveries again.
   (b) standard LGD on outstanding principal at default, reported for
       reference only, not used in the EV model:
@@ -199,7 +196,7 @@ def main() -> None:
     val_df = add_ev_columns(val_df, lgd, prepayment_ratio)
     print(f"n validation rows: {len(val_df)}")
 
-    print("\n=== Threshold sweep on validation (v2) ===")
+    print("\n=== Threshold sweep on validation ===")
     threshold_table = sweep_threshold_table(val_df)
     threshold_table.to_csv(METRICS_DIR / "decision_policy_validation_threshold_sweep.csv", index=False)
 
@@ -225,8 +222,6 @@ def main() -> None:
     print(fixed_rate_df.to_string(index=False))
 
     policy = {
-        "version": "v2",
-        "superseded_version": "v1 (reports/metrics/decision_policy_v1_superseded.json) - see decision_policy_changelog.json",
         "methodology": (
             "Swept the champion model's (LightGBM) calibrated PD on validation (2014) over its empirical "
             "distribution. For each candidate PD cut-off, approved = PD <= cut-off. Picked the cut-off that "

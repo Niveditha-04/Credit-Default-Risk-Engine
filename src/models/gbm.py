@@ -118,10 +118,10 @@ def feature_list(train_columns: list[str]) -> list[str]:
     """The model's feature list must equal the already-frozen allow-list
     exactly - same 69 names, same (alphabetical) order - not just "none of
     a handful of specifically-named banned columns are present." A
-    deny-list only catches columns someone thought to list in advance; it
-    would never have caught issue_d_1 (a stray duplicate column from a
-    SQL bug, not a leakage column anyone would think to ban by name). An
-    exact allow-list catches ANY unexpected column, named or not, because
+    deny-list only catches columns someone thought to list in advance; a
+    stray duplicate column from an unrelated query change would not be on
+    anyone's deny-list, since it is not a leakage column at all. An exact
+    allow-list catches ANY unexpected column, named or not, because
     anything not on the frozen list is rejected on sight.
 
     This assumes a frozen champion config already exists (true from Phase

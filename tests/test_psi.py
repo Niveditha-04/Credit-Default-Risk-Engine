@@ -97,6 +97,13 @@ def test_categorical_psi_unseen_category_counted_not_dropped():
     assert np.isfinite(result) and result > 0
 
 
+def test_categorical_psi_fits_categories_from_train_when_not_given():
+    train = pd.Series(["a", "b", "a", "b", "c"] * 20)
+    compare = pd.Series(["a", "b", "c"] * 20)
+    result = psi_categorical(train, compare)  # categories=None -> fit from train
+    assert np.isfinite(result)
+
+
 def test_psi_band_thresholds():
     assert psi_band(0.05) == "stable"
     assert psi_band(0.0999) == "stable"

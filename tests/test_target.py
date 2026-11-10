@@ -84,6 +84,17 @@ def test_replay_population_is_2016_2018_with_null_target(synthetic_cleaned):
     assert (result["split"] == "replay").all()
 
 
+def test_population_and_target_report_counts(synthetic_cleaned):
+    con = duckdb.connect()
+    report = target_mod.population_and_target_report(con)
+    assert report["splits"]["train"]["n_default"] == 2  # ids 1, 2
+    assert report["splits"]["train"]["n_excluded_unresolved"] == 5  # ids 5-9
+    assert report["splits"]["validation"]["n_fully_paid"] == 1  # id 3
+    assert report["splits"]["test"]["n_fully_paid"] == 1  # id 4
+    assert report["replay"]["n_rows"] == 2  # ids 13, 14
+    assert "In Grace Period" in report["exclusions_by_status"]
+
+
 def test_split_years_assigned_correctly(synthetic_cleaned):
     con = duckdb.connect()
     result = con.execute(f"SELECT id, split FROM ({target_mod.labelled_population_query()})").fetchdf()

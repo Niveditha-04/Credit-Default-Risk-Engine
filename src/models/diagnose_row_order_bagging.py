@@ -7,9 +7,10 @@ search) with a fixed num_boost_round (no early stopping noise), on:
   C. train in id order,       bagging_fraction=1.0, feature_fraction=1.0
   D. train in shuffled order, bagging_fraction=1.0, feature_fraction=1.0
 
-If A != B but C == D, row order interacting with LightGBM's bagging/
-feature subsampling (which samples by physical row position for a given
-seed, not by a stable key) is the cause - not a bug in the data itself.
+If A != B but C == D, that confirms row order interacts with LightGBM's
+bagging/feature subsampling: it samples by physical row position for a
+given seed, not by a stable key, so the same seed selects different rows
+under a different row order.
 
 Does not touch any frozen artifact: trains in memory only, writes
 nothing to data/processed/models/.
