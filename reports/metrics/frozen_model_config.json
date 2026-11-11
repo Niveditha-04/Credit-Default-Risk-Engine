@@ -1,6 +1,6 @@
 {
   "frozen_at_utc": "2026-11-09T14:19:04.754417+00:00",
-  "git_hash_at_freeze": "8755c0b88c0ff1b1c952a4cf4bc63304c5553aa5",
+  "git_hash_at_freeze": "53597a48f88c08b92d70789c0c17c37554220044",
   "git_status_clean_at_freeze": true,
   "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
   "champion": "lightgbm_chosen",
