@@ -41,23 +41,32 @@ Checked by issue quarter and by `addr_state` grouping, labeled stability, not fa
 
 LightGBM, XGBoost, and the scorecard are each calibrated out-of-sample on a held-out slice of validation (fit on 2014-01 to 2014-09, evaluated on 2014-10 to 2014-12), then refit on all of 2014 for deployment. The champion's calibrator deploys isotonic only if it beats Platt by more than 0.0005 holdout Brier score; otherwise it deploys Platt. The live champion picked Platt. Every scoring path (`score_models.py`, `decision_policy.py`, the served MLflow model, the API) applies whichever calibrator it got through one shared function, `apply_calibrator()`, so either choice scores correctly. LightGBM's champion mean predicted PD on test (13.74%) sits close to, but below, the actual test default rate (14.88%). See `reports/metrics/test_calibration_lightgbm.csv` for the full calibration curve.
 
-## Approval economics
+## Selection economics
 
-Threshold chosen entirely on validation (2014) and train (2012 to 2013), by maximizing total expected net value: PD x exposure x LGD against expected interest income. Chosen cutoff: PD <= 0.3998, a 99.5% validation approval rate. Applied unchanged to test:
+Threshold chosen entirely on validation (2014) and train (2012 to 2013), by maximizing total expected net value: PD x exposure x loss rate against expected interest income. Chosen cutoff: PD <= 0.3998, a 99.5% validation selection rate. Applied unchanged to test:
 
-| Model | PD cutoff | Approval rate on test | Default rate approved | Ex-ante EV | Ex-post realized cash | Gap |
+| Model | PD cutoff | Selection rate on test | Default rate funded | Ex-ante EV | Ex-post realized cash | Gap |
 |---|---|---|---|---|---|---|
 | LightGBM | 0.3998 | 99.41% | 14.70% | $276,185,609.46 | $231,563,567.21 | $44,622,042.25 (16.16%) |
 | XGBoost | 0.3998 | 99.12% | 14.63% | $274,940,133.99 | $232,196,032.38 | $42,744,101.61 (15.55%) |
 | Scorecard | 0.3998 | 99.82% | 14.83% | $292,623,250.94 | $230,207,167.68 | $62,416,083.26 (21.33%) |
 
-LGD used in the EV model: 0.3803 (cash basis, train charged-off loans). Sensitivity table over LGD 0.25 to 0.6 is in `reports/metrics/test_lgd_sensitivity.csv`. This EV model has no cost of capital, no operating cost, and no time value of money.
+Loss rate used in the EV model: loss rate on funded amount, cash basis (`1 - (total payment received - collection/recovery fee) / funded amount`), 0.3803 mean on train charged-off loans. The standard LGD definition on outstanding principal at charge-off averages 0.8906 on the same loans; the cash-basis version is used in the EV model because it matches dollars actually paid, not an accounting write-off. Sensitivity table over the cash-basis loss rate, 0.25 to 0.6, is in `reports/metrics/test_lgd_sensitivity.csv`. This EV model has no cost of capital, no operating cost, and no time value of money.
 
-Gap decomposition for LightGBM: 49.09% of the $44.62M gap is explained by the model's mean predicted PD on approved loans (13.56%) being below their actual default rate (14.70%). Of the remaining $22.72M, 57.0% is explained by realized interest income on test's fully paid loans coming in lower than train's assumption (80.24% vs. 82.62% of scheduled interest), and 32.3% by realized loss on test's charged-off loans coming in higher than train's LGD assumption (39.47% vs. 38.03%). Combined, these explain 89.3% of the remainder; 10.7% is unexplained.
+Gap decomposition for LightGBM, in the order attributed (each step's dollar amount comes out of what's left after the previous step, so the prepayment/loss-severity split specifically depends on this order): $21,903,123.37 (49.1% of the $44,622,042.25 gap) is default-rate drift, the model's mean predicted PD on funded loans (13.56%) being below their actual default rate (14.70%), since calibration was fit on 2014's 13.73% default rate and test ran at 14.88%. Of the $22,718,918.88 left after that, $12,945,771.83 (57.0% of the remainder, 29.0% of the original gap) is prepayment: realized interest income on test's fully paid loans came in lower than train's assumption (80.24% vs. 82.62% of scheduled interest). $7,336,260.28 (32.3% of the remainder, 16.4% of the original gap) is loss severity: realized loss on test's charged-off loans came in higher than train's assumption (39.47% vs. 38.03%). Combined, default-rate drift, prepayment, and loss severity explain $42,185,155.48 of the $44,622,042.25 gap (94.5%); $2,436,886.77 (5.5%) is unexplained.
 
 ## Drift (historical replay)
 
 PSI computed monthly, 2015 to 2018, bins fixed on train, against the conventional thresholds (<0.10 stable, 0.10 to 0.25 watch, >0.25 alert). 23 of 69 features crossed watch by end of 2018, 6 crossed alert. Performance drift is reported for 2015 only (the only year with real labels); no performance-drift claim is made for 2016 to 2018.
+
+## API latency (local laptop, not a production benchmark)
+
+1,000 sequential requests, one container, no load balancer, on an Apple M4:
+
+| Condition | p50 | p95 | p99 |
+|---|---|---|---|
+| With reason codes | 16.29 ms | 18.07 ms | 22.13 ms |
+| Without reason codes | 13.62 ms | 14.86 ms | 17.11 ms |
 
 ## Test-set access log
 

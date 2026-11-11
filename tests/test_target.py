@@ -1,6 +1,8 @@
 """Target mapping and population filters, against a tiny synthetic
 table - no real data needed."""
 
+import itertools
+import json
 from pathlib import Path
 
 import duckdb
@@ -103,3 +105,81 @@ def test_split_years_assigned_correctly(synthetic_cleaned):
     assert split_by_id[2] == "train"       # 2013
     assert split_by_id[3] == "validation"  # 2014
     assert split_by_id[4] == "test"        # 2015
+
+
+def test_split_year_ranges_never_overlap():
+    """train/validation/test/replay must partition issue years with no
+    year assigned to two splits - a date-range bug here would silently
+    leak rows across the time-based split the whole evaluation depends on."""
+    ranges = [target_mod.SPLIT_YEARS[s] for s in ("train", "validation", "test", "replay")]
+    seen_years: set[int] = set()
+    for y0, y1 in ranges:
+        assert y0 <= y1
+        years = set(range(y0, y1 + 1))
+        assert seen_years.isdisjoint(years), f"years {seen_years & years} assigned to more than one split"
+        seen_years |= years
+    # and no gap between the end of one split and the start of the next
+    boundaries = sorted(ranges)
+    for (_, prev_end), (next_start, _) in itertools.pairwise(boundaries):
+        assert next_start == prev_end + 1
+
+
+def test_split_boundary_years_land_in_the_right_split(synthetic_cleaned, monkeypatch, tmp_path):
+    rows = [
+        (101, 36, "Individual", "2013-12-31", "Fully Paid"),  # last day of train
+        (102, 36, "Individual", "2014-01-01", "Fully Paid"),  # first day of validation
+        (103, 36, "Individual", "2015-12-31", "Fully Paid"),  # last day of test
+        (104, 36, "Individual", "2016-01-01", "Fully Paid"),  # first day of replay (no labelled split)
+    ]
+    df = pd.DataFrame(rows, columns=["id", "term", "application_type", "issue_d", "loan_status"])
+    df["issue_d"] = pd.to_datetime(df["issue_d"])
+    path = tmp_path / "boundary_cleaned.parquet"
+    df.to_parquet(path, index=False)
+    monkeypatch.setattr(target_mod, "CLEANED_PARQUET", path)
+
+    con = duckdb.connect()
+    result = con.execute(f"SELECT id, split FROM ({target_mod.labelled_population_query()})").fetchdf()
+    split_by_id = dict(zip(result["id"], result["split"]))
+    assert split_by_id[101] == "train"
+    assert split_by_id[102] == "validation"
+    assert split_by_id[103] == "test"
+    assert 104 not in split_by_id  # 2016 is replay-only, not part of the labelled population
+
+
+def test_unrecognized_loan_status_gets_null_target_not_a_crash(synthetic_cleaned, monkeypatch, tmp_path):
+    """A loan_status this project has never seen (e.g. a new LendingClub
+    status) must fall through to NULL (excluded), not raise or silently
+    get mapped to 0/1."""
+    rows = [(201, 36, "Individual", "2012-06-01", "Some New Status Nobody Has Seen")]
+    df = pd.DataFrame(rows, columns=["id", "term", "application_type", "issue_d", "loan_status"])
+    df["issue_d"] = pd.to_datetime(df["issue_d"])
+    path = tmp_path / "unknown_status_cleaned.parquet"
+    df.to_parquet(path, index=False)
+    monkeypatch.setattr(target_mod, "CLEANED_PARQUET", path)
+
+    con = duckdb.connect()
+    result = con.execute(f"SELECT id, target FROM ({target_mod.labelled_population_query()})").fetchdf()
+    assert pd.isna(result.loc[result["id"] == 201, "target"].iloc[0])
+
+
+def test_issue_year_outside_every_defined_split_is_excluded_entirely(synthetic_cleaned):
+    """id 12 (issued 2011) is outside both the labelled (2012-2015) and
+    replay (2016-2018) populations - it must appear in neither."""
+    con = duckdb.connect()
+    labelled_ids = set(
+        con.execute(f"SELECT id FROM ({target_mod.labelled_population_query()})").fetchdf()["id"]
+    )
+    replay_ids = set(
+        con.execute(f"SELECT id FROM ({target_mod.replay_population_query()})").fetchdf()["id"]
+    )
+    assert 12 not in labelled_ids
+    assert 12 not in replay_ids
+
+
+def test_main_writes_report_to_given_path(synthetic_cleaned, tmp_path):
+    out_path = tmp_path / "out" / "population_and_target.json"
+    report = target_mod.main(out_path=str(out_path))
+    assert out_path.exists()
+    with open(out_path) as f:
+        saved = json.load(f)
+    assert saved["splits"]["train"]["n_default"] == report["splits"]["train"]["n_default"] == 2

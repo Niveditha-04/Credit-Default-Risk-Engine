@@ -47,5 +47,6 @@ def score(request: ScoreRequest, include_reason_codes: bool = True) -> ScoreResp
         top_3_risk_increasing_drivers_illustrative_only=result["top_3_risk_increasing_drivers_illustrative_only"],
         model_name=result["model_name"],
         model_version=result["model_version"],
+        missing_fields=result["missing_fields"],
         warnings=result["warnings"],
     )

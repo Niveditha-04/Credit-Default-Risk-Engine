@@ -52,7 +52,7 @@ def _warning(field: str, reason: str, value) -> dict:
 class ScoringEngine:
     """Loaded once at API startup; holds the frozen model, calibrator,
     risk bands, and training-range reference, all read from files
-    produced by earlier phases' scripts."""
+    produced by the training and freeze scripts."""
 
     def __init__(self) -> None:
         self.frozen = load_frozen_config()
@@ -77,6 +77,9 @@ class ScoringEngine:
 
         with open(API_DIR / "feature_ranges.json") as f:
             self.feature_ranges: dict = json.load(f)
+
+        shap_importance = pd.read_csv(METRICS_DIR / "shap_global_importance.csv", index_col=0)
+        self.top10_shap_features = set(shap_importance.sort_values("mean_abs_shap_rank").head(10).index)
 
     def build_raw_row(self, payload: dict) -> pd.DataFrame:
         """Turn one validated request payload into a single-row DataFrame
@@ -125,6 +128,21 @@ class ScoringEngine:
                 warnings.append(_warning(field, f"outside_training_range_({ref['min']}_to_{ref['max']})", value))
         return warnings
 
+    def missing_fields_for(self, payload: dict) -> list[str]:
+        """Optional fields the request left out. A missing field that is
+        also one of the model's top-10 global SHAP features (self.top10_shap_features)
+        gets an extra warning in check_warnings_for_missing, since the
+        served score then runs on less information than the evaluated
+        model saw on most of its training rows."""
+        return sorted(field for field, value in payload.items() if value is None)
+
+    def check_warnings_for_missing(self, missing_fields: list[str]) -> list[dict]:
+        return [
+            _warning(field, "missing_top10_shap_feature_lowers_fidelity", "missing")
+            for field in missing_fields
+            if field in self.top10_shap_features
+        ]
+
     def risk_band_for(self, pd_value: float) -> str:
         for band in self.risk_bands:
             lo, hi = band["pd_min"], band["pd_max"]
@@ -166,11 +184,12 @@ class ScoringEngine:
 
         pd_value = float(score_lightgbm(feat_row, self.cfg)[0])
         # SHAP (top_drivers) is the most expensive part of a request by far
-        # - the ?include_reason_codes=false switch exists so Phase 8's
-        # latency measurement can report the cost with and without it.
+        # - the ?include_reason_codes=false switch exists so the latency
+        # measurement can report the cost with and without it.
         drivers = self.top_drivers(feat_row) if include_reason_codes else []
         band = self.risk_band_for(pd_value)
-        warnings = self.check_warnings(payload)
+        missing_fields = self.missing_fields_for(payload)
+        warnings = self.check_warnings(payload) + self.check_warnings_for_missing(missing_fields)
 
         return {
             "calibrated_pd": pd_value,
@@ -178,5 +197,6 @@ class ScoringEngine:
             "top_3_risk_increasing_drivers_illustrative_only": drivers,
             "model_name": self.model_name,
             "model_version": self.model_version,
+            "missing_fields": missing_fields,
             "warnings": warnings,
         }

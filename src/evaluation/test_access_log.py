@@ -1,5 +1,5 @@
-"""Append-only log of every access to test (2015) data. Phase 5 rule: test
-is touched exactly once, and every touch is logged here."""
+"""Append-only log of every access to test (2015) data. Test is touched
+exactly once, and every touch is logged here."""
 
 import json
 from datetime import UTC, datetime

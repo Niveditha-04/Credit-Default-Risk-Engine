@@ -1,4 +1,4 @@
-"""Phase 9: Evidently HTML drift reports, train (reference) vs each of
+"""Evidently HTML drift reports, train (reference) vs each of
 2015/2016/2017/2018 (current). HISTORICAL REPLAY, not live monitoring -
 see src/monitoring/run_drift.py for that distinction and for the custom,
 train-deciles PSI this project treats as the source of truth. These

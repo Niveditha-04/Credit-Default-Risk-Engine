@@ -1,4 +1,4 @@
-"""Phase 6: explain the FROZEN LightGBM champion only. No model changes.
+"""Explains the frozen LightGBM champion only. No model changes.
 
 Per-feature contributions come from booster.predict(pred_contrib=True),
 LightGBM's own built-in exact TreeSHAP (computed in C++ inside the
@@ -45,7 +45,7 @@ def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
     np.corrcoef propagates a single NaN into the whole result, which
     silently breaks for any feature with missing values - several of the
     rollout-era and bankcard features have a small residual missing rate
-    even on test (see Phase 2/4 missingness notes)."""
+    even on test (see build_features.py's missing-rate handling)."""
     mask = ~pd.isna(values)
     if mask.sum() < 2:
         return float("nan")
@@ -189,9 +189,9 @@ def main() -> None:
     def woe_direction(feat: str) -> tuple[str, float | None]:
         """Correlation between bin order and WoE for the ordered interval
         bins only (excludes Special/Missing/Totals). Positive correlation
-        means WoE rises as the feature value rises, i.e. the convention
-        established in Phase 3 (higher WoE = lower event rate) implies
-        higher feature value -> lower risk."""
+        means WoE rises as the feature value rises, i.e. the scorecard's
+        convention (higher WoE = lower event rate) implies higher feature
+        value -> lower risk."""
         table = binning_process.get_binned_variable(feat).binning_table.build()
         # "Totals" row has Bin="" (empty string, not NaN), which silently
         # casts the whole WoE column to object dtype - filter by row

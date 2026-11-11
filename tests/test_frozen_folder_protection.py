@@ -1,8 +1,8 @@
-"""Frozen-folder write protection (src.models.gbm): regression test for
-the 2026-11-10 incident where a verification rerun silently overwrote
-the frozen champion artifacts. A locked file must refuse a plain write,
-and promote_candidate_artifacts must only ever be reachable when
---promote was passed."""
+"""Frozen-folder write protection (src.models.gbm). A locked file must
+refuse a plain write, and promote_candidate_artifacts must only ever be
+reachable when --promote was passed, so a run of gbm.py that is not
+explicitly promoting a new champion can never overwrite the committed
+frozen artifacts."""
 
 import stat
 import sys

@@ -1,4 +1,4 @@
-"""Phase 9 drift reporting: alert scan, PNG summaries, and the
+"""Drift reporting: alert scan, PNG summaries, and the
 loan_to_income PSI explanation. HISTORICAL REPLAY, not live monitoring -
 see run_drift.py, which all three of these read from.
 """

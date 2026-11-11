@@ -12,8 +12,9 @@ already dry-run and verified correct against validation in
 score_models.py), joins the small set of additional fields needed for
 economics/benchmark/stability/robustness analysis (all evaluation-only,
 never model features), and saves everything to a single file. Every
-downstream Phase 5 script reads from that saved file, not from test.parquet
-again, so the actual read of test (2015) happens exactly once, here.
+downstream evaluation script reads from that saved file, not from
+test.parquet again, so the actual read of test (2015) for evaluation
+happens exactly once, here.
 """
 
 from pathlib import Path
@@ -33,7 +34,7 @@ def main() -> None:
     frozen = load_frozen_config()
 
     test = pd.read_parquet(TEST_PARQUET)
-    log_access("score_test.py", len(test), "Loaded test.parquet for the one-time Phase 5 scoring pass")
+    log_access("score_test.py", len(test), "Loaded test.parquet for the one-time evaluation scoring pass")
 
     scores = score_all(test, frozen)
 

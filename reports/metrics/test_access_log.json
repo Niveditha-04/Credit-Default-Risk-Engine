@@ -3,7 +3,7 @@
     "timestamp_utc": "2026-11-09T14:30:28.713728+00:00",
     "script": "score_test.py",
     "row_count": 282787,
-    "action": "Loaded test.parquet for the one-time Phase 5 scoring pass"
+    "action": "Loaded test.parquet for the one-time evaluation scoring pass"
   },
   {
     "timestamp_utc": "2026-11-09T14:30:36.686695+00:00",
@@ -15,7 +15,7 @@
     "timestamp_utc": "2026-11-09T14:44:47.691996+00:00",
     "script": "score_test.py",
     "row_count": 282787,
-    "action": "Loaded test.parquet for the one-time Phase 5 scoring pass"
+    "action": "Loaded test.parquet for the one-time evaluation scoring pass"
   },
   {
     "timestamp_utc": "2026-11-09T14:44:57.748056+00:00",
@@ -27,7 +27,7 @@
     "timestamp_utc": "2026-11-09T15:04:14.667073+00:00",
     "script": "economics_v2.py",
     "row_count": 282787,
-    "action": "Re-read saved test_scored.parquet (no new raw test data read) to apply corrected v2 LGD/interest/ex-post formulas; model PDs unchanged from original score_test.py run"
+    "action": "Re-read saved test_scored.parquet (no new raw test data read) to compute the LGD/interest/ex-post economics formulas; model PDs unchanged from the score_test.py scoring pass"
   },
   {
     "timestamp_utc": "2026-11-09T15:13:39.038753+00:00",
@@ -39,7 +39,7 @@
     "timestamp_utc": "2026-11-10T07:10:27.248932+00:00",
     "script": "run_drift.py",
     "row_count": 282787,
-    "action": "Read test.parquet (2015) for Phase 9 historical replay: feature values for data/prediction drift and the target for 2015-only performance drift. Explicitly authorized by this phase's instructions (separate from Phase 5's one-time evaluation pass). No model, feature, or policy change."
+    "action": "Read test.parquet (2015) for historical replay: feature values for data/prediction drift and the target for 2015-only performance drift, separate from the one-time evaluation scoring pass. No model, feature, or policy change."
   },
   {
     "timestamp_utc": "2026-11-10T14:04:46.157225+00:00",
@@ -63,7 +63,7 @@
     "timestamp_utc": "2026-11-10T15:19:21.854749+00:00",
     "script": "run_drift.py",
     "row_count": 282787,
-    "action": "Read test.parquet (2015) for Phase 9 historical replay: feature values for data/prediction drift and the target for 2015-only performance drift. Explicitly authorized by this phase's instructions (separate from Phase 5's one-time evaluation pass). No model, feature, or policy change."
+    "action": "Read test.parquet (2015) for historical replay: feature values for data/prediction drift and the target for 2015-only performance drift, separate from the one-time evaluation scoring pass. No model, feature, or policy change."
   },
   {
     "timestamp_utc": "2026-11-11T07:20:07.419971+00:00",

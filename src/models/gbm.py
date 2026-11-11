@@ -24,8 +24,8 @@ IMPORTANT: validation is used for early stopping, hyperparameter search,
 model selection (the 0.002 rule), AND (a held-out slice of) calibration.
 That means the validation AUC reported here is optimistic as an estimate
 of out-of-sample performance - it was itself a target of model selection
-at every step. The honest, once-only read on truly unseen data happens in
-Phase 5 against test (2015).
+at every step. The honest, once-only read on truly unseen data happens
+against test (2015).
 """
 
 import json
@@ -58,15 +58,13 @@ CANDIDATES_DIR = MODELS_DIR / "candidates"
 # step function on a near-tie.
 ISOTONIC_SELECTION_MARGIN = 0.0005
 
-# 2026-11-10 incident: a run meant only to verify that adding ORDER BY to
-# the data pipeline didn't change results (it did - see
-# stability.py, row order interacts with LightGBM's
-# seeded bagging/feature subsampling) silently overwrote the frozen,
-# already-verified model_chosen.joblib and xgboost/model.joblib with a
-# DIFFERENT model, with no backup. Every run now writes to its own
-# data/processed/models/candidates/<run_id>/ directory instead of the
-# frozen data/processed/models/<model>/ paths. Only an explicit
-# --promote flag copies a candidate's artifacts over the frozen ones
+# Every run writes to its own data/processed/models/candidates/<run_id>/
+# directory rather than the frozen data/processed/models/<model>/ paths.
+# LightGBM's seeded bagging and feature subsampling depend on row order
+# (see reports/metrics/training_order_sensitivity.json), so a rerun's
+# artifacts are not guaranteed bit-for-bit identical to the frozen
+# champion and must not land on top of it by accident. Only an explicit
+# --promote flag copies a candidate run's artifacts over the frozen ones
 # (and only after confirming the files there aren't locked - see
 # promote_candidate_artifacts()). Nothing is lost by default: every run's
 # output survives under its own candidate directory even if never
@@ -83,8 +81,8 @@ def promote_requested() -> bool:
 
 def lock_frozen_file(path: Path) -> None:
     """Read-only for everyone - a plain joblib.dump()/open(...,'w') to
-    this exact path will now raise PermissionError instead of silently
-    overwriting a verified artifact."""
+    this exact path raises PermissionError instead of silently
+    overwriting the artifact."""
     os.chmod(path, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
 
 
@@ -116,7 +114,7 @@ EARLY_STOPPING_ROUNDS = 50
 
 TRAIN_VAL_AUC_GAP_FLAG = 0.05
 VALIDATION_AUC_INVESTIGATE_THRESHOLD = 0.75
-SCORECARD_VALIDATION_AUC = 0.665  # from Phase 3, reports/metrics/scorecard_validation_metrics.json
+SCORECARD_VALIDATION_AUC = 0.665  # reports/metrics/scorecard_validation_metrics.json
 SIMPLICITY_AUC_TOLERANCE = 0.002  # "simplest config within 0.002 AUC of the best"
 
 
@@ -130,9 +128,9 @@ def feature_list(train_columns: list[str]) -> list[str]:
     allow-list catches ANY unexpected column, named or not, because
     anything not on the frozen list is rejected on sight.
 
-    This assumes a frozen champion config already exists (true from Phase
-    5 onward) - it is a regression guard for an established pipeline, not
-    a bootstrapping mechanism for the very first run."""
+    This assumes a frozen champion config already exists - it is a
+    regression guard for an established pipeline, not a bootstrapping
+    mechanism for the very first run."""
     derived = sorted(c for c in train_columns if c not in METADATA_COLUMNS)
 
     with open(FROZEN_CONFIG_PATH) as f:
@@ -436,7 +434,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
     print(f"Chosen LightGBM trial (simplest within {SIMPLICITY_AUC_TOLERANCE} AUC): {chosen_trial['trial']}, "
           f"AUC={chosen_trial['auc']:.5f}, n_trees={chosen_trial['best_iteration']}")
     print(f"Best XGBoost:  AUC={best_xgb['auc']:.5f}, best_iteration={best_xgb['best_iteration']}")
-    print(f"Scorecard validation AUC (Phase 3): {SCORECARD_VALIDATION_AUC}")
+    print(f"Scorecard validation AUC: {SCORECARD_VALIDATION_AUC}")
 
     def model_metrics(booster, trial, label):
         train_pred = booster.predict(train[feats], num_iteration=booster.best_iteration)
@@ -475,9 +473,9 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
         "note": (
             "Validation was used for early stopping, hyperparameter search, "
             "the best-vs-chosen selection rule, AND calibration in this "
-            "phase, so this validation AUC is optimistic as an "
-            "out-of-sample estimate. Test (2015) is untouched and will "
-            "give the honest read in Phase 5."
+            "selection rule, AND calibration, so this validation AUC is "
+            "optimistic as an out-of-sample estimate. Test (2015) is "
+            "untouched and gives the honest read."
         ),
     }
     with open(METRICS_DIR / "gbm_validation_metrics.json", "w") as f:
@@ -492,7 +490,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
             print(f"\n!!! FLAG: {label} model validation AUC {m['validation_auc']:.4f} exceeds "
                   f"{VALIDATION_AUC_INVESTIGATE_THRESHOLD}, investigate for leakage !!!")
 
-    # The CHOSEN model is what gets frozen and carried into Phase 5.
+    # The CHOSEN model is what gets frozen and carried into the test evaluation.
     chosen_booster = lgb_boosters[chosen_trial["trial"]]
 
     print("\n=== Feature importance (gain), top 15, chosen model ===")
@@ -606,7 +604,7 @@ def run_with_mlflow() -> None:
         })
 
         # Test (2015) is NOT rescored here - attached from the already
-        # committed Phase 5 files for reference only.
+        # committed evaluation files for reference only.
         test_metrics_path = METRICS_DIR / "test_core_metrics.json"
         if test_metrics_path.exists():
             with open(test_metrics_path) as f:

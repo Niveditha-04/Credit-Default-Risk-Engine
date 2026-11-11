@@ -10,11 +10,11 @@ Engineered features (all computed from origination-time data only):
     never_flag__<source>    = 1 if <source> is missing, 0 if present, for the
                                6 mths_since_* columns.
 
-log_annual_inc was dropped (2026-11, pre-Phase-5 freeze): it is a strictly
-monotonic transform of annual_inc, so it is an exact duplicate for any
-tree split boundary and had byte-identical IV to annual_inc in Phase 3.
-fico_range_low/fico_range_high are similarly dropped from the feature set
-(see allow_list.py) in favor of the single fico_mean representative.
+log_annual_inc is not in the feature set: it is a strictly monotonic
+transform of annual_inc, so it is an exact duplicate for any tree split
+boundary and has byte-identical IV to annual_inc. fico_range_low and
+fico_range_high are similarly left out of the feature set (see
+allow_list.py) in favor of the single fico_mean representative.
 
 Four of those six source columns (mths_since_recent_bc_dlq,
 mths_since_recent_inq, mths_since_recent_revol_delinq,

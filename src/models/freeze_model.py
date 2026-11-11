@@ -1,10 +1,12 @@
-"""Freeze every model artifact that Phase 5 is allowed to touch.
+"""Freeze every model artifact that the test (2015) evaluation is allowed
+to touch.
 
-Reads only already-saved metrics files from Phase 3 and Phase 4 (never
-retrains anything) and writes reports/metrics/frozen_model_config.json.
-Phase 5 must load its models, features, and calibrator from this file
-alone - no retraining, no re-tuning, no feature changes once test (2015)
-is in scope.
+Reads only already-saved metrics files from the scorecard and gradient
+boosting training scripts (never retrains anything) and writes
+reports/metrics/frozen_model_config.json. The test evaluation must load
+its models, features, and calibrator from this file alone - no
+retraining, no re-tuning, no feature changes once test (2015) is in
+scope.
 
 Each model's artifacts live in their own subfolder under
 data/processed/models/: scorecard/, lightgbm/, xgboost/.
@@ -24,7 +26,7 @@ CHAMPION_AUC_TOLERANCE_NOTE = (
     "XGBoost (the best alternative) while using 273 trees instead of "
     "2122 - a much simpler model for a negligible performance difference. "
     "XGBoost and the scorecard are carried forward as comparison models "
-    "in Phase 5, not candidates for champion."
+    "in the test evaluation, not candidates for champion."
 )
 
 
@@ -83,9 +85,9 @@ def main() -> None:
             "xgboost_search": 43,
         },
         "test_touch_policy": (
-            "Phase 5 touches test (2015) exactly once, scoring ONLY the frozen "
+            "Test (2015) is touched exactly once, scoring ONLY the frozen "
             "artifacts listed in this file. No retraining, no feature changes, "
-            "no re-tuning, no re-selection of calibration method in Phase 5."
+            "no re-tuning, no re-selection of calibration method in that pass."
         ),
         "scorecard": {
             "model_type": "logistic_regression_on_woe",
@@ -137,7 +139,7 @@ def main() -> None:
             "train_validation_metrics": gbm_metrics["chosen"],
         },
         "lightgbm_best_unconstrained_reference_only": {
-            "note": "Not used in Phase 5. Kept only to show what the simplicity-selection rule traded away.",
+            "note": "Not used in the test evaluation. Kept only to show what the simplicity-selection rule traded away.",
             "hyperparameters": hparams(best_trial),
             "n_trees": best_n_trees,
             "num_leaves": best_num_leaves,

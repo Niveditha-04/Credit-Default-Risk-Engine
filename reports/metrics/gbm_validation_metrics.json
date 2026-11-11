@@ -31,5 +31,5 @@
   },
   "scorecard_validation_auc": 0.665,
   "chosen_lift_over_scorecard_auc": 0.0184,
-  "note": "Validation was used for early stopping, hyperparameter search, the best-vs-chosen selection rule, AND calibration in this phase, so this validation AUC is optimistic as an out-of-sample estimate. Test (2015) is untouched and will give the honest read in Phase 5."
+  "note": "Validation was used for early stopping, hyperparameter search, the best-vs-chosen selection rule, AND calibration, so this validation AUC is optimistic as an out-of-sample estimate. Test (2015) is untouched and gives the honest read."
 }

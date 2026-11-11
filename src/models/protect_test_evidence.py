@@ -1,23 +1,21 @@
-"""Post-incident evidence protection (2026-11-10). The only model
-artifacts that survived the row-order/bagging incident with a verifiable
-backup were the ones already logged to MLflow (the LightGBM champion).
-This locks down the one remaining piece of evidence that was NOT backed
-up anywhere until now: the saved test (2015) predictions
+"""Protects the test (2015) scoring evidence trail. The LightGBM
+champion's model artifacts are backed up through MLflow (the registered
+champion run), so the one remaining piece of evidence without its own
+backup is the saved test (2015) predictions
 (reports/metrics/test_scored.parquet), which is what reports/metrics/
 test_core_metrics.json and frozen_model_config.json's test_* numbers
-were computed from. If that file were ever silently overwritten the way
-the model artifacts were, there would be no way to re-derive those
-already-committed numbers without re-touching test, which the project's
-rules forbid.
+were computed from. If that file were ever silently overwritten, those
+already-committed numbers could not be re-derived without re-touching
+test, which this project's test-touch-once policy forbids - so this
+file is locked down the same way a frozen model artifact is.
 
 There is no separate saved "validation predictions" file anywhere in
 this repo - validation is always rescored on the fly, never cached to
 disk - so there is nothing else to protect here.
 
 Steps: hash test_scored.parquet, make it read-only, upload it as an
-MLflow artifact on the run that actually backs the current frozen
-model (f49885e7d05c41afa4a3a811defb5b6f - the original "gbm" run,
-restored and verified byte-identical in the 2026-11-10 recovery), and
+MLflow artifact on the run that backs the frozen model
+(f49885e7d05c41afa4a3a811defb5b6f, the registered champion run), and
 record the hash in reports/metrics/evidence_hashes.json. Also recomputes
 the XGBoost test AUC directly from the saved predictions as a live check
 against the frozen number (0.6886).

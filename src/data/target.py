@@ -76,11 +76,11 @@ def replay_population_query() -> str:
     """2016-2018: same filters, all loan_status kept. target is forced NULL
     unconditionally, by design, not just where unresolved: some 2016-2018
     loans have already resolved (Fully Paid/Charged Off) and would
-    otherwise get a real 0/1 target, but Section 2 of the brief defines
-    replay as "no labels used" for drift monitoring. Computing a real
-    target here would let a later phase accidentally compute performance
-    metrics on replay data, which Phase 9 explicitly forbids for anything
-    past 2015."""
+    otherwise get a real 0/1 target, but replay is "no labels used" by
+    design for drift monitoring. Computing a real target here would let
+    a later script accidentally compute performance metrics on replay
+    data, which this project only ever does for 2015 (see
+    src/monitoring/run_drift.py)."""
     return f"""
         SELECT *,
             CAST(NULL AS INTEGER) AS target,
@@ -144,13 +144,18 @@ def population_and_target_report(con: duckdb.DuckDBPyConnection) -> dict:
     return report
 
 
-if __name__ == "__main__":
+def main(out_path: str = "reports/metrics/population_and_target.json") -> dict:
     import json
 
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
     report = population_and_target_report(con)
     print(json.dumps(report, indent=2, default=str))
-    Path("reports/metrics").mkdir(parents=True, exist_ok=True)
-    with open("reports/metrics/population_and_target.json", "w") as f:
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w") as f:
         json.dump(report, f, indent=2, default=str)
+    return report
+
+
+if __name__ == "__main__":
+    main()

@@ -30,7 +30,8 @@ ENGINEERED_NUMERIC = [
 ]
 
 # The 4 never_flag__* columns kept as candidates: their source mths_since_*
-# column is 100% missing in Jan 2012 (rollout era, verified in Phase 2), so
+# column is 100% missing in Jan 2012 (rollout era, verified against
+# reports/metrics/field_rollout.csv), so
 # the source's own "missing" bin mixes two different populations -
 # borrowers who genuinely never had the event, and borrowers whose status
 # is simply unknown because the field didn't exist yet. The flag separates
@@ -433,8 +434,8 @@ def run_with_mlflow() -> None:
         })
 
         # Test (2015) is NOT rescored here - these metrics are read from
-        # the file score_test.py / test_evaluation.py already committed
-        # in Phase 5, attached for reference only.
+        # the file score_test.py / test_evaluation.py already committed,
+        # attached for reference only.
         test_metrics_path = METRICS_DIR / "test_core_metrics.json"
         if test_metrics_path.exists():
             with open(test_metrics_path) as f:

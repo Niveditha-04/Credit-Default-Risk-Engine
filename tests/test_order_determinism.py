@@ -1,10 +1,9 @@
 """ORDER BY determinism: every query that gets materialized to a
 parquet file must return rows in the same order every time it runs, and
-that order must be sorted by id. Regression test for the 2026-11-10
-incident (see src/models/stability.py): unordered
-queries let row order become an unspecified side effect of the query
-plan, which LightGBM's seeded bagging/feature subsampling is sensitive
-to even with a fixed seed."""
+that order must be sorted by id (see src/models/stability.py). An
+unordered query lets row order become an unspecified side effect of the
+query plan, which LightGBM's seeded bagging/feature subsampling is
+sensitive to even with a fixed seed."""
 
 import duckdb
 import pandas as pd

@@ -1,4 +1,4 @@
-"""Phase 6 follow-up checks on the frozen champion (no model changes).
+"""Follow-up checks on the frozen champion's SHAP output (no model changes).
 
 shap_followup_checks():
   - Income reversal: does it survive when grouping all income-scaled

@@ -1,4 +1,4 @@
-"""Phase 8 parity test: 1,000 seeded test-set rows, sent ONE AT A TIME
+"""Parity check: 1,000 seeded test-set rows, sent ONE AT A TIME
 through the live FastAPI app (TestClient - no network, but the full
 request/response/validation path), must return the exact same PD as the
 frozen champion's batch scoring (src.evaluation.score_models), within
@@ -7,7 +7,7 @@ category in the sample by construction, not by luck.
 
 This does not touch the test set's labels (target) or produce any metric
 about the model's performance: it is a plumbing check (does the API
-reproduce the offline score), not a Phase 5 evaluation.
+reproduce the offline score), not a test-set evaluation.
 """
 
 import json

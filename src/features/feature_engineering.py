@@ -14,10 +14,11 @@ mths_since_* columns.
 
 Four of the 6 never_flag__* source columns (mths_since_recent_bc_dlq,
 mths_since_recent_inq, mths_since_recent_revol_delinq,
-mths_since_last_major_derog) are gated because they were 100% missing in
-LendingClub's schema before a certain point in 2012 (see Phase 2 notes) -
-a missing value before that point means "not recorded yet", not "never
-happened". This gating is harmless for a live application scored today:
+mths_since_last_major_derog) are gated because they are 100% missing in
+LendingClub's schema before a certain point in 2012 (see
+reports/metrics/field_rollout.csv) - a missing value before that point
+means "not recorded yet", not "never happened". This gating is harmless
+for a live application scored today:
 issue_d will always be well after the 2012 cutoffs and tot_cur_bal will
 always be populated, so the gate always evaluates to "known" and the flag
 reduces to a plain 1/0 on whether the source field itself is missing.

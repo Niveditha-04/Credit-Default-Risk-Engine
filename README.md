@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Niveditha-04/Credit-Default-Risk-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Niveditha-04/Credit-Default-Risk-Engine/actions/workflows/ci.yml)
 
-I built an origination-time credit scoring model for LendingClub loans: given only what a lender knows at the moment a 36-month loan is issued, predict the probability it ends in default over its lifetime. I wanted to build it the way a lender actually would, not just a notebook with one accuracy number: a time-based split, a scorecard baseline, an expected-loss approval policy, explanations for every prediction, and a served model monitored for drift after launch.
+I built an origination-time credit scoring model for LendingClub loans: given only what LendingClub knew the moment it already accepted a 36-month loan, predict the probability that loan ends in default over its lifetime. This is loan selection among loans LendingClub has already accepted, the view an investor buying into these loans would take, not an underwriting model deciding who gets a loan in the first place. More than a notebook with one accuracy number: a time-based split, a scorecard baseline, an expected-loss selection policy, explanations for every prediction, and a served model monitored for drift after launch.
 
 ## Results at a glance
 
@@ -15,14 +15,16 @@ I built an origination-time credit scoring model for LendingClub loans: given on
 
 I used LendingClub's accepted-loan data, 2007 to 2018, from a public Kaggle copy uploaded by Nathan George (listed as CC0). The original data was published under LendingClub's own terms at the time. I do not redistribute the raw file; it stays local and gitignored.
 
-- Raw file: 2,260,701 rows, 151 columns, 33 footer/summary rows removed, 2,260,668 real loan rows left. My modeling population: 36-month, individual-application loans only. Time-based split, so I never shuffle across time:
+- Raw file: `accepted_2007_to_2018Q4.csv.gz`, SHA-256 `dd972c625896155b388224f3ce729e921dae7a9278af579f5a1d72ab49b632ce` (`reports/metrics/raw_data_profile.json`). 2,260,701 rows, 151 columns, 33 footer/summary rows removed, 2,260,668 real loan rows left. My modeling population: 36-month, individual-application loans only. Time-based split, so I never shuffle across time:
 
 | Split | Issue years | Loans | Default rate | Use |
 |---|---|---|---|---|
-| Train | 2012 to 2013 | 143,892 | 12.70% | Fit models, bin variables, estimate LGD |
-| Validation | 2014 | 162,570 | 13.73% | Tune, calibrate, choose the approval threshold |
-| Test | 2015 | 282,787 | 14.88% | Touched once, at the end, for the final numbers |
-| Replay | 2016 to 2018 | 919,053 | not used | Drift checks only, no labels read |
+| Train | 2012 to 2013 | 143,892 | 12.70% | Fit models, bin variables, estimate the loss rate |
+| Validation | 2014 | 162,570 | 13.73% | Tune, calibrate, choose the selection threshold |
+| Test | 2015 | 282,787 | 14.88% | Scored once, at the end, for the final numbers |
+| Replay | 2016 to 2018 | 919,053 | not used | Drift checks only, outcomes not yet resolved for most of this window |
+
+I start the modelling population at 2012 for two reasons: 36-month loans issued 2007 to 2011 are only 31,534 loans total, and a wave of bureau trade-line fields (`mths_since_recent_inq`, `bc_util`, and others) does not exist in LendingClub's schema before 2012, arriving between March and August that year (`reports/metrics/field_rollout.csv`). I use 36-month loans only because 60-month loans issued after 2013 are not fully resolved by this data's March 2019 snapshot (82.85% resolved for 2014, 67.08% for 2015, versus 99.97%+ for 36-month loans issued through 2013) - see `reports/metrics/maturity_audit.csv`. Replay (2016 to 2018) carries no labels for the same reason at a larger scale: by the March 2019 snapshot, as little as 11.97% of 2018's 36-month loans have resolved, so any label I computed there would mostly describe loans still in progress, not real outcomes.
 
 In the 2015 test population, 147 loans were still unresolved (72 Current, 61 Late 31-120 days, 9 In Grace Period, 5 Late 16-30 days) and are excluded from the labeled population, not counted as either outcome.
 
@@ -34,25 +36,27 @@ Target is 1 if `loan_status` is Charged Off or Default. Target is 0 if `loan_sta
 
 - Built an explicit allow-list for all 151 raw columns: 59 kept as model features, 12 kept as metadata only (dates, state, zip, grade, for filtering and stability checks, never fed to a model), 1 is the target source (`loan_status`), 79 dropped.
 - Engineered 10 features from origination-time data only: `fico_mean`, `credit_history_months`, `loan_to_income`, `revol_bal_to_income`, and 6 "never happened yet" flags for the `mths_since_*` columns.
-- Built a WOE-binned logistic scorecard as an honest baseline, then trained LightGBM as the main model and XGBoost as a comparison, both tuned and calibrated on validation only and logged to MLflow.
-- Picked one approval cutoff on validation by maximizing total expected net value, then applied that same fixed cutoff to test, once.
+- Built a WOE-binned logistic scorecard as the baseline, then trained LightGBM as the main model and XGBoost as a comparison, both tuned and calibrated on validation only and logged to MLflow.
+- Picked one selection cutoff on validation by maximizing total expected net value, then applied that same fixed cutoff to test, once.
 - Explained every prediction with LightGBM's own exact TreeSHAP on the full test set, and served the champion through FastAPI with reason codes, in a Docker image.
-- Checked drift over 2016 to 2018 with PSI, a historical replay not live monitoring, and tested the target logic, population filters, PSI math, and the API in CI.
+- Checked drift over 2016 to 2018 with PSI as a historical replay, and tested the target logic, population filters, PSI math, and the API in CI.
 
-## Results on test (2015), each model touched test exactly once
+## Results on test (2015)
 
 | Model | AUC (95% CI) | Gini | KS | Brier | AUC diff vs. LightGBM (95% CI) |
 |---|---|---|---|---|---|
-| LightGBM (champion) | 0.6872 (0.6847 to 0.6898) | 0.3745 | 0.2697 | 0.11966 | n/a |
-| XGBoost (comparison) | 0.6886 (0.6859 to 0.6912) | 0.3772 | 0.2725 | 0.11954 | -0.0014 (-0.0020 to -0.0008) |
-| Scorecard | 0.6711 (0.6686 to 0.6735) | 0.3421 | 0.2480 | 0.12105 | +0.0162 (0.0146 to 0.0178) |
-| LendingClub sub_grade | 0.6786 (0.6760 to 0.6812) | 0.3573 | 0.2619 | 0.12153 | +0.0086 (0.0063 to 0.0109) |
+| LightGBM (champion) | 0.6872 (0.6847 to 0.6898) | 0.3745 | 0.2697 | 0.1197 | n/a |
+| XGBoost (comparison) | 0.6886 (0.6859 to 0.6912) | 0.3772 | 0.2725 | 0.1195 | -0.0014 (-0.0020 to -0.0008) |
+| Scorecard | 0.6711 (0.6686 to 0.6735) | 0.3421 | 0.2480 | 0.1211 | +0.0162 (0.0146 to 0.0178) |
+| LendingClub sub_grade | 0.6786 (0.6760 to 0.6812) | 0.3573 | 0.2619 | 0.1215 | +0.0086 (0.0063 to 0.0109) |
 
-All three differences are statistically significant (95% bootstrap CI, 1,000 resamples). XGBoost edges out LightGBM by a small but significant margin; both gradient-boosted models beat the scorecard and sub_grade by a larger margin. I deployed LightGBM anyway: it is within 0.0021 AUC of XGBoost on validation, using 273 trees instead of 2,122, and retraining noise alone moves validation AUC by about 0.0007 (`reports/metrics/training_order_sensitivity.json`), so the two are effectively tied.
+All three differences are statistically significant (95% bootstrap CI, 1,000 resamples). XGBoost edges out LightGBM by a small but significant margin; both gradient-boosted models beat the scorecard and sub_grade by a larger margin. I deployed LightGBM anyway: it is within 0.0021 AUC of XGBoost on validation, using 273 trees against XGBoost's 2,122 (both searches ran 20 tuning trials; LightGBM's champion also had a second, 10-trial regularized search on top of that; the tree-count gap comes mostly from LightGBM's higher learning rate, 0.08 against XGBoost's 0.01). Retraining noise alone moves validation AUC by about 0.0007 (`reports/metrics/training_order_sensitivity.json`), so I treat the two as statistically detectable but effectively tied.
 
-## Fixed approval-rate comparison (test, cutoffs set on validation, $ in millions)
+A statistically significant AUC gap does not mean a large difference in money. At matched selection rates (see the table below), LightGBM and the scorecard realize nearly the same cash: $196.8M vs. $198.9M at 70%, $213.7M vs. $213.7M at 80%, $228.3M vs. $225.9M at 90%, a 0 to 1.1% difference. Riskier loans carry higher interest, so a model's ranking advantage mostly cancels out at the portfolio level under this objective. I do not show an economic value for the AUC gap itself; it is a ranking-quality result, not a profit result.
 
-| Model | Target approval rate | Actual approval rate on test | Actual default rate approved | Ex-ante expected net value | Ex-post realized net cash |
+## Fixed selection-rate comparison (test, cutoffs set on validation, $ in millions)
+
+| Model | Target selection rate | Actual selection rate on test | Actual default rate funded | Ex-ante expected net value | Ex-post realized net cash |
 |---|---|---|---|---|---|
 | LightGBM | 70% | 69.91% | 10.38% | $218.4M | $196.8M |
 | LightGBM | 80% | 79.59% | 11.59% | $242.8M | $213.7M |
@@ -68,18 +72,28 @@ Only XGBoost's test predictions were saved, so it appears in the main results bu
 
 ## Key findings
 
-- My ex-ante expected net value ($276.2M) overstates the actual realized net cash ($231.6M) by $44.6M (16.2% of ex-ante).
-- About half of that gap (49.1%) is calibration timing, not over-approval: fit on 2014 (13.73% default rate), but test (2015) ran at 14.88%, so predicted PD on approved loans (13.56%) sits below their actual rate (14.70%). The rest is two train-year assumptions missing on test: interest income ran lower (80.24% vs. 82.62% of scheduled interest, 57.0% of the remainder) and loss ran higher (39.47% vs. 38.03%, 32.3%); together 89.3% explained, 10.7% unexplained.
-- A stricter policy means less total cash, not more: LightGBM realizes $196.8M at 70% approval and $228.3M at 90%, against $231.6M for the chosen policy (99.41%), since riskier loans also carry higher interest and approving more of them raises total cash even as more default. No cost of capital, operating cost, or time value of money here, and accepted-loans-only data, so I cannot say what a rejected applicant would have done.
+- My ex-ante expected net value ($276.2M) overstates the actual realized net cash ($231.6M) by $44.6M (16.2% of ex-ante). In the order I attribute it: $21.9M (49.1% of the gap) is default-rate drift (calibration fit on 2014 at 13.73% default, test 2015 ran at 14.88%), $12.9M (29.0%) is prepayment (fully paid test loans collected less of their scheduled interest than train-year fully paid loans did, 80.24% vs. 82.62%), and $7.3M (16.4%) is loss severity (charged-off test loans lost more of their funded amount than train-year charged-off loans did, 39.47% vs. 38.03%). Together those three explain $42.2M of the $44.6M gap (94.5%), leaving $2.4M (5.5%) unexplained. I subtract default-rate drift first and split what's left between prepayment and loss severity, so these shares depend on that attribution order; a different order could split the money differently between the two remainder causes.
+- Loss on a charged-off loan: I use loss rate on funded amount (cash basis), `1 - (total payment received - collection/recovery fee) / funded amount`, averaging 38.03% on train charged-off loans; this is what feeds the expected-loss model. The standard LGD definition on outstanding principal at charge-off (recoveries net of fees, over principal still owed) averages 89.06% on the same loans; I use the cash-basis version because it is the one I can verify directly against dollars actually paid.
+- A stricter selection policy means less total cash, not more: LightGBM realizes $196.8M at 70% selection and $228.3M at 90%, against $231.6M for the chosen policy (99.41% of test loans selected), since riskier loans also carry higher interest and funding more of them raises total cash even as more default. No cost of capital, operating cost, or time value of money here, and this is accepted-loans-only data, so I cannot say what would have happened to a loan LendingClub itself never accepted.
 - A stricter robustness check (default within 24 months of issue, from payment dates, labeling only) gives a different default rate (11.93% vs. 14.88%) but the same model ranking: XGBoost, LightGBM, sub_grade, scorecard, in that order, on both labels.
 
 ## Drift findings (historical replay, 2015 to 2018, not live monitoring)
 
-I checked monthly PSI for 69 features over 48 months, train as the baseline. By end of 2018, 23 of 69 crossed the 0.10 "watch" threshold at least once, 6 crossed the 0.25 "alert" threshold: `verification_status` (0.52), `bc_util` (0.44), `revol_util` (0.43), `percent_bc_gt_75` (0.43). None of these 6 are top-10 SHAP drivers; they rank 11 to 62 of 69 by SHAP importance. Prediction drift, the model's own score distribution vs. train, stayed low: max monthly PSI 0.0549, never crossing 0.10. I only checked performance drift for 2015, since 2015 is the last year with labels: monthly test AUC ranged from 0.679 to 0.695, no clear trend down, and I make no performance-drift claim for 2016 to 2018.
+PSI bins are fit on train only and reused unchanged for every later month: numeric features get 10 train-decile bins (edges widened to the whole real line so a future value outside train's range still lands somewhere), categorical features get train's observed categories, and missing values get their own separate bin in both cases. A small epsilon (0.0001) replaces an empty bin's share before the log step, so one empty bin doesn't blow up the whole feature's PSI to infinity.
+
+I checked monthly PSI for 69 features over 48 months, train as the baseline. By end of 2018, 23 of 69 crossed the 0.10 "watch" threshold at least once, 6 crossed the 0.25 "alert" threshold: `verification_status` (0.52), `bc_util` (0.44), `revol_util` (0.43), `percent_bc_gt_75` (0.43), `bc_open_to_buy` (0.31), `num_tl_120dpd_2m` (0.29). None of these 6 are top-10 SHAP drivers; they rank 11 to 62 of 69 by SHAP importance. `verification_status`'s drift is the largest by far (0.52); since it is a label LendingClub assigns about its own verification process rather than something about the borrower, I read this as LendingClub changing how it categorizes or applies verification over time, not a shift in who is borrowing.
+
+![PSI of the top drifting feature, 2015 to 2018](reports/figures/drift_top_feature_psi_2015_2018.png)
+
+Prediction drift, the model's own score distribution vs. train, stayed low: max monthly PSI 0.0549, never crossing 0.10. I only checked performance drift for 2015, since 2015 is the last year with labels: monthly test AUC ranged from 0.679 to 0.695, no clear trend down, and I make no performance-drift claim for 2016 to 2018.
+
+![Predicted vs. actual default rate, 2015](reports/figures/drift_2015_predicted_vs_actual.png)
 
 ## What drives the model (SHAP, full test set, no sampling)
 
-LightGBM's own exact TreeSHAP (`pred_contrib=True`), additivity checked to within 1.24e-14 of the raw model output.
+LightGBM's own exact TreeSHAP (`pred_contrib=True`), checked for additivity against the model's raw output.
+
+![SHAP dependence, top 6 features](reports/figures/shap_dependence_top6.png)
 
 | Rank | Feature | Mean \|SHAP\| (log-odds) |
 |---|---|---|
@@ -96,14 +110,7 @@ LightGBM's own exact TreeSHAP (`pred_contrib=True`), additivity checked to withi
 
 Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-to-income raise it. `annual_inc` alone is most protective around $90K-110K (mean SHAP -0.24), then weaker above, settling near -0.14 to -0.15 from $150K up. Grouped with the other two income-scaled features (`loan_to_income`, `revol_bal_to_income`), the combined effect stays in a -0.22 to -0.30 band above $90K rather than trending back toward zero like `annual_inc` alone (`reports/metrics/shap_income_group_reversal_check.csv`). All 15 shared numeric features agree in direction between SHAP and the scorecard's WOE.
 
-## API latency (local laptop, not a production benchmark)
-
-1,000 sequential requests, one container, no load balancer, on an Apple M4:
-
-| Condition | p50 | p95 | p99 |
-|---|---|---|---|
-| With reason codes | 16.29 ms | 18.07 ms | 22.13 ms |
-| Without reason codes | 13.62 ms | 14.86 ms | 17.11 ms |
+API latency numbers (p50/p95/p99, with and without reason codes) are in `docs/validation_report.md`.
 
 ## Tests and coverage
 
@@ -121,17 +128,18 @@ The rest of those four modules are one-time pipeline scripts I run by hand again
 ## How to run
 
 ```bash
-make setup                                    # Python 3.11 venv, pinned deps
-make data                                     # raw csv.gz -> cleaned, typed parquet
-make features                                 # allow-list + origination-time features
-make train                                    # scorecard + LightGBM/XGBoost, as a candidate only
-.venv/bin/python -m src.models.gbm --promote  # promote the candidate to the frozen path
-.venv/bin/python -m src.models.calibrate_comparison_models
-.venv/bin/python -m src.models.freeze_model   # write frozen_model_config.json
-make evaluate                                 # test metrics, benchmark, economics
-make serve                                    # FastAPI dev server
-make test                                     # pytest, synthetic fixtures only
-make drift                                    # historical PSI replay, 2015 to 2018
+make setup      # Python 3.11 venv, pinned dev deps (pytest, ruff, the notebook tools, and everything in requirements.txt)
+make data       # raw csv.gz -> cleaned, typed parquet (skipped if the raw file's hash already matches)
+make features   # allow-list + origination-time features
+make train      # scorecard + LightGBM/XGBoost, as a candidate only, logged to MLflow
+make promote    # retrains with --promote: copies the result over the frozen artifacts, registers it in MLflow
+make calibrate  # out-of-sample Platt calibration for the two comparison models (XGBoost, scorecard)
+make freeze     # write frozen_model_config.json, the one file the evaluation loads everything from
+make evaluate   # test metrics, benchmark, economics
+make serve      # FastAPI dev server
+make test       # pytest, synthetic fixtures only
+make drift      # historical PSI replay, 2015 to 2018
+# or: make reproduce, which chains all of the above in order
 docker build -t credit-default-risk-engine:latest .
 docker run -d --rm -p 8000:8000 --name cdre credit-default-risk-engine:latest
 curl -s http://localhost:8000/health
@@ -145,31 +153,64 @@ docker stop cdre
 
 `make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included, see Data above). On macOS, LightGBM needs `brew install libomp` first; the Docker image installs `libgomp1` on Linux. See `docs/validation_report.md` for the calibrator selection rule.
 
+The request above sends 20 of the schema's 63 fields; everything else defaults to missing. `/score` still scores it, but the response lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. Sending all 63 fields avoids this. A trimmed response for the request above:
+
+```json
+{
+  "request_id": "f3a1...",
+  "calibrated_pd": 0.1186,
+  "risk_band": "Medium",
+  "top_3_risk_increasing_drivers_illustrative_only": [
+    {"feature": "fico_mean", "plain_english": "credit score (FICO)", "shap_value_log_odds": 0.164116},
+    {"feature": "mths_since_recent_bc", "plain_english": "months since most recent bankcard account opened", "shap_value_log_odds": 0.056168},
+    {"feature": "home_ownership", "plain_english": "home ownership status", "shap_value_log_odds": 0.045984}
+  ],
+  "model_name": "lightgbm_chosen",
+  "model_version": "lightgbm_chosen@git:53597a48f88c+sha256:b8437eb84d6a",
+  "missing_fields": ["acc_now_delinq", "avg_cur_bal", "bc_open_to_buy", "..."],
+  "warnings": [
+    {"field": "mths_since_recent_bc", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
+    {"field": "mths_since_recent_inq", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
+    {"field": "num_tl_op_past_12m", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"}
+  ]
+}
+```
+
 ## Project structure
 
 ```
 src/
-  data/        load, clean, define the target and the time split
-  features/    allow-list and origination-time feature engineering
-  models/      scorecard, LightGBM/XGBoost, calibration, MLflow
-  evaluation/  test metrics, approval economics, benchmarks
-  explain/     SHAP
-  monitoring/  PSI drift and historical replay
-  api/         FastAPI serving app
-tests/         pytest, synthetic fixtures only
-reports/       metrics/ (every number here traces to a file), figures/ (saved plots)
-docs/          model card, validation report, data audit
-notebooks/     EDA viewing only
+  data/               load, clean, define the target and the time split
+  features/           allow-list and origination-time feature engineering
+  models/             scorecard, LightGBM/XGBoost, calibration, MLflow
+  evaluation/         test metrics, selection economics, benchmarks
+  explain/            SHAP
+  monitoring/         PSI drift and historical replay
+  api/                FastAPI serving app
+tests/                pytest, synthetic fixtures only
+reports/              metrics/ (computed values), figures/ (saved plots), drift/ (HTML reports, gitignored)
+docs/                 model card, validation report, data audit
+notebooks/            EDA viewing only
+config/               allow_list.csv, the column-by-column keep/drop decisions
+.github/workflows/    CI: install, lint, test
+Dockerfile            serving image
+Makefile              setup/data/features/train/promote/calibrate/freeze/evaluate/serve/test/drift/reproduce
+requirements.txt        core pipeline dependencies
+requirements-serve.txt  the smaller set the Docker image actually installs
+requirements-dev.txt    requirements.txt plus pytest, ruff, and the notebook tools
 ```
+
+See [`docs/model_card.md`](docs/model_card.md), [`docs/validation_report.md`](docs/validation_report.md), and [`docs/data_audit.md`](docs/data_audit.md) for more detail than fits here.
 
 ## Limitations
 
 - Accepted loans only. I never see loans LendingClub rejected, so I cannot evaluate the model on applicants who were turned down.
 - This uses origination-time data, what LendingClub recorded when the loan was issued, not necessarily the exact instant someone applied.
 - US data, 2012 to 2015 only. I make no claim this generalizes to other lenders, other countries, or other years.
-- No protected attributes are in this data, and I did not create proxies for them. I cannot evaluate this model for fairness, only for stability across issue quarter and state.
-- Drift monitoring here is a historical replay against 2016 to 2018 data, not a live monitoring system watching a production feed.
-- LGD is estimated from train-year charged-off loans on a cash-recovered basis, an approximation; a sensitivity table over a range of LGD values is in `reports/metrics/test_lgd_sensitivity.csv`.
+- No protected attributes are in this data, and I did not create proxies for them, so I did not run a proxy-based disparate impact test. BISG (Bayesian Improved Surname Geocoding, the standard proxy method for this) needs a surname field this data does not have. A zip3-level analysis against Census demographics is possible future work, not done here.
+- Fully paid loans in this data include prepayments, and prepayment is a competing risk alongside default: a loan that pays off early can no longer default afterward. I treat it as the 0 class here; a survival or competing-risk hazard model that estimates default and prepayment together over time is a natural next step, not something this project does.
+- Drift monitoring here replays already-closed historical periods against a fixed reference; it was never run against a live incoming feed.
+- The loss rate on funded amount (cash basis) is estimated from train-year charged-off loans, an approximation; a sensitivity table over a range of loss-rate values is in `reports/metrics/test_lgd_sensitivity.csv`.
 - Training uses seeded bagging, which depends on row order. Retraining reproduces the champion to within about 0.001 validation AUC, not bit for bit (`reports/metrics/training_order_sensitivity.json`).
 
 ## License and data credit

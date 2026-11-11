@@ -4,7 +4,7 @@
   "git_status_clean_at_freeze": true,
   "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
   "champion": "lightgbm_chosen",
-  "champion_reason": "lightgbm_chosen is the champion: within 0.0021 validation AUC of XGBoost (the best alternative) while using 273 trees instead of 2122 - a much simpler model for a negligible performance difference. XGBoost and the scorecard are carried forward as comparison models in Phase 5, not candidates for champion.",
+  "champion_reason": "lightgbm_chosen is the champion: within 0.0021 validation AUC of XGBoost (the best alternative) while using 273 trees instead of 2122 - a much simpler model for a negligible performance difference. XGBoost and the scorecard are carried forward as comparison models in the test evaluation, not candidates for champion.",
   "champion_vs_xgboost_validation_auc_gap": 0.0021,
   "seeds": {
     "global": 42,
@@ -12,7 +12,7 @@
     "lightgbm_regularized_search": 142,
     "xgboost_search": 43
   },
-  "test_touch_policy": "Phase 5 touches test (2015) exactly once, scoring ONLY the frozen artifacts listed in this file. No retraining, no feature changes, no re-tuning, no re-selection of calibration method in Phase 5.",
+  "test_touch_policy": "Test (2015) is touched exactly once, scoring ONLY the frozen artifacts listed in this file. No retraining, no feature changes, no re-tuning, no re-selection of calibration method in that pass.",
   "scorecard": {
     "model_type": "logistic_regression_on_woe",
     "role": "comparison",
@@ -218,7 +218,7 @@
     }
   },
   "lightgbm_best_unconstrained_reference_only": {
-    "note": "Not used in Phase 5. Kept only to show what the simplicity-selection rule traded away.",
+    "note": "Not used in the test evaluation. Kept only to show what the simplicity-selection rule traded away.",
     "hyperparameters": {
       "objective": "binary",
       "metric": "auc",

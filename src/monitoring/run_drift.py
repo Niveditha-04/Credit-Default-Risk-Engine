@@ -1,4 +1,4 @@
-"""Phase 9: HISTORICAL REPLAY, not live monitoring. Scores already-closed
+"""HISTORICAL REPLAY, not live monitoring. Scores already-closed
 months of origination data (2015-01 through 2018-12) with the frozen
 champion, batch, once - there is no live feed here, and no retraining.
 
@@ -110,16 +110,16 @@ def compute_baseline_psi(train: pd.DataFrame, validation: pd.DataFrame, features
 def build_2015_2018_population() -> pd.DataFrame:
     """test.parquet (2015, labelled) + replay.parquet (2016-2018, target
     forced NULL) - both already filtered to 36-month, individual loans.
-    Logs this as a new, Phase-9-authorized read of test (explicitly asked
-    for by name in this phase's instructions: "Performance drift: 2015
-    only"), separate from and in addition to Phase 5's one-time score."""
+    Logs this read of test: a second, separate read from the one-time
+    evaluation scoring pass, used only for 2015-only performance drift
+    (labels available), never for model, feature, or policy changes."""
     test = pd.read_parquet(TEST_PARQUET)
     log_access(
         "run_drift.py",
         len(test),
-        "Read test.parquet (2015) for Phase 9 historical replay: feature values for data/prediction "
-        "drift and the target for 2015-only performance drift. Explicitly authorized by this phase's "
-        "instructions (separate from Phase 5's one-time evaluation pass). No model, feature, or policy change.",
+        "Read test.parquet (2015) for historical replay: feature values for data/prediction "
+        "drift and the target for 2015-only performance drift, separate from the one-time "
+        "evaluation scoring pass. No model, feature, or policy change.",
     )
     replay = pd.read_parquet(REPLAY_PARQUET)
     assert replay["target"].isna().all(), "replay target must be entirely NULL - no labels for 2016-2018"
@@ -134,11 +134,10 @@ def build_2015_2018_population() -> pd.DataFrame:
 
 def score_population(df: pd.DataFrame, frozen_cfg: dict) -> np.ndarray:
     """Batch score with the frozen champion. For the 2015 rows, reuses
-    the PD already computed and logged by Phase 5's score_test.py
-    (joined by id) instead of re-deriving it, since that's the exact
-    frozen scoring pass this project already touched test with once;
-    2016-2018 (replay) rows are scored fresh here - replay has never
-    been scored before this phase."""
+    the PD already computed and logged by score_test.py's one-time
+    evaluation scoring pass (joined by id) instead of re-deriving it;
+    2016-2018 (replay) rows are scored fresh here, since nothing else
+    in the project scores them."""
     pd_values = pd.Series(index=df.index, dtype=float)
     is_2015 = df["split"] == "test"
 

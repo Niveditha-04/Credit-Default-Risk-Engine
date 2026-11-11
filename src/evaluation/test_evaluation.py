@@ -1,4 +1,4 @@
-"""Full Phase 5 test (2015) evaluation. Reads ONLY from
+"""Full test (2015) evaluation. Reads ONLY from
 reports/metrics/test_scored.parquet (the one-time scoring pass saved by
 score_test.py) plus train.parquet (for the sub_grade-to-PD map). This
 script does not open test.parquet again. The approval economics

@@ -1,4 +1,4 @@
-"""EDA for the Phase 2 modelling table. Default-rate-by-year uses the
+"""EDA for the modelling table. Default-rate-by-year uses the
 already-computed train/validation/test numbers (reports/metrics/
 population_and_target.json). Everything else (default rate by feature,
 distributions, correlations) is computed on TRAIN ONLY, so nothing here

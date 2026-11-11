@@ -7,5 +7,5 @@
   "free_disk_bytes_at_record_time": 8894681088,
   "free_disk_gb_at_record_time": 8.9,
   "base_image": "python:3.11-slim",
-  "note": "requirements-serve.txt no longer includes shap/matplotlib (see src/api/scoring.py - reason codes use booster.predict(pred_contrib=True) instead), which is most of the size drop from the first Phase 8 build."
+  "note": "requirements-serve.txt does not include shap or matplotlib (see src/api/scoring.py - reason codes use booster.predict(pred_contrib=True) instead), which keeps this image small."
 }

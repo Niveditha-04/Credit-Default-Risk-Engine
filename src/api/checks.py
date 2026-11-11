@@ -129,9 +129,8 @@ def record_docker_image_size() -> None:
         "free_disk_bytes_at_record_time": free_bytes,
         "free_disk_gb_at_record_time": round(free_bytes / 1_000_000_000, 1),
         "base_image": "python:3.11-slim",
-        "note": "requirements-serve.txt no longer includes shap/matplotlib (see src/api/scoring.py - "
-        "reason codes use booster.predict(pred_contrib=True) instead), which is most of the size drop "
-        "from the first Phase 8 build.",
+        "note": "requirements-serve.txt does not include shap or matplotlib (see src/api/scoring.py - "
+        "reason codes use booster.predict(pred_contrib=True) instead), which keeps this image small.",
     }
     with open(METRICS_DIR / "docker_image.json", "w") as f:
         json.dump(result, f, indent=2)
