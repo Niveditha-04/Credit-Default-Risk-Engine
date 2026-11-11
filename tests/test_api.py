@@ -162,3 +162,20 @@ def test_missing_optional_fields_do_not_crash(client):
     minimal = dict(VALID_PAYLOAD)
     r = client.post("/score", json=minimal)
     assert r.status_code == 200
+
+
+def test_missing_fields_listed_in_response(client):
+    minimal = dict(VALID_PAYLOAD)
+    r = client.post("/score", json=minimal)
+    body = r.json()
+    assert "acc_open_past_24mths" in body["missing_fields"]
+    assert "loan_amnt" not in body["missing_fields"]
+
+
+def test_missing_top10_shap_feature_warns(client):
+    minimal = dict(VALID_PAYLOAD)
+    r = client.post("/score", json=minimal)
+    warnings = r.json()["warnings"]
+    assert any(
+        w["field"] == "mths_since_recent_inq" and "missing_top10_shap" in w["reason"] for w in warnings
+    )

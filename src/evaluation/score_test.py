@@ -10,7 +10,9 @@ already dry-run and verified correct against validation in
 score_models.py), joins the small set of additional fields needed for
 economics/benchmark/stability/robustness analysis (all evaluation-only,
 never model features), and saves everything to a single file. Every
-again, so the actual read of test (2015) happens exactly once, here.
+downstream evaluation script reads from that saved file, not from
+test.parquet again, so the actual read of test (2015) for evaluation
+happens exactly once, here.
 """
 
 from pathlib import Path

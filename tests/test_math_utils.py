@@ -39,3 +39,25 @@ def test_apply_calibrator_outputs_differ_between_platt_and_isotonic():
     platt_out = apply_calibrator(platt, RAW_PRED)
     iso_out = apply_calibrator(isotonic, RAW_PRED)
     assert not np.array_equal(platt_out, iso_out)
+
+
+def test_apply_calibrator_platt_is_monotonic_in_the_raw_score():
+    # A calibrator must never reorder applicants by risk: a higher raw
+    # score must never come out with a lower calibrated PD, whatever the
+    # calibration method. Platt is a strictly increasing sigmoid of
+    # logit(p), so it is monotonic by construction - this proves
+    # apply_calibrator's dispatch doesn't accidentally break that.
+    platt = LogisticRegression().fit(logit(RAW_PRED).reshape(-1, 1), Y)
+    ordered = np.sort(RAW_PRED)
+    calibrated = apply_calibrator(platt, ordered)
+    assert np.all(np.diff(calibrated) >= 0)
+
+
+def test_apply_calibrator_isotonic_is_monotonic_in_the_raw_score():
+    # Isotonic regression is fit under a monotonicity constraint, but
+    # that constraint is on IsotonicRegression itself, not on
+    # apply_calibrator's dispatch - this proves the dispatch preserves it.
+    isotonic = IsotonicRegression(out_of_bounds="clip").fit(RAW_PRED, Y)
+    ordered = np.sort(RAW_PRED)
+    calibrated = apply_calibrator(isotonic, ordered)
+    assert np.all(np.diff(calibrated) >= 0)

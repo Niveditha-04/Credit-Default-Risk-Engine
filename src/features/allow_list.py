@@ -88,7 +88,7 @@ def write_feature_audit_csv(path: str = "reports/metrics/feature_audit.csv") -> 
     print(f"Wrote {path} ({len(ALLOW_LIST)} rows)")
 
 
-if __name__ == "__main__":
+def main() -> None:
     check_completeness()
     print(f"All {len(ALLOW_LIST)} columns have a decision.")
     feats = feature_columns()
@@ -96,3 +96,7 @@ if __name__ == "__main__":
     for c in feats:
         print(f"  {c}")
     write_feature_audit_csv()
+
+
+if __name__ == "__main__":
+    main()

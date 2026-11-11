@@ -1,9 +1,10 @@
 """Fit the same out-of-sample Platt calibration used for the LightGBM
 champion onto the two comparison models (XGBoost, scorecard).
 
-This is NOT a retuning step: every model here is already fully fitted
-validation, and fits a 1D logistic regression (Platt, on logit(p)) on top
-- the same post-processing step, applied identically to all three models
+This is NOT a retuning step: every model here is already fully fitted.
+This script only loads them, scores validation, and fits a 1D logistic
+regression (Platt, on logit(p)) on top - the same post-processing step,
+applied identically to all three models for a fair comparison on test.
 
 Methodology (identical to the LightGBM champion's calibration):
     fit on validation Jan-Sep 2014, evaluate on the Oct-Dec 2014 holdout

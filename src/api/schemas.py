@@ -117,6 +117,7 @@ class ScoreResponse(BaseModel):
     top_3_risk_increasing_drivers_illustrative_only: list[Driver]
     model_name: str
     model_version: str
+    missing_fields: list[str] = []
     warnings: list[RangeWarning] = []
 
 

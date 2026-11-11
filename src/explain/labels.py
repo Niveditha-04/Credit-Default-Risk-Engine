@@ -1,4 +1,5 @@
 """Plain-English labels for every one of the 69 champion model features.
+Single source of truth, imported by both the SHAP report
 (shap_analysis.py) and the serving API (src/api/reason_codes.py) - no
 duplicated copy of this dict anywhere else. Deliberately has no imports
 beyond the standard library: both importers need it for different
