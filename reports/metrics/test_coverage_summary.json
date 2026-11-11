@@ -1,5 +1,5 @@
 {
-  "n_tests_passed": 242,
+  "n_tests_passed": 243,
   "core_modules_checked": [
     "src.features",
     "src.data.target",
@@ -12,7 +12,7 @@
     "src/api/build_assets.py": 0.0,
     "src/api/checks.py": 0.0,
     "src/api/main.py": 100.0,
-    "src/api/parity_test.py": 0.0,
+    "src/api/parity_check.py": 0.0,
     "src/api/reason_codes.py": 100.0,
     "src/api/schemas.py": 100.0,
     "src/api/scoring.py": 100.0,

@@ -139,6 +139,11 @@ def fixed_approval_rate_and_gap_analysis() -> None:
     fixed_table.to_csv(METRICS_DIR / "test_fixed_approval_rate_comparison.csv", index=False)
     print(fixed_table.to_string(index=False))
 
+    n_sub_grade_levels = int(test["sub_grade"].nunique())
+    with open(METRICS_DIR / "test_sub_grade_level_count.json", "w") as f:
+        json.dump({"n_distinct_sub_grade_levels_test": n_sub_grade_levels}, f, indent=2)
+    print(f"\nDistinct sub_grade levels in test: {n_sub_grade_levels}")
+
     # ================================================================
     # 2. Gap decomposition for LightGBM
     # ================================================================
