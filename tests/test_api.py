@@ -1,6 +1,6 @@
 """API tests against a TINY DUMMY MODEL trained on synthetic data, so
 these run in CI without the real (gitignored) champion artifacts. The
-real champion is checked separately by src/api/parity_test.py (a
+real champion is checked separately by src/api/parity_check.py (a
 verification script, not a pytest test, run locally where the real
 artifacts exist) - these tests check the API's request/response
 contract and validation behavior, not model quality.
