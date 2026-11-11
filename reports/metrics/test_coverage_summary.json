@@ -1,12 +1,12 @@
 {
-  "n_tests_passed": 244,
+  "n_tests_passed": 266,
   "core_modules_checked": [
     "src.features",
     "src.data.target",
     "src.monitoring.psi",
     "src.api"
   ],
-  "core_modules_combined_percent_covered": 55.39,
+  "core_modules_combined_percent_covered": 57.88,
   "per_file_percent_covered": {
     "src/api/__init__.py": 100.0,
     "src/api/build_assets.py": 0.0,
@@ -16,9 +16,9 @@
     "src/api/reason_codes.py": 100.0,
     "src/api/schemas.py": 100.0,
     "src/api/scoring.py": 100.0,
-    "src/data/target.py": 81.82,
+    "src/data/target.py": 97.87,
     "src/features/__init__.py": 100.0,
-    "src/features/allow_list.py": 83.93,
+    "src/features/allow_list.py": 98.28,
     "src/features/build_features.py": 98.51,
     "src/features/eda.py": 0.0,
     "src/features/feature_engineering.py": 100.0,

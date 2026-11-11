@@ -70,5 +70,29 @@
     "script": "economics_gap.py (gap_remainder_diagnostic)",
     "row_count": 282787,
     "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
+  },
+  {
+    "timestamp_utc": "2026-11-11T15:34:31.377709+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-11T15:36:40.409218+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-11T15:38:33.728704+00:00",
+    "script": "posthoc_monthly_lift.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift by issue month. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-11T15:39:01.312128+00:00",
+    "script": "posthoc_matched_volume_economics.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to fund each model's own top N% of test loans by its own score, an evaluation device, not a policy. No model, feature, or policy change."
   }
 ]

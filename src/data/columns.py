@@ -1,5 +1,5 @@
 """The full 151-column schema of the raw LendingClub file, grouped by how
-each column must be parsed out of the all-text Phase 1 parquet.
+each column must be parsed out of the all-text raw parquet.
 
 Every column name here was read directly from the raw file's header
 (DESCRIBE on data/interim/accepted_2007_to_2018Q4_raw.parquet), not typed

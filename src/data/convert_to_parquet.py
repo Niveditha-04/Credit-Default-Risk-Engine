@@ -1,8 +1,8 @@
 """Convert the raw LendingClub CSV.gz into parquet (all columns as text).
 
-Typing happens later, in Phase 2. This script only moves the data from
-CSV.gz to parquet and proves the row/column counts are preserved, using
-two independent counting methods as required by the verification protocol.
+Typing happens later. This script only moves the data from CSV.gz to
+parquet and proves the row/column counts are preserved, using two
+independent counting methods.
 """
 
 import hashlib

@@ -1,8 +1,8 @@
 """Remove footer rows and type every column of the raw LendingClub file.
 
-Input: data/interim/accepted_2007_to_2018Q4_raw.parquet (all columns text,
-from Phase 1). Output: data/interim/accepted_2007_to_2018Q4_cleaned.parquet
-(same 151 columns, each cast to its natural type, footer rows removed).
+Input: data/interim/accepted_2007_to_2018Q4_raw.parquet (all columns text).
+Output: data/interim/accepted_2007_to_2018Q4_cleaned.parquet (same 151
+columns, each cast to its natural type, footer rows removed).
 """
 
 import json

@@ -1,0 +1,113 @@
+{
+  "label": "post-hoc",
+  "note": "Every ablation reuses the frozen champion's own hyperparameters (num_leaves=15, learning_rate=0.08, min_child_samples=1500, feature_fraction=0.6, bagging_fraction=0.8, bagging_freq=1, lambda_l1=0.1, lambda_l2=1.0); none of these ablations rerun a tuning search. Validation (2014) is the primary number for every ablation, same as the champion-selection process. Test (2015) AUC is reported for context only and is explicitly post-hoc: none of these ablations were fit, chosen, or compared against each other before test was touched for the main evaluation.",
+  "champion_validation_auc": 0.6834,
+  "champion_test_auc_reference": 0.6872,
+  "ablations": [
+    {
+      "ablation": "a_lightgbm_on_scorecard_17_features",
+      "n_features": 17,
+      "features": [
+        "acc_open_past_24mths",
+        "annual_inc",
+        "bc_open_to_buy",
+        "dti",
+        "home_ownership",
+        "inq_last_6mths",
+        "mo_sin_old_il_acct",
+        "mo_sin_old_rev_tl_op",
+        "mths_since_recent_bc",
+        "num_rev_tl_bal_gt_0",
+        "num_tl_op_past_12m",
+        "percent_bc_gt_75",
+        "purpose",
+        "revol_util",
+        "tot_hi_cred_lim",
+        "fico_mean",
+        "loan_to_income"
+      ],
+      "n_trees": 223,
+      "validation_auc": 0.6738,
+      "test_auc_post_hoc": 0.6787,
+      "validation_auc_minus_champion": -0.0096,
+      "test_auc_minus_champion_post_hoc": -0.0085
+    },
+    {
+      "ablation": "b_woe_logreg_on_63_candidates_no_reduction",
+      "n_features": 63,
+      "n_positive_coefficients_sign_mismatch": 15,
+      "validation_auc": 0.6684,
+      "test_auc_post_hoc": 0.6735,
+      "validation_auc_minus_champion": -0.015,
+      "test_auc_minus_champion_post_hoc": -0.0137
+    },
+    {
+      "ablation": "c_lightgbm_champion_features_plus_sub_grade",
+      "n_features": 70,
+      "n_trees": 156,
+      "validation_auc": 0.6891,
+      "test_auc_post_hoc": 0.6967,
+      "validation_auc_minus_champion": 0.0057,
+      "test_auc_minus_champion_post_hoc": 0.0095
+    },
+    {
+      "ablation": "d_lightgbm_champion_features_monotone_constraints",
+      "n_features": 69,
+      "n_trees": 273,
+      "monotone_constraints": {
+        "acc_open_past_24mths": 1,
+        "annual_inc": -1,
+        "bc_util": 1,
+        "dti": 1,
+        "fico_mean": -1,
+        "inq_last_6mths": 1,
+        "loan_to_income": 1,
+        "revol_util": 1
+      },
+      "validation_auc": 0.6833,
+      "test_auc_post_hoc": 0.6871,
+      "validation_auc_minus_champion": -0.0001,
+      "test_auc_minus_champion_post_hoc": -0.0001
+    }
+  ],
+  "income_monotonicity_check": {
+    "champion": {
+      "model": "champion",
+      "mean_shap_annual_inc_by_income_bucket": {
+        "(0.0, 30000.0]": 0.2137,
+        "(30000.0, 50000.0]": 0.1375,
+        "(50000.0, 70000.0]": 0.0062,
+        "(70000.0, 90000.0]": -0.1295,
+        "(90000.0, 110000.0]": -0.2365,
+        "(110000.0, 150000.0]": -0.2081,
+        "(150000.0, 200000.0]": -0.1439,
+        "(200000.0, 300000.0]": -0.1481,
+        "(300000.0, 500000.0]": -0.1509,
+        "(500000.0, 10000000.0]": -0.1495
+      },
+      "monotonic_across_buckets": false,
+      "most_protective_bucket": "(90000.0, 110000.0]",
+      "reversal_magnitude_after_peak": 0.0926
+    },
+    "ablation_d_monotone_constraints": {
+      "model": "ablation_d_monotone",
+      "mean_shap_annual_inc_by_income_bucket": {
+        "(0.0, 30000.0]": 0.2619,
+        "(30000.0, 50000.0]": 0.1708,
+        "(50000.0, 70000.0]": -0.0094,
+        "(70000.0, 90000.0]": -0.1529,
+        "(90000.0, 110000.0]": -0.2418,
+        "(110000.0, 150000.0]": -0.2475,
+        "(150000.0, 200000.0]": -0.2462,
+        "(200000.0, 300000.0]": -0.2445,
+        "(300000.0, 500000.0]": -0.2436,
+        "(500000.0, 10000000.0]": -0.2434
+      },
+      "monotonic_across_buckets": false,
+      "most_protective_bucket": "(110000.0, 150000.0]",
+      "reversal_magnitude_after_peak": 0.0041
+    },
+    "reversal_shrinks_under_constraint": true,
+    "reversal_magnitude_ratio_d_over_champion": 0.0443
+  }
+}

@@ -1,15 +1,14 @@
 """THE ONE-TIME TOUCH OF TEST (2015).
 
-Rules (per Nivi, before running this):
+Rules this script follows:
   - Load models ONLY from reports/metrics/frozen_model_config.json.
   - Log this access (timestamp, script, row count).
   - After this script runs and results are seen, no model, feature, or
-    calibration changes. If a bug is found after viewing test, report it
-    to Nivi first - do not silently fix and rerun.
+    calibration changes.
 
-This script scores test with the three frozen models (scoring functions
-already dry-run and verified correct against validation in
-score_models.py), joins the small set of additional fields needed for
+This script scores test with the three frozen models (the same scoring
+functions already checked against validation in score_models.py), joins
+the small set of additional fields needed for
 economics/benchmark/stability/robustness analysis (all evaluation-only,
 never model features), and saves everything to a single file. Every
 downstream evaluation script reads from that saved file, not from

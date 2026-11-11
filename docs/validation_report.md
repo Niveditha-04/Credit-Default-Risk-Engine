@@ -33,6 +33,44 @@ Two checks, both test-set, both using only train-year information for the mappin
 
 A stricter label, default within 24 months of issue (from payment dates, labeling only, no new filters), was tested as a sensitivity check, not a redefinition of the primary target. It gives a different default rate (11.93% vs. 14.88%) on 273,313 of the 282,787 test loans (9,474 excluded as slow charge-offs past the 24-month window). The model ranking by AUC is unchanged: XGBoost (0.6984), LightGBM (0.6967), sub_grade (0.6922), scorecard (0.6786), same order as the primary label.
 
+## Ablations (post-hoc)
+
+Four ablations, all fit with the frozen champion's own hyperparameters (num_leaves=15, learning_rate=0.08, min_child_samples=1500, feature_fraction=0.6, bagging_fraction=0.8, bagging_freq=1, lambda_l1=0.1, lambda_l2=1.0) and no tuning search. Validation (2014) is the primary number for every ablation, matching how the champion itself was selected; test (2015) AUC is reported for context only and is explicitly post-hoc (`reports/metrics/posthoc_ablations_summary.json`, `src/models/posthoc_ablations.py`):
+
+| Ablation | Validation AUC | vs. champion | Test AUC (post-hoc) | vs. champion (post-hoc) |
+|---|---|---|---|---|
+| Champion (69 features) | 0.6834 | n/a | 0.6872 | n/a |
+| a. LightGBM, scorecard's 17 features only | 0.6738 | -0.0096 | 0.6787 | -0.0085 |
+| b. WOE logistic regression, all 63 scorecard candidates, no correlation/VIF/sign-correction reduction | 0.6684 | -0.0150 | 0.6735 | -0.0137 |
+| c. LightGBM, champion features + sub_grade | 0.6891 | +0.0057 | 0.6967 | +0.0095 |
+| d. LightGBM, champion features, 8 monotone constraints (fico_mean -, dti +, loan_to_income +, revol_util +, bc_util +, inq_last_6mths +, acc_open_past_24mths +, annual_inc -) | 0.6833 | -0.0001 | 0.6871 | -0.0001 |
+
+Ablation (b) produces 15 positive (sign-mismatched) WOE coefficients out of 63 - exactly the instability the scorecard's correlation and VIF reduction steps exist to catch.
+
+For (d), the monotone constraints cost essentially nothing in AUC and mostly remove the income non-monotonicity flagged in the SHAP section above: binning test by income and taking the mean SHAP contribution of `annual_inc`, the champion's curve turns protective, peaks around $90K-110K, then partially reverses (swinging back up by 0.0926 log-odds after the peak); under the monotone constraint the same curve still peaks and then only drifts by 0.0041 log-odds afterward, a 95.6% reduction in that reversal (`reports/metrics/posthoc_ablations_summary.json`'s `income_monotonicity_check`). The reversal shrinks sharply rather than disappearing to exactly zero, since the constraint only forces the tree splits to be non-increasing in `annual_inc`, which allows a flat (not strictly decreasing) segment.
+
+### Paired monthly lift (post-hoc)
+
+Per-month AUC on test (2015), LightGBM vs. sub_grade's ordinal rank and vs. the scorecard, all 12 months (`reports/metrics/posthoc_monthly_lift.csv`, `src/evaluation/posthoc_monthly_lift.py`):
+
+| Comparison | Mean lift | Min | Max | Months positive |
+|---|---|---|---|---|
+| LightGBM minus sub_grade | +0.0082 | +0.0043 | +0.0165 | 12 / 12 |
+| LightGBM minus scorecard | +0.0161 | +0.0107 | +0.0213 | 12 / 12 |
+
+### Economics at matched funding volume (post-hoc)
+
+For each model, funds exactly the top 70/80/90% of test loans by that model's own score (an evaluation device, not a policy: the deployed policy's cutoff is fixed on validation, see Selection economics above). Realized return per dollar funded = realized net cash / funded amount, summed over the funded loans (`reports/metrics/posthoc_matched_volume_economics.csv`, `reports/figures/posthoc_return_per_dollar_vs_selection_rate.png`, `src/evaluation/posthoc_matched_volume_economics.py`):
+
+| Model | 70% | 80% | 90% |
+|---|---|---|---|
+| LightGBM | 7.57% | 7.30% | 6.99% |
+| XGBoost | 7.55% | 7.34% | 6.99% |
+| Scorecard | 7.28% | 7.04% | 6.80% |
+| sub_grade map | 6.97% | 6.89% | 6.74% |
+
+Cost-of-funds sensitivity (same selection rates, LightGBM): cost of funds = annual rate x funded_amnt x (months from issue to last payment / 12) x 0.5, where 0.5 approximates the average outstanding balance of an amortizing loan over its observed life (starts near funded_amnt, ends near 0 if fully paid off). At 0% annual cost of funds the returns above are unchanged; at 4% they fall to 3.40% / 3.16% / 2.88%; at 8% they go negative, -0.76% / -0.97% / -1.23%, since 8% approaches the gross realized return itself over a typical holding period. `months_to_last_pymnt` is set to 0 for the handful of test loans with no recorded payment date.
+
 ## Stability
 
 Checked by issue quarter and by `addr_state` grouping, labeled stability, not fairness, since there are no protected attributes in this data to check fairness against. See `reports/metrics/test_stability_by_quarter.csv` and `test_stability_by_region.csv`.
