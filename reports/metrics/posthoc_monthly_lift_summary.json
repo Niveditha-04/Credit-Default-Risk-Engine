@@ -1,0 +1,17 @@
+{
+  "label": "post-hoc",
+  "lift_vs_sub_grade": {
+    "mean": 0.0082,
+    "min": 0.0043,
+    "max": 0.0165,
+    "n_months_positive": 12,
+    "n_months_total": 12
+  },
+  "lift_vs_scorecard": {
+    "mean": 0.0161,
+    "min": 0.0107,
+    "max": 0.0213,
+    "n_months_positive": 12,
+    "n_months_total": 12
+  }
+}

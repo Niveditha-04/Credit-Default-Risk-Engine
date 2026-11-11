@@ -1,0 +1,155 @@
+{
+  "label": "post-hoc",
+  "note": "Average-balance approximation: cost of funds = rate x funded_amnt x (months from issue to last payment / 12) x 0.5, where 0.5 approximates the average outstanding balance of an amortizing loan over its observed life (starts near funded_amnt, ends near 0 if fully paid off). months_to_last_pymnt is set to 0 for the 200 test loans with no recorded payment date.",
+  "selection_rates_reported_pct": [
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100
+  ],
+  "cost_of_funds_rates_pct": [
+    0,
+    4,
+    8
+  ],
+  "at_70_80_90_pct_selection": [
+    {
+      "model": "lightgbm",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.4,
+      "realized_net_cash_total": 196930470.42,
+      "realized_return_per_dollar_funded_pct": 7.5656,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.5656,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 3.4047,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -0.7562
+    },
+    {
+      "model": "lightgbm",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.63,
+      "realized_net_cash_total": 214621479.91,
+      "realized_return_per_dollar_funded_pct": 7.3011,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.3011,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 3.1642,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -0.9727
+    },
+    {
+      "model": "lightgbm",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 12.99,
+      "realized_net_cash_total": 228921719.1,
+      "realized_return_per_dollar_funded_pct": 6.9888,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.9888,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.8774,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.2341
+    },
+    {
+      "model": "xgboost",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.35,
+      "realized_net_cash_total": 196261376.16,
+      "realized_return_per_dollar_funded_pct": 7.5501,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.5501,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 3.3872,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -0.7758
+    },
+    {
+      "model": "xgboost",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.57,
+      "realized_net_cash_total": 215378610.88,
+      "realized_return_per_dollar_funded_pct": 7.3404,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.3404,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 3.2022,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -0.936
+    },
+    {
+      "model": "xgboost",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 12.98,
+      "realized_net_cash_total": 228699144.62,
+      "realized_return_per_dollar_funded_pct": 6.9937,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.9937,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.8821,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.2295
+    },
+    {
+      "model": "scorecard",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.79,
+      "realized_net_cash_total": 194977193.58,
+      "realized_return_per_dollar_funded_pct": 7.2816,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.2816,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 3.1344,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.0129
+    },
+    {
+      "model": "scorecard",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.92,
+      "realized_net_cash_total": 211479053.26,
+      "realized_return_per_dollar_funded_pct": 7.0441,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 7.0441,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.9226,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.1989
+    },
+    {
+      "model": "scorecard",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 13.19,
+      "realized_net_cash_total": 225497201.21,
+      "realized_return_per_dollar_funded_pct": 6.8024,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.8024,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.702,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.3984
+    },
+    {
+      "model": "sub_grade_map",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.66,
+      "realized_net_cash_total": 180102002.94,
+      "realized_return_per_dollar_funded_pct": 6.9708,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.9708,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.742,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.4869
+    },
+    {
+      "model": "sub_grade_map",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.93,
+      "realized_net_cash_total": 201110967.88,
+      "realized_return_per_dollar_funded_pct": 6.8828,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.8828,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.6982,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.4864
+    },
+    {
+      "model": "sub_grade_map",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 13.18,
+      "realized_net_cash_total": 220182130.66,
+      "realized_return_per_dollar_funded_pct": 6.7368,
+      "return_per_dollar_after_0pct_cost_of_funds_pct": 6.7368,
+      "return_per_dollar_after_4pct_cost_of_funds_pct": 2.5987,
+      "return_per_dollar_after_8pct_cost_of_funds_pct": -1.5393
+    }
+  ]
+}

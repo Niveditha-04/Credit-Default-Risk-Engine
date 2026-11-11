@@ -9,7 +9,7 @@ I built an origination-time credit scoring model for LendingClub loans: given on
 - LightGBM (AUC 0.6872) beats LendingClub's own sub_grade (AUC 0.6786) on test, 2015: +0.0086 AUC, 95% CI 0.0063 to 0.0109, significant.
 - LightGBM also beats the scorecard baseline (AUC 0.6711) by +0.0162 AUC, 95% CI 0.0146 to 0.0178, significant.
 - `fico_mean` is the strongest driver on average (mean |SHAP|).
-- Served through FastAPI in Docker at 16.29 ms p50 latency; 244 tests pass, 241 of them in CI.
+- Served through FastAPI in Docker at 16.29 ms p50 latency; 266 tests pass, 263 of them in CI.
 
 ## Data
 
@@ -72,10 +72,39 @@ Only XGBoost's test predictions were saved, so it appears in the main results bu
 
 ## Key findings
 
-- My ex-ante expected net value ($276.2M) overstates the actual realized net cash ($231.6M) by $44.6M (16.2% of ex-ante). In the order I attribute it: $21.9M (49.1% of the gap) is default-rate drift (calibration fit on 2014 at 13.73% default, test 2015 ran at 14.88%), $12.9M (29.0%) is prepayment (fully paid test loans collected less of their scheduled interest than train-year fully paid loans did, 80.24% vs. 82.62%), and $7.3M (16.4%) is loss severity (charged-off test loans lost more of their funded amount than train-year charged-off loans did, 39.47% vs. 38.03%). Together those three explain $42.2M of the $44.6M gap (94.5%), leaving $2.4M (5.5%) unexplained. I subtract default-rate drift first and split what's left between prepayment and loss severity, so these shares depend on that attribution order; a different order could split the money differently between the two remainder causes.
+- My ex-ante expected net value ($276.2M) overstates the actual realized net cash ($231.6M) by $44.6M (16.2% of ex-ante). Breaking that gap down by cause:
+
+| Cause | $M | % of gap |
+|---|---|---|
+| Default-rate drift (calibration fit on 2014 at 13.73% default, test 2015 ran at 14.88%) | $21.9M | 49.1% |
+| Prepayment (fully paid test loans collected less of their scheduled interest than train-year fully paid loans did, 80.24% vs. 82.62%) | $12.9M | 29.0% |
+| Loss severity (charged-off test loans lost more of their funded amount than train-year charged-off loans did, 39.47% vs. 38.03%) | $7.3M | 16.4% |
+| Unexplained | $2.4M | 5.5% |
+
+I subtract default-rate drift first, then split what's left between prepayment and loss severity, so the prepayment/loss-severity split specifically depends on that order; a different order could move money between those two rows without changing the total explained.
 - Loss on a charged-off loan: I use loss rate on funded amount (cash basis), `1 - (total payment received - collection/recovery fee) / funded amount`, averaging 38.03% on train charged-off loans; this is what feeds the expected-loss model. The standard LGD definition on outstanding principal at charge-off (recoveries net of fees, over principal still owed) averages 89.06% on the same loans; I use the cash-basis version because it is the one I can verify directly against dollars actually paid.
 - A stricter selection policy means less total cash, not more: LightGBM realizes $196.8M at 70% selection and $228.3M at 90%, against $231.6M for the chosen policy (99.41% of test loans selected), since riskier loans also carry higher interest and funding more of them raises total cash even as more default. No cost of capital, operating cost, or time value of money here, and this is accepted-loans-only data, so I cannot say what would have happened to a loan LendingClub itself never accepted.
 - A stricter robustness check (default within 24 months of issue, from payment dates, labeling only) gives a different default rate (11.93% vs. 14.88%) but the same model ranking: XGBoost, LightGBM, sub_grade, scorecard, in that order, on both labels.
+
+## Ablations and robustness (post-hoc)
+
+Four ablations, fit with the champion's own frozen hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation, same as the champion itself; test (2015) AUC is reported for context only and is explicitly **post-hoc**, since none of these were fit or compared before test was touched for the main evaluation.
+
+| Ablation | Validation AUC | vs. champion | Test AUC (post-hoc) |
+|---|---|---|---|
+| Champion (69 features) | 0.6834 | n/a | 0.6872 |
+| a. LightGBM, scorecard's 17 features only | 0.6738 | -0.0096 | 0.6787 |
+| b. WOE logistic regression, all 63 scorecard candidates, no reduction | 0.6684 | -0.0150 | 0.6735 |
+| c. LightGBM, champion features + sub_grade | 0.6891 | +0.0057 | 0.6967 |
+| d. LightGBM, champion features, 8 monotone constraints | 0.6833 | -0.0001 | 0.6871 |
+
+- **Where the lift comes from:** the scorecard's 17 features alone cost LightGBM 0.0096 validation AUC (a); skipping the scorecard's correlation/VIF reduction entirely on all 63 candidates costs even more, 0.0150 (b), and produces 15 sign-mismatched coefficients. So most of the champion's edge over the scorecard comes from using more raw features and letting trees capture interactions among them, not a bigger feature list by itself. Adding `sub_grade` on top of the champion's full 69 features still adds +0.0057 (c), so LendingClub's own grading carries a little information the model doesn't fully recover from the raw fields alone. Constraining 8 business-obvious features to a single direction (fico_mean down, dti up, and others) costs essentially nothing (-0.0001, d) and the income SHAP reversal I flagged earlier mostly disappears under it: the post-peak swing in mean SHAP for `annual_inc` shrinks from 0.093 to 0.004 log-odds, about a 96% reduction (`reports/metrics/posthoc_ablations_summary.json`).
+- **Does the lift hold month by month:** paired monthly AUC, all 12 months of test (2015): LightGBM beats sub_grade's ordinal rank every month (mean +0.0082, range +0.0043 to +0.0165) and beats the scorecard every month (mean +0.0161, range +0.0107 to +0.0213) (`reports/metrics/posthoc_monthly_lift.csv`).
+- **Does it pay at matched volume:** funding each model's own top 70/80/90% of test loans by its own score (an evaluation device, not the deployed policy), LightGBM's realized return per dollar funded is highest at every rate (7.57% / 7.30% / 6.99%), ahead of the scorecard (7.28% / 7.04% / 6.80%) and the sub_grade map (6.97% / 6.88% / 6.74%). Unlike the fixed-cutoff comparison above (set on validation, nearly tied), ranking loans by each model's own score does turn into more realized cash per dollar at matched volume (`reports/metrics/posthoc_matched_volume_economics.csv`).
+
+![Realized return per dollar vs. selection rate, post-hoc](reports/figures/posthoc_return_per_dollar_vs_selection_rate.png)
+
+More detail, including the cost-of-funds sensitivity table, is in `docs/validation_report.md`.
 
 ## Drift findings (historical replay, 2015 to 2018, not live monitoring)
 
@@ -114,14 +143,14 @@ API latency numbers (p50/p95/p99, with and without reason codes) are in `docs/va
 
 ## Tests and coverage
 
-244 tests total: 241 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
+266 tests total: 263 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
 
 | File | Coverage |
 |---|---|
 | src/api (main, schemas, scoring, reason_codes); src/features/feature_engineering.py; src/monitoring/psi.py | 100% |
 | src/features/build_features.py | 98.51% |
-| src/features/allow_list.py | 83.93% |
-| src/data/target.py | 81.82% |
+| src/features/allow_list.py | 98.28% |
+| src/data/target.py | 97.87% |
 
 The rest of those four modules are one-time pipeline scripts I run by hand against real data, not pytest tests, so they show 0% here.
 
@@ -131,8 +160,8 @@ The rest of those four modules are one-time pipeline scripts I run by hand again
 make setup      # Python 3.11 venv, pinned dev deps (pytest, ruff, the notebook tools, and everything in requirements.txt)
 make data       # raw csv.gz -> cleaned, typed parquet (skipped if the raw file's hash already matches)
 make features   # allow-list + origination-time features
-make train      # scorecard + LightGBM/XGBoost, as a candidate only, logged to MLflow
-make promote    # retrains with --promote: copies the result over the frozen artifacts, registers it in MLflow
+make train      # scorecard only, logged to MLflow
+make promote    # LightGBM/XGBoost tuning search, then copies the result over the frozen artifacts and registers it in MLflow
 make calibrate  # out-of-sample Platt calibration for the two comparison models (XGBoost, scorecard)
 make freeze     # write frozen_model_config.json, the one file the evaluation loads everything from
 make evaluate   # test metrics, benchmark, economics

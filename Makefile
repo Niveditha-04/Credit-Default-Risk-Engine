@@ -34,19 +34,18 @@ features: data
 	$(VENV)/python -m src.features.allow_list
 	$(VENV)/python -m src.features.build_features
 
-# Scorecard + LightGBM/XGBoost tuning search, each logged to MLflow.
-# Writes a candidate under data/processed/models/candidates/<run_id>/
-# without touching the frozen champion - see promote.
+# Scorecard only. LightGBM/XGBoost train as part of promote, which runs
+# the tuning search and the frozen-artifact copy in one invocation, so
+# there is no separate, discarded gbm.py candidate run here.
 train: features
 	$(VENV)/python -m src.models.scorecard
-	$(VENV)/python -m src.models.gbm
 
-# Reruns src.models.gbm with --promote: trains again (seeded, but not
-# guaranteed bit-for-bit identical to a previous run - see
-# reports/metrics/training_order_sensitivity.json) and this time copies
-# the result over the frozen data/processed/models/ artifacts and
-# registers it in MLflow with the "champion" alias.
-promote:
+# Runs src.models.gbm with --promote: the LightGBM/XGBoost tuning search
+# (seeded, but not guaranteed bit-for-bit identical to a previous run -
+# see reports/metrics/training_order_sensitivity.json), then copies the
+# result over the frozen data/processed/models/ artifacts and registers
+# it in MLflow with the "champion" alias.
+promote: train
 	$(VENV)/python -m src.models.gbm --promote
 
 # Out-of-sample Platt calibration for the two comparison models
@@ -86,5 +85,7 @@ verify:
 mlflow-ui:
 	$(VENV)/python -m mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5001
 
-# Runs the full pipeline end to end, in order.
-reproduce: data features train promote calibrate freeze evaluate drift
+# Runs the full pipeline end to end, in order. train is not listed here
+# directly: promote already depends on it, so make runs it once, in order,
+# without a redundant standalone invocation.
+reproduce: data features promote calibrate freeze evaluate drift
