@@ -1,5 +1,5 @@
 {
-  "n_tests_passed": 243,
+  "n_tests_passed": 244,
   "core_modules_checked": [
     "src.features",
     "src.data.target",

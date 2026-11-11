@@ -4,6 +4,9 @@ shap_followup_checks():
   - Income reversal: does it survive when grouping all income-scaled
     features together, and does it show up in the raw train default rate?
   - dti dip: does it show up in the raw train default rate?
+  Per-feature contributions come from booster.predict(pred_contrib=True),
+  the same full-282,787-row-test-set, no-sampling source shap_analysis.py
+  uses, not the separate shap package.
   Every bucket's raw default rate is reported with n and a 95% Wilson
   score confidence interval - some buckets are small (the $500K+ income
   bucket has n=116, the dti 0-1 bucket has n=700), and a point-estimate
@@ -24,12 +27,10 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-import shap
 
 METRICS_DIR = Path("reports/metrics")
 TEST_PARQUET = "data/processed/test.parquet"
 TRAIN_PARQUET = "data/processed/train.parquet"
-SAMPLE_SIZE = 10_000
 SEED = 42
 
 INCOME_BINS = [0, 30000, 50000, 70000, 90000, 110000, 150000, 200000, 300000, 500000, 1e7]
@@ -79,11 +80,11 @@ def shap_followup_checks() -> None:
     test = pd.read_parquet(TEST_PARQUET)
     for col in ["home_ownership", "purpose", "verification_status"]:
         test[col] = test[col].astype("category")
-    sample = test.sample(n=SAMPLE_SIZE, random_state=SEED).reset_index(drop=True)
-    X = sample[feats]
+    X = test[feats]
+    print(f"Test set: {len(test)} rows (no sampling)")
 
-    explainer = shap.TreeExplainer(booster)
-    shap_values = explainer.shap_values(X)
+    contrib = booster.predict(X, pred_contrib=True, num_iteration=booster.best_iteration)
+    shap_values = contrib[:, :-1]
 
     # --- Income reversal: grouped SHAP ---
     income_group = ["annual_inc", "loan_to_income", "revol_bal_to_income"]
@@ -138,10 +139,11 @@ def shap_followup_checks() -> None:
         "income_reversal": {
             "grouped_shap_monotonic_across_buckets": bool(grouped_monotonic),
             "note": (
-                "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.237 toward -0.14 at "
-                "$500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), "
-                "the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward "
-                "zero - the other income-scaled features partly offset annual_inc's own rise."
+                "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.236 toward -0.14 to -0.15 at "
+                "$150K and up). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same "
+                "income), the combined effect stays in a -0.22 to -0.30 band above $90K rather than trending back "
+                "toward zero like annual_inc alone - the other income-scaled features partly offset annual_inc's "
+                "own rise."
             ),
             "raw_rate_500k_plus_ci": [float(row_500k["ci_low"]), float(row_500k["ci_high"])],
             "raw_rate_110_150k_min_ci": [float(row_110_150k["ci_low"]), float(row_110_150k["ci_high"])],

@@ -1,7 +1,7 @@
 {
   "income_reversal": {
     "grouped_shap_monotonic_across_buckets": false,
-    "note": "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.237 toward -0.14 at $500K+). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), the combined effect mostly plateaus around -0.25 to -0.27 rather than trending back toward zero - the other income-scaled features partly offset annual_inc's own rise.",
+    "note": "annual_inc alone shows a rising SHAP trend above $90-110K (from -0.236 toward -0.14 to -0.15 at $150K and up). Grouped with loan_to_income and revol_bal_to_income (both scaled by the same income), the combined effect stays in a -0.22 to -0.30 band above $90K rather than trending back toward zero like annual_inc alone - the other income-scaled features partly offset annual_inc's own rise.",
     "raw_rate_500k_plus_ci": [
       5.38,
       16.19

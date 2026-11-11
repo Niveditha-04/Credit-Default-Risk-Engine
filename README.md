@@ -7,8 +7,9 @@ I built an origination-time credit scoring model for LendingClub loans: given on
 ## Results at a glance
 
 - LightGBM (AUC 0.6872) beats LendingClub's own sub_grade (AUC 0.6786) on test, 2015: +0.0086 AUC, 95% CI 0.0063 to 0.0109, significant.
-- The chosen approval policy approves 99.41% of test loans and realizes $231.6M in net cash.
-- `fico_mean` is the single strongest driver of every prediction (SHAP).
+- LightGBM also beats the scorecard baseline (AUC 0.6711) by +0.0162 AUC, 95% CI 0.0146 to 0.0178, significant.
+- `fico_mean` is the strongest driver on average (mean |SHAP|).
+- Served through FastAPI in Docker at 16.29 ms p50 latency; 244 tests pass, 241 of them in CI.
 
 ## Data
 
@@ -31,7 +32,7 @@ Target is 1 if `loan_status` is Charged Off or Default. Target is 0 if `loan_sta
 
 ## Approach
 
-- Built an explicit allow-list for all 151 raw columns: 59 kept as model features, 12 kept as metadata only (dates, state, zip, grade, for filtering and stability checks, never fed to a model), 79 dropped.
+- Built an explicit allow-list for all 151 raw columns: 59 kept as model features, 12 kept as metadata only (dates, state, zip, grade, for filtering and stability checks, never fed to a model), 1 is the target source (`loan_status`), 79 dropped.
 - Engineered 10 features from origination-time data only: `fico_mean`, `credit_history_months`, `loan_to_income`, `revol_bal_to_income`, and 6 "never happened yet" flags for the `mths_since_*` columns.
 - Built a WOE-binned logistic scorecard as an honest baseline, then trained LightGBM as the main model and XGBoost as a comparison, both tuned and calibrated on validation only and logged to MLflow.
 - Picked one approval cutoff on validation by maximizing total expected net value, then applied that same fixed cutoff to test, once.
@@ -93,7 +94,7 @@ LightGBM's own exact TreeSHAP (`pred_contrib=True`), additivity checked to withi
 | 9 | mths_since_recent_bc | 0.0702 |
 | 10 | home_ownership | 0.0690 |
 
-Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-to-income raise it. Income's protective effect grows up to about $100K (mean SHAP -0.24 in the $90K-110K bucket), then levels off near -0.14 to -0.15 all the way through $500K+. All 15 shared numeric features agree in direction between SHAP and the scorecard's WOE.
+Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-to-income raise it. `annual_inc` alone is most protective around $90K-110K (mean SHAP -0.24), then weaker above, settling near -0.14 to -0.15 from $150K up. Grouped with the other two income-scaled features (`loan_to_income`, `revol_bal_to_income`), the combined effect stays in a -0.22 to -0.30 band above $90K rather than trending back toward zero like `annual_inc` alone (`reports/metrics/shap_income_group_reversal_check.csv`). All 15 shared numeric features agree in direction between SHAP and the scorecard's WOE.
 
 ## API latency (local laptop, not a production benchmark)
 
@@ -106,7 +107,7 @@ Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-
 
 ## Tests and coverage
 
-243 tests total: 240 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
+244 tests total: 241 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
 
 | File | Coverage |
 |---|---|
