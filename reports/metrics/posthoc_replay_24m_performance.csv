@@ -1,0 +1,10 @@
+period,source,n,n_positive,label_24m_rate_pct,auc
+2015Q1,"test 2015 (same 24-month label, re-applied)",54666,6489,11.87,0.6877
+2015Q2,"test 2015 (same 24-month label, re-applied)",61940,7596,12.26,0.6943
+2015Q3,"test 2015 (same 24-month label, re-applied)",71195,8353,11.73,0.7006
+2015Q4,"test 2015 (same 24-month label, re-applied)",85512,10177,11.9,0.7009
+2016Q1,"replay (post-hoc, 24-month label)",91791,11441,12.46,0.7045
+2016Q2,"replay (post-hoc, 24-month label)",71904,9342,12.99,0.6886
+2016Q3,"replay (post-hoc, 24-month label)",72392,9539,13.18,0.6769
+2016Q4,"replay (post-hoc, 24-month label)",76019,8925,11.74,0.6747
+2017Q1,"replay (post-hoc, 24-month label)",69634,6969,10.01,0.685

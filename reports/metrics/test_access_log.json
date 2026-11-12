@@ -94,5 +94,35 @@
     "script": "posthoc_matched_volume_economics.py",
     "row_count": 282787,
     "action": "Post-hoc: re-read saved test_scored.parquet to fund each model's own top N% of test loans by its own score, an evaluation device, not a policy. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-12T02:48:53.524906+00:00",
+    "script": "posthoc_matched_volume_economics.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to fund each model's own top N% of test loans by its own score, an evaluation device, not a policy. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-12T02:52:53.337496+00:00",
+    "script": "posthoc_walkforward.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to evaluate a walk-forward fold (train 2012-2014, frozen LightGBM hyperparameters and tree count, no tuning; scorecard refit through its own pipeline) against test (2015). No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-12T02:54:38.780977+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 388055,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2017-03 (the only replay window with >= 24 months of seasoning by the March 2019 snapshot) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-12T02:55:28.918316+00:00",
+    "script": "posthoc_calibration.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, not stored in test_scored.parquet) to compute calibration by issue month and by FICO band. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-12T02:56:00.769448+00:00",
+    "script": "posthoc_segments.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
   }
 ]

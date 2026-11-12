@@ -1,0 +1,3 @@
+fold,train_years,evaluate_years,evaluate_label,lightgbm_auc,scorecard_auc,sub_grade_auc,lift_vs_scorecard,lift_vs_sub_grade
+1,2012-2013,2014,primary (validation),0.6834,0.665,0.6596,0.0184,0.0238
+2,2012-2014,2015,post-hoc (test),0.6962,0.6739,0.6786,0.0223,0.0175

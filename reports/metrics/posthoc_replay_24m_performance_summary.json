@@ -1,0 +1,92 @@
+{
+  "label": "post-hoc, exploratory",
+  "note": "last_pymnt_d is an approximation of when a loan stopped performing, not an exact default date (LendingClub does not record one). A loan whose charge-off happened more than 24 months after issue, or whose last_pymnt_d is missing, cannot be placed inside or outside the 24-month window and is excluded from this check entirely (not counted as a 0 or a 1).",
+  "replay_window": [
+    "2016-01-01",
+    "2017-03-31"
+  ],
+  "n_excluded_cannot_be_labelled": 6315,
+  "n_scored": 381740,
+  "by_quarter": [
+    {
+      "period": "2015Q1",
+      "source": "test 2015 (same 24-month label, re-applied)",
+      "n": 54666,
+      "n_positive": 6489,
+      "label_24m_rate_pct": 11.87,
+      "auc": 0.6877
+    },
+    {
+      "period": "2015Q2",
+      "source": "test 2015 (same 24-month label, re-applied)",
+      "n": 61940,
+      "n_positive": 7596,
+      "label_24m_rate_pct": 12.26,
+      "auc": 0.6943
+    },
+    {
+      "period": "2015Q3",
+      "source": "test 2015 (same 24-month label, re-applied)",
+      "n": 71195,
+      "n_positive": 8353,
+      "label_24m_rate_pct": 11.73,
+      "auc": 0.7006
+    },
+    {
+      "period": "2015Q4",
+      "source": "test 2015 (same 24-month label, re-applied)",
+      "n": 85512,
+      "n_positive": 10177,
+      "label_24m_rate_pct": 11.9,
+      "auc": 0.7009
+    },
+    {
+      "period": "2016Q1",
+      "source": "replay (post-hoc, 24-month label)",
+      "n": 91791,
+      "n_positive": 11441,
+      "label_24m_rate_pct": 12.46,
+      "auc": 0.7045
+    },
+    {
+      "period": "2016Q2",
+      "source": "replay (post-hoc, 24-month label)",
+      "n": 71904,
+      "n_positive": 9342,
+      "label_24m_rate_pct": 12.99,
+      "auc": 0.6886
+    },
+    {
+      "period": "2016Q3",
+      "source": "replay (post-hoc, 24-month label)",
+      "n": 72392,
+      "n_positive": 9539,
+      "label_24m_rate_pct": 13.18,
+      "auc": 0.6769
+    },
+    {
+      "period": "2016Q4",
+      "source": "replay (post-hoc, 24-month label)",
+      "n": 76019,
+      "n_positive": 8925,
+      "label_24m_rate_pct": 11.74,
+      "auc": 0.6747
+    },
+    {
+      "period": "2017Q1",
+      "source": "replay (post-hoc, 24-month label)",
+      "n": 69634,
+      "n_positive": 6969,
+      "label_24m_rate_pct": 10.01,
+      "auc": 0.685
+    }
+  ],
+  "replay_auc_range": [
+    0.6747,
+    0.7045
+  ],
+  "test_2015_auc_range_same_label": [
+    0.6877,
+    0.7009
+  ]
+}

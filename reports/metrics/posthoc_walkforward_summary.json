@@ -1,0 +1,56 @@
+{
+  "label": "post-hoc (fold 2 only; fold 1 reuses the champion's own committed validation numbers)",
+  "note": "LightGBM reuses the frozen champion's exact hyperparameters AND exact tree count (273) in fold 2 - there is no non-test holdout left within 2012-2014 to early-stop against without using test for a design decision, so the champion's already-chosen tree count is reused directly instead of re-running early stopping. The scorecard reruns its full pipeline (WOE binning, IV filter, correlation reduction, VIF reduction, sign-correction logistic regression) on each fold's own train data; fold 2's final feature set is allowed to differ from the frozen scorecard's 17 features.",
+  "fold_2_scorecard_features": [
+    "acc_open_past_24mths",
+    "annual_inc",
+    "bc_open_to_buy",
+    "dti",
+    "home_ownership",
+    "inq_last_6mths",
+    "mo_sin_old_rev_tl_op",
+    "mort_acc",
+    "mths_since_recent_bc",
+    "num_tl_op_past_12m",
+    "percent_bc_gt_75",
+    "purpose",
+    "revol_util",
+    "tot_hi_cred_lim",
+    "fico_mean",
+    "loan_to_income"
+  ],
+  "folds": [
+    {
+      "fold": 1,
+      "train_years": "2012-2013",
+      "evaluate_years": "2014",
+      "evaluate_label": "primary (validation)",
+      "lightgbm_auc": 0.6834,
+      "scorecard_auc": 0.665,
+      "sub_grade_auc": 0.6596,
+      "lift_vs_scorecard": 0.0184,
+      "lift_vs_sub_grade": 0.0238
+    },
+    {
+      "fold": 2,
+      "train_years": "2012-2014",
+      "evaluate_years": "2015",
+      "evaluate_label": "post-hoc (test)",
+      "lightgbm_auc": 0.6962,
+      "scorecard_auc": 0.6739,
+      "sub_grade_auc": 0.6786,
+      "lift_vs_scorecard": 0.0223,
+      "lift_vs_sub_grade": 0.0175
+    }
+  ],
+  "lift_vs_scorecard_mean": 0.0204,
+  "lift_vs_scorecard_range": [
+    0.0184,
+    0.0223
+  ],
+  "lift_vs_sub_grade_mean": 0.0207,
+  "lift_vs_sub_grade_range": [
+    0.0175,
+    0.0238
+  ]
+}
