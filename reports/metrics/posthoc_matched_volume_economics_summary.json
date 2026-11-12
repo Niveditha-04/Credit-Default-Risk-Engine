@@ -1,6 +1,6 @@
 {
   "label": "post-hoc",
-  "note": "Average-balance approximation: cost of funds = rate x funded_amnt x (months from issue to last payment / 12) x 0.5, where 0.5 approximates the average outstanding balance of an amortizing loan over its observed life (starts near funded_amnt, ends near 0 if fully paid off). months_to_last_pymnt is set to 0 for the 200 test loans with no recorded payment date.",
+  "note": "Return per dollar funded is measured over the loan's observed life (issue to last payment on record), not annualized - a 36-month loan's realized return per dollar is not comparable to an annual rate without dividing by its holding period. Average-balance approximation: cost of funds = rate x funded_amnt x (months from issue to last payment / 12) x 0.5, where 0.5 approximates the average outstanding balance of an amortizing loan over its observed life (starts near funded_amnt, ends near 0 if fully paid off). months_to_last_pymnt is set to 0 for the 200 test loans with no recorded payment date.",
   "selection_rates_reported_pct": [
     10,
     20,
@@ -151,5 +151,6 @@
       "return_per_dollar_after_4pct_cost_of_funds_pct": 2.5987,
       "return_per_dollar_after_8pct_cost_of_funds_pct": -1.5393
     }
-  ]
+  ],
+  "bootstrap_comparison_table": "reports/metrics/posthoc_matched_volume_comparison_table.csv"
 }

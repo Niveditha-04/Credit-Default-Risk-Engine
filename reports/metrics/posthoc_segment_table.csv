@@ -1,0 +1,24 @@
+dimension,segment,n,default_rate_pct,auc
+fico_band,"(660, 680]",106434,19.32,0.6481
+fico_band,"(680, 700]",75566,15.72,0.6552
+fico_band,"(700, 720]",49343,11.85,0.6642
+fico_band,"(720, 740]",25382,8.81,0.6886
+fico_band,"(740, 760]",12325,7.41,0.7062
+fico_band,"(760, 850]",13737,4.77,0.7417
+purpose,all_other_purposes_combined,10515,18.48,0.6764
+purpose,credit_card,70592,12.23,0.6945
+purpose,debt_consolidation,160841,15.73,0.6825
+purpose,home_improvement,17145,13.51,0.6862
+purpose,major_purchase,5340,14.46,0.6795
+purpose,medical,3144,17.84,0.6778
+purpose,other,15210,16.84,0.6677
+loan_size_band,"(0, 5000]",45590,15.26,0.6596
+loan_size_band,"(5000, 10000]",97290,15.72,0.6783
+loan_size_band,"(10000, 15000]",57074,14.59,0.6947
+loan_size_band,"(15000, 20000]",37787,14.58,0.6986
+loan_size_band,"(20000, 25000]",21482,12.88,0.7092
+loan_size_band,"(25000, 35000]",23564,13.72,0.7124
+issue_quarter,2015Q1,56568,14.83,0.6812
+issue_quarter,2015Q2,64222,15.38,0.6837
+issue_quarter,2015Q3,73567,14.58,0.69
+issue_quarter,2015Q4,88430,14.81,0.6914

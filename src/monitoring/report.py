@@ -149,9 +149,33 @@ def explain_loan_to_income_psi() -> None:
     print(json.dumps(result, indent=2))
 
 
+def combined_psi_table() -> pd.DataFrame:
+    """One row per feature: PSI against two different references -
+    validation (2014) vs train, the closest-in-time reference available
+    without touching test or replay, and the max PSI reached against
+    train across the full 2015-2018 historical replay - next to that
+    feature's SHAP rank, so a reader can see at a glance whether the
+    features that drift most are the ones the model leans on most."""
+    baseline = pd.read_csv(METRICS_DIR / "drift_baseline_psi_validation_vs_train.csv")
+    crossings = pd.read_csv(METRICS_DIR / "drift_data_first_crossing.csv")
+    shap_rank = pd.read_csv(METRICS_DIR / "shap_global_importance.csv", index_col=0)["mean_abs_shap_rank"]
+
+    table = baseline.merge(crossings, on="feature", how="outer")
+    table["shap_rank"] = table["feature"].map(shap_rank)
+    table = table.rename(columns={"band": "band_validation_vs_train"})
+    table["band_max_2015_2018"] = pd.cut(
+        table["max_psi_2015_2018"], bins=[-0.01, 0.10, 0.25, 10], labels=["stable", "watch", "alert"]
+    )
+    table = table.sort_values("shap_rank")
+    table.to_csv(METRICS_DIR / "drift_combined_psi_table.csv", index=False)
+    return table
+
+
 if __name__ == "__main__":
     drift_alerts()
     print()
     drift_figures()
     print()
     explain_loan_to_income_psi()
+    print()
+    print(combined_psi_table().to_string(index=False))

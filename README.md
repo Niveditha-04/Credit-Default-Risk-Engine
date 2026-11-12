@@ -9,7 +9,7 @@ I built an origination-time credit scoring model for LendingClub loans: given on
 - LightGBM (AUC 0.6872) beats LendingClub's own sub_grade (AUC 0.6786) on test, 2015: +0.0086 AUC, 95% CI 0.0063 to 0.0109, significant.
 - LightGBM also beats the scorecard baseline (AUC 0.6711) by +0.0162 AUC, 95% CI 0.0146 to 0.0178, significant.
 - `fico_mean` is the strongest driver on average (mean |SHAP|).
-- Served through FastAPI in Docker at 16.29 ms p50 latency; 266 tests pass, 263 of them in CI.
+- Served through FastAPI in Docker at 16.29 ms p50 latency; 282 tests pass, 279 of them in CI.
 
 ## Data
 
@@ -43,12 +43,12 @@ Target is 1 if `loan_status` is Charged Off or Default. Target is 0 if `loan_sta
 
 ## Results on test (2015)
 
-| Model | AUC (95% CI) | Gini | KS | Brier | AUC diff vs. LightGBM (95% CI) |
-|---|---|---|---|---|---|
-| LightGBM (champion) | 0.6872 (0.6847 to 0.6898) | 0.3745 | 0.2697 | 0.1197 | n/a |
-| XGBoost (comparison) | 0.6886 (0.6859 to 0.6912) | 0.3772 | 0.2725 | 0.1195 | -0.0014 (-0.0020 to -0.0008) |
-| Scorecard | 0.6711 (0.6686 to 0.6735) | 0.3421 | 0.2480 | 0.1211 | +0.0162 (0.0146 to 0.0178) |
-| LendingClub sub_grade | 0.6786 (0.6760 to 0.6812) | 0.3573 | 0.2619 | 0.1215 | +0.0086 (0.0063 to 0.0109) |
+| Model | AUC (95% CI) | Gini | KS | Brier | Brier skill score | AUC diff vs. LightGBM (95% CI) |
+|---|---|---|---|---|---|---|
+| LightGBM (champion) | 0.6872 (0.6847 to 0.6898) | 0.3745 | 0.2697 | 0.1197 | 0.0555 | n/a |
+| XGBoost (comparison) | 0.6886 (0.6859 to 0.6912) | 0.3772 | 0.2725 | 0.1195 | 0.0564 | -0.0014 (-0.0020 to -0.0008) |
+| Scorecard | 0.6711 (0.6686 to 0.6735) | 0.3421 | 0.2480 | 0.1211 | 0.0445 | +0.0162 (0.0146 to 0.0178) |
+| LendingClub sub_grade | 0.6786 (0.6760 to 0.6812) | 0.3573 | 0.2619 | 0.1215 | 0.0407 | +0.0086 (0.0063 to 0.0109) |
 
 All three differences are statistically significant (95% bootstrap CI, 1,000 resamples). XGBoost edges out LightGBM by a small but significant margin; both gradient-boosted models beat the scorecard and sub_grade by a larger margin. I deployed LightGBM anyway: it is within 0.0021 AUC of XGBoost on validation, using 273 trees against XGBoost's 2,122 (both searches ran 20 tuning trials; LightGBM's champion also had a second, 10-trial regularized search on top of that; the tree-count gap comes mostly from LightGBM's higher learning rate, 0.08 against XGBoost's 0.01). Retraining noise alone moves validation AUC by about 0.0007 (`reports/metrics/training_order_sensitivity.json`), so I treat the two as statistically detectable but effectively tied.
 
@@ -90,31 +90,49 @@ I subtract default-rate drift first, then split what's left between prepayment a
 
 Four ablations, fit with the champion's own frozen hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation, same as the champion itself; test (2015) AUC is reported for context only and is explicitly **post-hoc**, since none of these were fit or compared before test was touched for the main evaluation.
 
-| Ablation | Validation AUC | vs. champion | Test AUC (post-hoc) |
-|---|---|---|---|
-| Champion (69 features) | 0.6834 | n/a | 0.6872 |
-| a. LightGBM, scorecard's 17 features only | 0.6738 | -0.0096 | 0.6787 |
-| b. WOE logistic regression, all 63 scorecard candidates, no reduction | 0.6684 | -0.0150 | 0.6735 |
-| c. LightGBM, champion features + sub_grade | 0.6891 | +0.0057 | 0.6967 |
-| d. LightGBM, champion features, 8 monotone constraints | 0.6833 | -0.0001 | 0.6871 |
+Absolute validation AUC for every ablation, with the deployed scorecard and the champion itself as reference rows, in the order they build on each other:
 
-- **Where the lift comes from:** the scorecard's 17 features alone cost LightGBM 0.0096 validation AUC (a); skipping the scorecard's correlation/VIF reduction entirely on all 63 candidates costs even more, 0.0150 (b), and produces 15 sign-mismatched coefficients. So most of the champion's edge over the scorecard comes from using more raw features and letting trees capture interactions among them, not a bigger feature list by itself. Adding `sub_grade` on top of the champion's full 69 features still adds +0.0057 (c), so LendingClub's own grading carries a little information the model doesn't fully recover from the raw fields alone. Constraining 8 business-obvious features to a single direction (fico_mean down, dti up, and others) costs essentially nothing (-0.0001, d) and the income SHAP reversal I flagged earlier mostly disappears under it: the post-peak swing in mean SHAP for `annual_inc` shrinks from 0.093 to 0.004 log-odds, about a 96% reduction (`reports/metrics/posthoc_ablations_summary.json`).
+| Model | Validation AUC | Test AUC (post-hoc) |
+|---|---|---|
+| Scorecard (deployed: 17 features, WOE, correlation/VIF/sign-correction reduction) | 0.6650 | 0.6711 |
+| a. LightGBM on the scorecard's same 17 (reduced) features | 0.6738 | 0.6787 |
+| b. WOE logistic regression on all 63 scorecard candidates, no reduction | 0.6684 | 0.6735 |
+| Champion (LightGBM, 69 features) | 0.6834 | 0.6872 |
+| c. LightGBM, champion features + sub_grade | 0.6891 | 0.6967 |
+| d. LightGBM, champion features, 8 monotone constraints | 0.6833 | 0.6871 |
+
+- **Where the lift comes from:** swapping logistic regression for LightGBM on the scorecard's own 17 features already recovers most of the gap to the champion (0.6650 to 0.6738, a). Skipping the scorecard's correlation/VIF reduction and fitting WOE logistic regression on all 63 raw candidates (b) scores 0.6684, slightly above the deployed, reduced scorecard, not below it - so the reduction step is not what costs AUC; it produces 15 sign-mismatched coefficients instead, an interpretability and stability problem, not a ranking one. Going from 17 to the champion's 69 features adds the rest (0.6738 to 0.6834). Adding `sub_grade` on top of those 69 still adds +0.0057 (c), so LendingClub's own grading carries a little information the model doesn't fully recover from the raw fields alone. Constraining 8 business-obvious features to a single direction (fico_mean down, dti up, and others) costs essentially nothing (0.6834 to 0.6833, d) and the income SHAP reversal I flagged earlier mostly disappears under it: the post-peak swing in mean SHAP for `annual_inc` shrinks from 0.093 to 0.004 log-odds, about a 96% reduction (`reports/metrics/posthoc_ablations_summary.json`).
+- **A candidate for the next version:** the monotone-constrained model (d) costs about -0.0001 validation AUC and removes most of the income non-monotonicity, which is easier to defend to a reviewer than the champion's current income shape. I have not swapped the champion for it here, since test (2015) was already touched for the frozen champion and swapping now would mean picking a model with test information in hand - a decision for a genuinely new model-selection round, not a same-round edit.
 - **Does the lift hold month by month:** paired monthly AUC, all 12 months of test (2015): LightGBM beats sub_grade's ordinal rank every month (mean +0.0082, range +0.0043 to +0.0165) and beats the scorecard every month (mean +0.0161, range +0.0107 to +0.0213) (`reports/metrics/posthoc_monthly_lift.csv`).
-- **Does it pay at matched volume:** funding each model's own top 70/80/90% of test loans by its own score (an evaluation device, not the deployed policy), LightGBM's realized return per dollar funded is highest at every rate (7.57% / 7.30% / 6.99%), ahead of the scorecard (7.28% / 7.04% / 6.80%) and the sub_grade map (6.97% / 6.88% / 6.74%). Unlike the fixed-cutoff comparison above (set on validation, nearly tied), ranking loans by each model's own score does turn into more realized cash per dollar at matched volume (`reports/metrics/posthoc_matched_volume_economics.csv`).
+- **Does it pay at matched volume:** funding each model's own top 70/80/90% of test loans by its own score (an evaluation device, not the deployed policy), LightGBM's realized return per dollar funded (over the loan's observed life, not annualized) is highest at every rate, with a paired bootstrap 95% CI (1,000 resamples) on each difference that never crosses zero:
+
+| Selection rate | LightGBM | Scorecard | sub_grade map | LightGBM minus scorecard (95% CI) | LightGBM minus sub_grade (95% CI) |
+|---|---|---|---|---|---|
+| 70% | 7.57% | 7.28% | 6.97% | +0.28 pp (0.22 to 0.34) | +0.59 pp (0.52 to 0.67) |
+| 80% | 7.30% | 7.04% | 6.88% | +0.26 pp (0.21 to 0.30) | +0.42 pp (0.36 to 0.49) |
+| 90% | 6.99% | 6.80% | 6.74% | +0.19 pp (0.15 to 0.22) | +0.25 pp (0.20 to 0.30) |
+
+Unlike the fixed-cutoff comparison above (set on validation, nearly tied), ranking loans by each model's own score does turn into significantly more realized cash per dollar at matched volume. The same pattern (LightGBM ahead of both, every difference significant) holds at 4% and 8% annual cost of funds too - see `docs/validation_report.md` for the full table (`reports/metrics/posthoc_matched_volume_comparison_table.csv`).
 
 ![Realized return per dollar vs. selection rate, post-hoc](reports/figures/posthoc_return_per_dollar_vs_selection_rate.png)
 
-More detail, including the cost-of-funds sensitivity table, is in `docs/validation_report.md`.
+- **Does it hold walking forward in time:** a 2-fold walk-forward check with the champion's frozen hyperparameters (fold 1: train 2012-2013, evaluate validation 2014, reusing the already-committed numbers; fold 2: train 2012-2014, evaluate test 2015, post-hoc) gives a positive lift over both comparisons in both folds: mean +0.0204 vs. the scorecard (range +0.0184 to +0.0223) and mean +0.0207 vs. sub_grade (range +0.0175 to +0.0238) (`reports/metrics/posthoc_walkforward.csv`).
+- **Does it hold on replay under a stricter label:** loans issued January 2016 to March 2017 have all had at least 24 months to season by this data's March 2019 snapshot, so a fixed 24-month-default label is computable for them (exploratory, post-hoc, 6,315 of 388,055 loans excluded as unlabelable slow charge-offs). AUC under this label ranges 0.6747 to 0.7045 across the 5 replay quarters, overlapping the same label's 0.6877 to 0.7009 range on test (2015) - no sign of degraded discrimination on more recent originations under this check (`reports/metrics/posthoc_replay_24m_performance.csv`).
+
+- **Calibration in more detail:** Expected Calibration Error 0.0121 (10 bins); predicted and actual default rates stay within about 1.9 percentage points of each other whether cut by issue month or by FICO band (`reports/figures/posthoc_reliability_plot.png`).
+- **Where it works best:** LightGBM's AUC on test rises with FICO band (0.6481 at the riskiest band to 0.7417 at the safest) and with loan size (0.6596 to 0.7124) - the model discriminates better among safer, larger loans, where there's more room between a typical good and bad outcome. By purpose, AUC ranges 0.6677 to 0.6945 (`reports/metrics/posthoc_segment_table.csv`).
+
+More detail, including the cost-of-funds sensitivity table and the full segment and calibration breakdowns, is in `docs/validation_report.md`.
 
 ## Drift findings (historical replay, 2015 to 2018, not live monitoring)
 
+Leading with the two numbers that matter most for whether the model itself can be trusted to keep working: prediction drift (the model's own score distribution vs. train) stayed low, max monthly PSI 0.0549, never crossing the 0.10 "watch" threshold. And every one of the top-10 SHAP features stays "stable" against the closest reference (validation 2014 vs. train, max 0.0326) and never reaches "alert" against the full 2015-2018 reference either - the closest any of them gets is `purpose` at 0.1421 ("watch"). I only checked performance drift for 2015, since 2015 is the last year with labels: monthly test AUC ranged from 0.679 to 0.695, no clear trend down, and I make no performance-drift claim for 2016 to 2018.
+
 PSI bins are fit on train only and reused unchanged for every later month: numeric features get 10 train-decile bins (edges widened to the whole real line so a future value outside train's range still lands somewhere), categorical features get train's observed categories, and missing values get their own separate bin in both cases. A small epsilon (0.0001) replaces an empty bin's share before the log step, so one empty bin doesn't blow up the whole feature's PSI to infinity.
 
-I checked monthly PSI for 69 features over 48 months, train as the baseline. By end of 2018, 23 of 69 crossed the 0.10 "watch" threshold at least once, 6 crossed the 0.25 "alert" threshold: `verification_status` (0.52), `bc_util` (0.44), `revol_util` (0.43), `percent_bc_gt_75` (0.43), `bc_open_to_buy` (0.31), `num_tl_120dpd_2m` (0.29). None of these 6 are top-10 SHAP drivers; they rank 11 to 62 of 69 by SHAP importance. `verification_status`'s drift is the largest by far (0.52); since it is a label LendingClub assigns about its own verification process rather than something about the borrower, I read this as LendingClub changing how it categorizes or applies verification over time, not a shift in who is borrowing.
+I checked monthly PSI for 69 features over 48 months, train as the baseline (plus validation 2014 vs. train as a second, closer-in-time reference). By end of 2018, 23 of 69 crossed the 0.10 "watch" threshold at least once, 6 crossed the 0.25 "alert" threshold: `verification_status` (0.52), `bc_util` (0.44), `revol_util` (0.43), `percent_bc_gt_75` (0.43), `bc_open_to_buy` (0.31), `num_tl_120dpd_2m` (0.29). None of these 6 are top-10 SHAP drivers; they rank 11 to 62 of 69 by SHAP importance. `verification_status`'s drift is the largest by far (0.52, and already at 0.17, "watch", against validation alone); since it is a label LendingClub assigns about its own verification process rather than something about the borrower, I read this as LendingClub changing how it categorizes or applies verification over time, not a shift in who is borrowing. The full 69-feature table, both references side by side with each feature's SHAP rank, is in `docs/validation_report.md` (`reports/metrics/drift_combined_psi_table.csv`).
 
 ![PSI of the top drifting feature, 2015 to 2018](reports/figures/drift_top_feature_psi_2015_2018.png)
-
-Prediction drift, the model's own score distribution vs. train, stayed low: max monthly PSI 0.0549, never crossing 0.10. I only checked performance drift for 2015, since 2015 is the last year with labels: monthly test AUC ranged from 0.679 to 0.695, no clear trend down, and I make no performance-drift claim for 2016 to 2018.
 
 ![Predicted vs. actual default rate, 2015](reports/figures/drift_2015_predicted_vs_actual.png)
 
@@ -143,7 +161,7 @@ API latency numbers (p50/p95/p99, with and without reason codes) are in `docs/va
 
 ## Tests and coverage
 
-266 tests total: 263 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
+282 tests total: 279 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api`):
 
 | File | Coverage |
 |---|---|

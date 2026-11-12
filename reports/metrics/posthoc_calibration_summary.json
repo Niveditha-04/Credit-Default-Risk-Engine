@@ -1,0 +1,7 @@
+{
+  "label": "post-hoc (by-month and by-FICO-band breakdowns; ECE and the reliability plot use only the already-committed 10-bin calibration table)",
+  "ece": 0.0121,
+  "n_bins": 10,
+  "by_month_max_abs_gap_pct": 1.89,
+  "by_fico_band_max_abs_gap_pct": 1.9
+}

@@ -1,0 +1,10 @@
+selection_rate_pct,cost_of_funds_pct,lightgbm_return_per_dollar_pct,scorecard_return_per_dollar_pct,sub_grade_map_return_per_dollar_pct,lightgbm_minus_scorecard_pct,lightgbm_minus_scorecard_ci_low,lightgbm_minus_scorecard_ci_high,lightgbm_minus_scorecard_significant,lightgbm_minus_sub_grade_map_pct,lightgbm_minus_sub_grade_map_ci_low,lightgbm_minus_sub_grade_map_ci_high,lightgbm_minus_sub_grade_map_significant
+70,0,7.5656,7.2816,6.9708,0.284,0.2249,0.34,True,0.5948,0.5188,0.6692,True
+70,4,3.4047,3.1344,2.742,0.2703,0.2137,0.3251,True,0.6627,0.5895,0.7333,True
+70,8,-0.7562,-1.0129,-1.4869,0.2567,0.2025,0.3099,True,0.7307,0.6593,0.7998,True
+80,0,7.3011,7.0441,6.8828,0.257,0.2062,0.3043,True,0.4183,0.3565,0.4851,True
+80,4,3.1642,2.9226,2.6982,0.2416,0.1937,0.2873,True,0.466,0.4067,0.5311,True
+80,8,-0.9727,-1.1989,-1.4864,0.2262,0.1789,0.271,True,0.5137,0.4573,0.5773,True
+90,0,6.9888,6.8024,6.7368,0.1864,0.1453,0.2238,True,0.252,0.1984,0.3022,True
+90,4,2.8774,2.702,2.5987,0.1754,0.136,0.2109,True,0.2787,0.2263,0.3274,True
+90,8,-1.2341,-1.3984,-1.5393,0.1643,0.1266,0.1983,True,0.3052,0.2544,0.3526,True

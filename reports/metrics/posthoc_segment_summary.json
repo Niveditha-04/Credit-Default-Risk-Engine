@@ -1,0 +1,27 @@
+{
+  "label": "post-hoc",
+  "top_purposes_by_volume": [
+    "debt_consolidation",
+    "credit_card",
+    "home_improvement",
+    "other",
+    "major_purchase",
+    "medical"
+  ],
+  "fico_band_auc_range": [
+    0.6481,
+    0.7417
+  ],
+  "purpose_auc_range": [
+    0.6677,
+    0.6945
+  ],
+  "loan_size_band_auc_range": [
+    0.6596,
+    0.7124
+  ],
+  "issue_quarter_auc_range": [
+    0.6812,
+    0.6914
+  ]
+}
