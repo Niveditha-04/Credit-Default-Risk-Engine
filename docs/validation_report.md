@@ -76,13 +76,36 @@ Population: 2016 vintages, issue_d <= 2016-10-31, the same restricted, censoring
 | v1 (frozen champion, scored fresh on this population) | 0.6899 | 0.0080 |
 | v2 (fresh-fit: LightGBM, 2012-2014, frozen hyperparameters and tree count, 8 monotone constraints) | 0.6978 | 0.0079 |
 
+ECE caveat: both models' predicted PDs here are compared against a 24-month outcome, but v1's PD is calibrated for the project's actual, lifetime-default target (any time in a 36-month loan's life), not a 24-month one - the two definitions do not match, so neither ECE number is a calibration-quality statement in its own right. v2 additionally has no calibrator at all at this point in the process (these are v2's raw, uncalibrated predictions) - so this ECE comparison is a relative v1-vs-v2 check only (does v2's shape look worse than v1's against the same proxy), not an absolute claim about either model's calibration.
+
 Rule: adopt v2 only if both `AUC(v2) >= AUC(v1) - 0.002` and `ECE(v2) <= ECE(v1) + 0.005`.
 
 - AUC condition: 0.6978 >= 0.6879 - **met** (v2 is actually higher, not just within the slack).
-- ECE condition: 0.0079 <= 0.0130 - **met** (v2 is also slightly better calibrated).
+- ECE condition: 0.0079 <= 0.0130 - **met**, with the relative-only caveat above.
 - **Outcome: adopt v2**, per the pre-registered rule.
 
-"Adopt" here means recording this outcome, exactly as stated in the rule file - it does not change the frozen v1 champion's artifacts, MLflow alias, or served model (verified: parity check and `verify_champion_alias` both still pass against the unchanged v1 after this evaluation ran). Promoting an actual v2 champion - retraining through the real pipeline, freezing new artifacts, registering it in MLflow - is a separate, later action this evaluation does not take.
+### Label robustness check (post-hoc, exploratory - does not change the result above)
+
+Rerun on the same 2016-vintage population with a second, "corrected" 24-month label, chosen only after the pre-registered result above was already recorded: a charge-off more than 24 months after issue now counts as 0 (survived the 24-month window before eventually failing, rather than being excluded), and a charge-off with no recorded `last_pymnt_d` at all now counts as 1 (no payment ever made reads as an immediate failure, rather than being excluded) (`reports/metrics/posthoc_v2_label_robustness.json`, `src/models/posthoc_v2_label_robustness.py`).
+
+| Label | n scored | Label rate | v1 AUC | v1 ECE | v2 AUC | v2 ECE | Rule outcome |
+|---|---|---|---|---|---|---|---|
+| Original (pre-registered) | 260,038 | 12.70% | 0.6899 | 0.0080 | 0.6978 | 0.0079 | Adopt v2 |
+| Corrected (robustness check) | 265,967 | 12.55% | 0.6860 | 0.0104 | 0.6938 | 0.0104 | Adopt v2 |
+
+**The decision does not change.** Under the corrected label, v1's AUC drops a little more than v2's (0.6899 to 0.6860 vs. 0.6978 to 0.6938), so v2's margin over v1 is essentially unchanged; ECE moves to a tie (0.0104 vs. 0.0104) rather than v2 edging ahead, but the rule's ECE condition (within 0.005) is still comfortably met.
+
+### Promotion
+
+v2 has been promoted to the served model (`src/models/promote_v2.py`, `reports/metrics/v2_promotion_summary.json`). v1's artifacts are kept, not deleted:
+
+1. **Calibration (calibration only, not evaluation):** v2's own Platt calibrator, fit out-of-sample within 2015 itself (fit Jan-Sep, holdout-check Oct-Dec, refit on the full year for deployment) - the same discipline already used for v1's own calibration on 2014. This is a new, explicit, logged read of test; it happens after v2 was already selected against v1 on 2016 vintages, so it is not an evaluation read. Holdout Brier: 0.11801 uncalibrated vs. 0.11779 Platt-calibrated (a small improvement; mean predicted PD moves from 13.45% to 14.51% against a 14.81% actual holdout rate).
+2. **Artifact promotion:** v1's `model_chosen.joblib`, `calibrator.joblib`, and `features.json` were copied to `data/processed/models/lightgbm_v1_history/` (same read-only locking as the frozen path) before v2's artifacts were written over the frozen `data/processed/models/lightgbm/` path.
+3. **Frozen config:** `reports/metrics/frozen_model_config.json`'s `lightgbm_chosen` now describes v2; the previous `lightgbm_chosen` content is preserved verbatim under a new key, `lightgbm_v1_history`. `scorecard` and `xgboost` are untouched.
+4. **MLflow:** the model version that was `champion` (version 3, v1) now also carries the alias `v1_champion` (MLflow reserves alias names matching `v<number>`, so a literal `v1` alias is not allowed); v2 is registered as a new version (4) with alias `champion`.
+5. **Verification, all passing against v2:** parity check 1,000/1,000 exact matches; `verify_champion_alias` max abs diff 0.0 against validation; Docker build and a `/health` + `/score` smoke test.
+
+Model hashes (SHA-256 of `model_chosen.joblib`): v1 `b8437eb84d6a...` (history), v2 `d7dda06ef209...` (now served). The served model's `model_version` field in every `/score` response is self-describing and independently verifiable from these: `lightgbm_chosen@git:<commit>+sha256:<first 12 hex chars of the served booster's hash>`.
 
 ## Ablations (post-hoc)
 
@@ -261,22 +284,23 @@ The full 69-feature table, both references side by side with each feature's SHAP
 
 **Optional** (>= 4% missing in train - there is a clean gap in the data between the lowest optional field's missing rate, 4.19%, and the highest required field's, 0.07%): `emp_length`, `acc_open_past_24mths`, `avg_cur_bal`, `bc_open_to_buy`, `bc_util`, `mo_sin_old_il_acct`, `mo_sin_old_rev_tl_op`, `mo_sin_rcnt_rev_tl_op`, `mo_sin_rcnt_tl`, `mort_acc`, `mths_since_last_delinq`, `mths_since_last_major_derog`, `mths_since_last_record`, `mths_since_recent_bc`, `mths_since_recent_bc_dlq`, `mths_since_recent_inq`, `mths_since_recent_revol_delinq`, `num_accts_ever_120_pd`, `num_actv_bc_tl`, `num_actv_rev_tl`, `num_bc_sats`, `num_bc_tl`, `num_il_tl`, `num_op_rev_tl`, `num_rev_accts`, `num_rev_tl_bal_gt_0`, `num_sats`, `num_tl_120dpd_2m`, `num_tl_30dpd`, `num_tl_90g_dpd_24m`, `num_tl_op_past_12m`, `pct_tl_nvr_dlq`, `percent_bc_gt_75`, `tot_coll_amt`, `tot_cur_bal`, `tot_hi_cred_lim`, `total_bal_ex_mort`, `total_bc_limit`, `total_il_high_credit_limit`, `total_rev_hi_lim`.
 
-The response still lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. A trimmed response, for a request sending 20 of the 62 fields:
+The response still lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. **This top-10 SHAP ranking (`reports/metrics/shap_global_importance.csv`) has not been recomputed for v2** - the warning logic still uses v1's ranking; this is a known gap, not yet fixed. A trimmed response, now served by v2, for a request sending the 19 required fields plus `emp_length` (20 of the 62 fields):
 
 ```json
 {
   "request_id": "f3a1...",
-  "calibrated_pd": 0.1186,
-  "risk_band": "Medium",
+  "calibrated_pd": 0.1553,
+  "risk_band": "High",
   "top_3_risk_increasing_drivers_illustrative_only": [
-    {"feature": "fico_mean", "plain_english": "credit score (FICO)", "shap_value_log_odds": 0.164116},
-    {"feature": "mths_since_recent_bc", "plain_english": "months since most recent bankcard account opened", "shap_value_log_odds": 0.056168},
-    {"feature": "home_ownership", "plain_english": "home ownership status", "shap_value_log_odds": 0.045984}
+    {"feature": "fico_mean", "plain_english": "credit score (FICO)", "shap_value_log_odds": 0.167837},
+    {"feature": "bc_open_to_buy", "plain_english": "available bankcard credit", "shap_value_log_odds": 0.101559},
+    {"feature": "home_ownership", "plain_english": "home ownership status", "shap_value_log_odds": 0.056849}
   ],
   "model_name": "lightgbm_chosen",
-  "model_version": "lightgbm_chosen@git:53597a48f88c+sha256:b8437eb84d6a",
-  "missing_fields": ["acc_now_delinq", "avg_cur_bal", "bc_open_to_buy", "..."],
+  "model_version": "lightgbm_chosen@git:53597a48f88c+sha256:d7dda06ef209",
+  "missing_fields": ["acc_open_past_24mths", "avg_cur_bal", "bc_open_to_buy", "..."],
   "warnings": [
+    {"field": "acc_open_past_24mths", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
     {"field": "mths_since_recent_bc", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
     {"field": "mths_since_recent_inq", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
     {"field": "num_tl_op_past_12m", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"}

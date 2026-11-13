@@ -154,5 +154,17 @@
     "script": "posthoc_subgrade_lightgbm_matched_volume.py",
     "row_count": 282787,
     "action": "Post-hoc: refits LightGBM with champion features + sub_grade (ablation c), scores it on validation (2014) and test (2015, post-hoc), and compares matched -volume economics against sub_grade alone. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:59:48.037832+00:00",
+    "script": "posthoc_v2_label_robustness.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory robustness check (does not change the already-recorded pre-registered v2 decision): rescores v1 and a freshly-refit v2 on the same 2016-vintage population with a second, corrected 24-month label, chosen after the pre-registered evaluation already ran. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-13T07:03:06.592474+00:00",
+    "script": "promote_v2.py",
+    "row_count": 282787,
+    "action": "Explicit, authorized read of test (2015) for CALIBRATION ONLY, not evaluation: v2 was already selected against v1 on 2016 vintages, before this read, under the pre-registered rule in docs/v2_decision_rule.md. This fits v2's own Platt calibrator, out-of-sample within 2015 itself, the same discipline already used for v1's calibration on 2014. No model selection happens here."
   }
 ]

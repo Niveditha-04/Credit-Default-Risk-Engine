@@ -6,12 +6,14 @@ I built an origination-time credit scoring model for 36-month LendingClub loans:
 
 This project is both a credit-modelling exercise and an MLOps one: the scorecard-vs-LightGBM comparison answers the modelling question, and the rest (MLflow run tracking, a tested FastAPI service, Docker, CI, drift monitoring) exists to demonstrate running that model the way a production system would, not just producing one accuracy number.
 
+**Two models, read carefully:** every metrics table below (AUC, calibration, SHAP, drift, economics) describes **v1**, the original frozen champion - test (2015) was touched once, exhaustively, for that evaluation. The API actually serves **v2** right now: LightGBM refit on 2012-2014 with 8 monotone constraints, selected against v1 using a rule pre-registered before evaluation (`docs/v2_decision_rule.md`), tested on 2016 vintages, and promoted after passing. v2 has not been run through v1's full test-set evaluation pipeline; its only contact with test is calibration (fitting its probability-scaling layer on 2015, after it was already selected, not model selection). See "v2: the served model" below for its own numbers.
+
 ## Results at a glance
 
 - LightGBM beats LendingClub's own sub_grade (+0.0086 AUC) and the scorecard baseline (+0.0162 AUC) on test (2015), in 12 of 12 months (`reports/metrics/posthoc_monthly_lift.csv`).
 - At matched 70% funding, realized return per dollar over the loan's life: LightGBM 7.57%, scorecard 7.28%, sub_grade 6.97%. The differences are significant at 0%, 4%, and 8% annual cost of funds, and the gap vs. sub_grade widens as cost of funds rises (`reports/metrics/posthoc_matched_volume_comparison_table.csv`).
 - Refitting on 2012-2014 (one more year, same frozen hyperparameters) raises 2015 AUC from 0.6872 to 0.6962 - retraining on the latest resolved year matters (walk-forward check, `reports/metrics/posthoc_walkforward.csv`).
-- A monotone-constrained variant costs about 0.0001 validation AUC and removes most of the income non-monotonicity I found in SHAP; I recommend it for a next model-selection round (`reports/metrics/posthoc_ablations_summary.json`).
+- A monotone-constrained variant has no detectable validation AUC cost and removes most of the income non-monotonicity I found in SHAP; selected against v1 on a pre-registered rule, it is now **v2, the model the API actually serves** (`reports/metrics/posthoc_ablations_summary.json`).
 
 ## Data
 
@@ -72,15 +74,27 @@ I subtract default-rate drift first, then split what's left between prepayment a
 
 ## Ablations and robustness (post-hoc)
 
-Four ablations with the champion's frozen hyperparameters (no tuning search), validation (2014) primary, test (2015) **post-hoc**: the scorecard's 17 features alone in LightGBM score 0.6738 validation AUC (vs. the deployed scorecard's own 0.6650); skipping the scorecard's correlation/VIF reduction entirely and fitting WOE logistic regression on all 63 candidates scores 0.6684, slightly *above* the deployed, reduced scorecard, but with 15 sign-mismatched coefficients - that reduction step buys stability, not AUC. Adding `sub_grade` to the champion's 69 features still adds +0.0057, and that combination also wins on realized economics: sub_grade + LightGBM beats sub_grade alone at matched funding volume in both 2014 (9.58% vs. 8.86% return per dollar at 70% funded) and 2015 (7.49% vs. 6.98%). A monotone-constrained variant has no detectable AUC cost (-0.0001, within the 0.0007 retraining-noise spread measured from row order alone).
+Four ablations with the champion's frozen hyperparameters (no tuning search), validation (2014) primary, test (2015) **post-hoc**: the scorecard's 17 features alone in LightGBM score 0.6738 validation AUC (vs. the deployed scorecard's own 0.6650); skipping the scorecard's correlation/VIF reduction entirely and fitting WOE logistic regression on all 63 candidates scores 0.6684, slightly *above* the deployed, reduced scorecard, but with 15 sign-mismatched coefficients - that reduction step buys stability, not AUC. Adding `sub_grade` to the champion's 69 features adds +0.0057 AUC, and that combination also beats sub_grade alone on realized economics, at matched funding volume, in both 2014 (9.58% vs. 8.86% return per dollar at 70% funded) and 2015 (7.49% vs. 6.98%) - but it is a *worse* economic choice than the champion itself: at 70% funded on 2015, the champion alone realizes 7.57% vs. 7.49% with sub_grade added, even though adding sub_grade raised AUC. My read: `sub_grade` partly tracks the loan's own interest rate (LendingClub prices directly off grade), so a model that leans on it ranks loans partly by price rather than pure risk, trading some realized revenue for a small amount of extra discrimination. A monotone-constrained variant has no detectable AUC cost (-0.0001, within the 0.0007 retraining-noise spread measured from row order alone) - this is v2, below.
 
 **Walk-forward**: fold 1 (train 2012-2013, evaluate 2014) is in-sample for this configuration's own tuning and calibration, not a clean holdout - only fold 2 (train 2012-2014, evaluate test 2015) is genuinely out-of-sample. Per fold: +0.0184 / +0.0223 lift vs. the scorecard, +0.0238 / +0.0175 vs. sub_grade - positive in both, including the one fold that counts.
 
-**Pre-registered v2 check**: before running any v2 code, I committed `docs/v2_decision_rule.md` defining v2 (LightGBM refit on 2012-2014, frozen hyperparameters, monotone constraints) and an adoption rule (AUC within 0.002 of v1, ECE within 0.005), to be evaluated on 2016 vintages (issue <= Oct 2016, 24-month label). Result: v1 AUC 0.6899/ECE 0.0080, v2 AUC 0.6978/ECE 0.0079 - v2 beats v1 on both and the rule says **adopt v2**. This does not change the frozen v1 champion (verified: parity and alias checks still pass); it is a recorded decision, not a promotion.
+**Pre-registered v2 check**: before running any v2 code, I committed `docs/v2_decision_rule.md` defining v2 (LightGBM refit on 2012-2014, frozen hyperparameters, monotone constraints) and an adoption rule (AUC within 0.002 of v1, ECE within 0.005), to be evaluated on 2016 vintages (issue <= Oct 2016, 24-month label). Result: v1 AUC 0.6899/ECE 0.0080, v2 AUC 0.6978/ECE 0.0079 - v2 beats v1 on both and the rule says **adopt v2**. The ECE numbers here are a relative v1-vs-v2 check only, not an absolute calibration claim: they compare lifetime-calibrated v1 and uncalibrated-at-that-point v2 against a 24-month outcome, not the lifetime target either was built for. A robustness check with a second, "corrected" 24-month label (chosen only after this result was already recorded) gives the same decision: v1 AUC 0.6860/ECE 0.0104, v2 AUC 0.6938/ECE 0.0104.
 
 At 8% annual cost of funds (an approximate cost model: rate x funded amount x average outstanding balance over the loan's observed life), every model's *best achievable funding fraction* still loses money - not just at full funding, and not just LightGBM's (`reports/metrics/posthoc_funding_optimization_optimal.csv`). A 24-month default check on replay (exploratory, post-hoc, restricted to vintages with a 5-month seasoning buffer past the 24-month horizon) is consistent with no large degradation: AUC 0.6725 to 0.7045 across 5 replay quarters, overlapping test's 0.6877 to 0.7009 under the same label.
 
 Full ablation table, the monthly-lift breakdown (note: months share macro conditions, so "12 of 12 positive" is not 12 independent confirmations), walk-forward fold detail, the v2 evaluation detail, funding-fraction optimization and its return-vs-volume figure, calibration by month and FICO band (on test; Expected Calibration Error 0.0121) plus a recalibration policy, the segment table, and the full cost-of-funds sensitivity table are all in `docs/validation_report.md`.
+
+## v2: the served model
+
+v2 was promoted after passing the pre-registered rule above. v1's artifacts are kept, not deleted (`data/processed/models/lightgbm_v1_history/`, MLflow alias `v1_champion`) - nothing about v1's own evaluation above changes.
+
+- **Calibration, not evaluation:** v2's own Platt calibrator was fit out-of-sample within 2015 (fit Jan-Sep, holdout-check Oct-Dec, refit on the full year), the same discipline used for v1's calibration on 2014. This is a new, explicit read of test, after v2 was already selected on 2016 vintages - it tunes probability scaling only, not the model.
+- **MLflow:** v1 (the version that was `champion`) now also carries alias `v1_champion`; v2 is a new registered version with alias `champion`.
+- **Verified:** parity check 1,000/1,000 exact matches against v2; `verify_champion_alias` max abs diff 0.0; Docker build plus a `/health` and `/score` smoke test, all passing.
+- **Known gap:** the API's top-10-SHAP missing-field warning (see How to run) still uses v1's SHAP ranking (`reports/metrics/shap_global_importance.csv`) - that analysis has not been rerun for v2 yet.
+- **Model hash** (SHA-256 of `model_chosen.joblib`, also in every `/score` response's `model_version` field): v1 `b8437eb84d6a...`, v2 (served now) `d7dda06ef209...`.
+
+Full promotion detail is in `docs/validation_report.md`.
 
 ## Drift findings (historical replay, 2015 to 2018, not live monitoring)
 
@@ -113,7 +127,7 @@ Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-
 
 ## Tests and coverage
 
-319 tests total: 316 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api` - the rest of those four modules are one-time pipeline scripts I run by hand against real data, not pytest tests, so they show 0% below):
+323 tests total: 320 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only. Coverage, for the core library modules (`src/features`, `src/data/target.py`, `src/monitoring/psi.py`, `src/api` - the rest of those four modules are one-time pipeline scripts I run by hand against real data, not pytest tests, so they show 0% below):
 
 | File | Coverage |
 |---|---|
