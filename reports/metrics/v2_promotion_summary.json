@@ -1,0 +1,22 @@
+{
+  "label": "promotion (not post-hoc/exploratory - this changes the served model)",
+  "v2_model_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
+  "v1_history_artifacts": "data/processed/models/lightgbm_v1_history",
+  "v1_mlflow_alias": "v1_champion",
+  "calibration_evidence": {
+    "method": "platt",
+    "fit_period": "2015-01 to 2015-09",
+    "holdout_period": "2015-10 to 2015-12",
+    "n_fit": 194357,
+    "n_holdout": 88430,
+    "brier_uncalibrated_holdout": 0.11801,
+    "brier_platt_holdout": 0.11779,
+    "mean_predicted_pd_before_holdout_pct": 13.4487,
+    "actual_default_rate_holdout_pct": 14.8083,
+    "mean_predicted_pd_after_platt_holdout_pct": 14.51,
+    "final_calibrator_refit_on": "full 2015 (Jan-Dec)",
+    "mean_predicted_pd_before_full_2015_pct": 13.7179,
+    "actual_default_rate_full_2015_pct": 14.8836,
+    "mean_predicted_pd_after_full_2015_pct": 14.8904
+  }
+}

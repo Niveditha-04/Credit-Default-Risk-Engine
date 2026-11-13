@@ -1,0 +1,38 @@
+{
+  "label": "post-hoc, exploratory robustness check - does not change the pre-registered decision",
+  "pre_registered_result_untouched": "reports/metrics/posthoc_v2_evaluation.json",
+  "note": "The corrected label was chosen after the pre-registered run already reported its result. It reclassifies two cases the original label excluded: a charge-off more than 24 months after issue now counts as 0 (survived the 24-month window), and a charge-off with no recorded last_pymnt_d now counts as 1 (no payment ever made reads as an immediate failure).",
+  "results_by_label": {
+    "original": {
+      "n_scored": 260038,
+      "label_rate_pct": 12.7,
+      "v1": {
+        "auc": 0.6899,
+        "ece": 0.008
+      },
+      "v2": {
+        "auc": 0.6978,
+        "ece": 0.0079
+      },
+      "auc_condition_met": true,
+      "ece_condition_met": true,
+      "adopt_v2_under_this_label": true
+    },
+    "corrected": {
+      "n_scored": 265967,
+      "label_rate_pct": 12.55,
+      "v1": {
+        "auc": 0.686,
+        "ece": 0.0104
+      },
+      "v2": {
+        "auc": 0.6938,
+        "ece": 0.0104
+      },
+      "auc_condition_met": true,
+      "ece_condition_met": true,
+      "adopt_v2_under_this_label": true
+    }
+  },
+  "decision_changes": false
+}
