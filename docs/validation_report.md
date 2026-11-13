@@ -151,6 +151,24 @@ Loss rate used in the EV model: loss rate on funded amount, cash basis (`1 - (to
 
 Gap decomposition for LightGBM, in the order attributed (each step's dollar amount comes out of what's left after the previous step, so the prepayment/loss-severity split specifically depends on this order): $21,903,123.37 (49.1% of the $44,622,042.25 gap) is default-rate drift, the model's mean predicted PD on funded loans (13.56%) being below their actual default rate (14.70%), since calibration was fit on 2014's 13.73% default rate and test ran at 14.88%. Of the $22,718,918.88 left after that, $12,945,771.83 (57.0% of the remainder, 29.0% of the original gap) is prepayment: realized interest income on test's fully paid loans came in lower than train's assumption (80.24% vs. 82.62% of scheduled interest). $7,336,260.28 (32.3% of the remainder, 16.4% of the original gap) is loss severity: realized loss on test's charged-off loans came in higher than train's assumption (39.47% vs. 38.03%). Combined, default-rate drift, prepayment, and loss severity explain $42,185,155.48 of the $44,622,042.25 gap (94.5%); $2,436,886.77 (5.5%) is unexplained.
 
+### Fixed selection-rate sweep (test, cutoffs set on validation, $ in millions)
+
+Rather than the single EV-maximizing cutoff above, this sweeps 3 fixed target selection rates (70/80/90%) per model, cutoff chosen on validation and applied unchanged to test:
+
+| Model | Target selection rate | Actual selection rate on test | Actual default rate funded | Ex-ante expected net value | Ex-post realized net cash |
+|---|---|---|---|---|---|
+| LightGBM | 70% | 69.91% | 10.38% | $218.4M | $196.8M |
+| LightGBM | 80% | 79.59% | 11.59% | $242.8M | $213.7M |
+| LightGBM | 90% | 89.47% | 12.91% | $264.2M | $228.3M |
+| Scorecard | 70% | 72.02% | 11.00% | $235.7M | $198.9M |
+| Scorecard | 80% | 81.35% | 12.08% | $259.4M | $213.7M |
+| Scorecard | 90% | 90.54% | 13.26% | $279.5M | $225.9M |
+| sub_grade map | 70% | 75.57% | 11.33% | $209.5M | $192.3M |
+| sub_grade map | 80% | 84.59% | 12.46% | $237.9M | $210.4M |
+| sub_grade map | 90% | 92.88% | 13.59% | $266.6M | $224.6M |
+
+At these validation-set cutoffs, LightGBM and the scorecard realize nearly the same cash (0 to 1.1% apart) - a different methodology from the matched-funding-volume comparison below, which ranks loans by each model's own test-set score instead of a cutoff fixed on validation, and does show a significant LightGBM edge. Only XGBoost's test predictions were saved, so it appears in the main results table but not here. sub_grade can't hit a target rate exactly either: it has only 35 discrete levels.
+
 ## Drift (historical replay)
 
 PSI computed monthly, 2015 to 2018, bins fixed on train, against the conventional thresholds (<0.10 stable, 0.10 to 0.25 watch, >0.25 alert). 23 of 69 features crossed watch by end of 2018, 6 crossed alert. Performance drift is reported for 2015 only (the only year with real labels); no performance-drift claim is made for 2016 to 2018.
@@ -158,6 +176,31 @@ PSI computed monthly, 2015 to 2018, bins fixed on train, against the conventiona
 PSI is also computed against a second, closer-in-time reference: validation (2014) vs. train, the nearest in-sample-adjacent comparison available without touching test or replay (`reports/metrics/drift_baseline_psi_validation_vs_train.csv`). Two features are already at "watch" between validation and train alone: `verification_status` (0.1678) and `mths_since_last_record` (0.1285) - both already flagged as drifters by the main 2015-2018 scan, so this is not a new finding, just an earlier confirmation of the same two features. No feature reaches "alert" against this closer reference.
 
 The full 69-feature table, both references side by side with each feature's SHAP rank (`reports/metrics/drift_combined_psi_table.csv`, built by `combined_psi_table()` in `src/monitoring/report.py`), shows that every one of the top-10 SHAP features is "stable" against the validation-vs-train reference (max 0.0326) and none reaches "alert" against the full 2015-2018 reference either (the closest is `purpose` at 0.1421, "watch"). The 6 features that do reach "alert" against the full reference (`verification_status`, `bc_util`, `revol_util`, `percent_bc_gt_75`, `bc_open_to_buy`, `num_tl_120dpd_2m`) rank 11 to 62 of 69 by SHAP importance - see the README's drift section for that list with PSI values.
+
+## API
+
+`/score` accepts the schema's 63 fields; any left out default to missing. The response lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. A trimmed response, for a request sending 20 of the 63 fields:
+
+```json
+{
+  "request_id": "f3a1...",
+  "calibrated_pd": 0.1186,
+  "risk_band": "Medium",
+  "top_3_risk_increasing_drivers_illustrative_only": [
+    {"feature": "fico_mean", "plain_english": "credit score (FICO)", "shap_value_log_odds": 0.164116},
+    {"feature": "mths_since_recent_bc", "plain_english": "months since most recent bankcard account opened", "shap_value_log_odds": 0.056168},
+    {"feature": "home_ownership", "plain_english": "home ownership status", "shap_value_log_odds": 0.045984}
+  ],
+  "model_name": "lightgbm_chosen",
+  "model_version": "lightgbm_chosen@git:53597a48f88c+sha256:b8437eb84d6a",
+  "missing_fields": ["acc_now_delinq", "avg_cur_bal", "bc_open_to_buy", "..."],
+  "warnings": [
+    {"field": "mths_since_recent_bc", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
+    {"field": "mths_since_recent_inq", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"},
+    {"field": "num_tl_op_past_12m", "reason": "missing_top10_shap_feature_lowers_fidelity", "value": "missing"}
+  ]
+}
+```
 
 ## API latency (local laptop, not a production benchmark)
 
