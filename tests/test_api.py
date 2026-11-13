@@ -111,7 +111,20 @@ VALID_PAYLOAD = {
     "earliest_cr_line": "2005-03-01",
     "home_ownership": "RENT", "purpose": "debt_consolidation",
     "verification_status": "Verified", "emp_length": 5.0,
+    # Required fields (< 1% missing in train, src/api/field_requirements.py).
+    "acc_now_delinq": 0.0, "chargeoff_within_12_mths": 0.0,
+    "collections_12_mths_ex_med": 0.0, "delinq_2yrs": 0.0, "delinq_amnt": 0.0,
+    "inq_last_6mths": 1.0, "open_acc": 10.0, "pub_rec": 0.0,
+    "pub_rec_bankruptcies": 0.0, "revol_bal": 8000.0, "revol_util": 45.0,
+    "tax_liens": 0.0, "total_acc": 20.0,
 }
+REQUIRED_FIELDS = [
+    "loan_amnt", "annual_inc", "dti", "fico_range_low", "fico_range_high",
+    "earliest_cr_line", "home_ownership", "purpose", "verification_status",
+    "acc_now_delinq", "chargeoff_within_12_mths", "collections_12_mths_ex_med",
+    "delinq_2yrs", "delinq_amnt", "inq_last_6mths", "open_acc", "pub_rec",
+    "pub_rec_bankruptcies", "revol_bal", "revol_util", "tax_liens", "total_acc",
+]
 
 
 def test_health(client):
@@ -148,6 +161,14 @@ def test_negative_dti_rejected_with_422(client):
     bad = dict(VALID_PAYLOAD, dti=-1.0)
     r = client.post("/score", json=bad)
     assert r.status_code == 422
+
+
+@pytest.mark.parametrize("field", REQUIRED_FIELDS)
+def test_missing_required_field_rejected_with_422(client, field):
+    bad = {k: v for k, v in VALID_PAYLOAD.items() if k != field}
+    r = client.post("/score", json=bad)
+    assert r.status_code == 422
+    assert any(e["field"] == field for e in r.json()["errors"])
 
 
 def test_unseen_category_warns_but_does_not_crash(client):

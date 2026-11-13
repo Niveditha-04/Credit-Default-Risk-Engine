@@ -31,21 +31,33 @@ class ScoreRequest(BaseModel):
     home_ownership: str
     purpose: str
     verification_status: str
-    emp_length: float | None = Field(None, ge=0, le=10)
 
-    # --- Bureau/trade-line fields: non-negative where provided, missing
-    # allowed (optbinning/LightGBM both handle missing natively, and
-    # several of these are legitimately missing-not-at-random in training). ---
-    acc_now_delinq: float | None = Field(None, ge=0)
+    # --- Required bureau/trade-line fields: < 1% missing in train
+    # (reports/metrics/api_field_missing_rates.csv), so a live caller
+    # omitting one is treated as a bad request, not a natively-missing value. ---
+    acc_now_delinq: float = Field(..., ge=0)
+    chargeoff_within_12_mths: float = Field(..., ge=0)
+    collections_12_mths_ex_med: float = Field(..., ge=0)
+    delinq_2yrs: float = Field(..., ge=0)
+    delinq_amnt: float = Field(..., ge=0)
+    inq_last_6mths: float = Field(..., ge=0)
+    open_acc: float = Field(..., ge=0)
+    pub_rec: float = Field(..., ge=0)
+    pub_rec_bankruptcies: float = Field(..., ge=0)
+    revol_bal: float = Field(..., ge=0)
+    revol_util: float = Field(..., ge=0)
+    tax_liens: float = Field(..., ge=0)
+    total_acc: float = Field(..., ge=0)
+
+    # --- Optional bureau/trade-line fields: >= 4% missing in train
+    # (reports/metrics/api_field_missing_rates.csv) - optbinning/LightGBM
+    # both handle missing natively, and several of these are legitimately
+    # missing-not-at-random in training (an event that never happened). ---
+    emp_length: float | None = Field(None, ge=0, le=10)
     acc_open_past_24mths: float | None = Field(None, ge=0)
     avg_cur_bal: float | None = Field(None, ge=0)
     bc_open_to_buy: float | None = Field(None, ge=0)
     bc_util: float | None = Field(None, ge=0)
-    chargeoff_within_12_mths: float | None = Field(None, ge=0)
-    collections_12_mths_ex_med: float | None = Field(None, ge=0)
-    delinq_2yrs: float | None = Field(None, ge=0)
-    delinq_amnt: float | None = Field(None, ge=0)
-    inq_last_6mths: float | None = Field(None, ge=0)
     mo_sin_old_il_acct: float | None = Field(None, ge=0)
     mo_sin_old_rev_tl_op: float | None = Field(None, ge=0)
     mo_sin_rcnt_rev_tl_op: float | None = Field(None, ge=0)
@@ -72,18 +84,11 @@ class ScoreRequest(BaseModel):
     num_tl_30dpd: float | None = Field(None, ge=0)
     num_tl_90g_dpd_24m: float | None = Field(None, ge=0)
     num_tl_op_past_12m: float | None = Field(None, ge=0)
-    open_acc: float | None = Field(None, ge=0)
     pct_tl_nvr_dlq: float | None = Field(None, ge=0)
     percent_bc_gt_75: float | None = Field(None, ge=0)
-    pub_rec: float | None = Field(None, ge=0)
-    pub_rec_bankruptcies: float | None = Field(None, ge=0)
-    revol_bal: float | None = Field(None, ge=0)
-    revol_util: float | None = Field(None, ge=0)
-    tax_liens: float | None = Field(None, ge=0)
     tot_coll_amt: float | None = Field(None, ge=0)
     tot_cur_bal: float | None = Field(None, ge=0)
     tot_hi_cred_lim: float | None = Field(None, ge=0)
-    total_acc: float | None = Field(None, ge=0)
     total_bal_ex_mort: float | None = Field(None, ge=0)
     total_bc_limit: float | None = Field(None, ge=0)
     total_il_high_credit_limit: float | None = Field(None, ge=0)

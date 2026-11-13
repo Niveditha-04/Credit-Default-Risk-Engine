@@ -1,0 +1,104 @@
+{
+  "label": "post-hoc",
+  "note": "2016 is not used as a clean holdout year because 2016 loans are not fully resolved by this data's March 2019 snapshot - realized_net_cash (built from total_pymnt) would understate cash for loans still being paid down. There is no year in this data that is both unused by this model's own tree-count selection and fully resolved, so validation (2014) is reused with that caveat stated: it was this model's early-stopping target, so its economics here are in-sample for tuning, unlike test (2015).",
+  "validation_auc_ablation_c_reference": 0.6891,
+  "test_auc_ablation_c_reference": 0.6967,
+  "by_year_and_rate": [
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 70,
+      "n_funded": 113799,
+      "default_rate_pct": 10.24,
+      "realized_return_per_dollar_funded_pct": 8.8552
+    },
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 80,
+      "n_funded": 130056,
+      "default_rate_pct": 11.28,
+      "realized_return_per_dollar_funded_pct": 8.8905
+    },
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 90,
+      "n_funded": 146313,
+      "default_rate_pct": 12.39,
+      "realized_return_per_dollar_funded_pct": 8.8853
+    },
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 70,
+      "n_funded": 113799,
+      "default_rate_pct": 9.37,
+      "realized_return_per_dollar_funded_pct": 9.5801
+    },
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 80,
+      "n_funded": 130056,
+      "default_rate_pct": 10.57,
+      "realized_return_per_dollar_funded_pct": 9.4724
+    },
+    {
+      "evaluation_year": "2014 (validation, in-sample for this model's tree count)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 90,
+      "n_funded": 146313,
+      "default_rate_pct": 11.97,
+      "realized_return_per_dollar_funded_pct": 9.2505
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.65,
+      "realized_return_per_dollar_funded_pct": 6.9761
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.88,
+      "realized_return_per_dollar_funded_pct": 6.88
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_map",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 13.17,
+      "realized_return_per_dollar_funded_pct": 6.7321
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 70,
+      "n_funded": 197950,
+      "default_rate_pct": 10.11,
+      "realized_return_per_dollar_funded_pct": 7.4912
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 80,
+      "n_funded": 226229,
+      "default_rate_pct": 11.43,
+      "realized_return_per_dollar_funded_pct": 7.2826
+    },
+    {
+      "evaluation_year": "2015 (test, post-hoc)",
+      "model": "sub_grade_plus_lightgbm",
+      "selection_rate_pct": 90,
+      "n_funded": 254508,
+      "default_rate_pct": 12.92,
+      "realized_return_per_dollar_funded_pct": 6.9717
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   "orders": {
     "frozen_original_pipeline_order": {
       "validation_auc": 0.6834,
-      "note": "the already-committed, frozen number - the row order produced by the pipeline before the 2026-11-10 ORDER BY fix"
+      "note": "the already-committed, frozen number, from this pipeline's own row order"
     },
     "id_sorted_ascending": {
       "validation_auc": 0.6841,
@@ -18,5 +18,5 @@
     }
   },
   "spread": 0.0007,
-  "conclusion": "Row order alone moves this config's validation AUC by about 0.0007 - small in absolute terms, but enough that a full ~40-trial tuning search's best-vs-chosen selection rule (within 0.002 AUC tolerance) can pick an entirely different trial when row order changes, which is what happened when gbm.py was rerun after the ORDER BY fix (chosen n_trees 273 -> 232, calibration method platt -> isotonic)."
+  "conclusion": "Row order alone moves this config's validation AUC by about 0.0007 - small in absolute terms, but enough that a full ~40-trial tuning search's best-vs-chosen selection rule (within 0.002 AUC tolerance) can pick an entirely different trial under a different row order, for example changing the chosen n_trees (273 vs. 232 in one comparison run) and calibration method (Platt vs. isotonic)."
 }

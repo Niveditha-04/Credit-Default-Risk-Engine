@@ -29,3 +29,19 @@ jobs:
         with:
           name: coverage-xml
           path: coverage.xml
+
+      - name: Build dummy model for Docker build (CI has no real, gitignored model)
+        run: python .github/scripts/build_dummy_model_for_ci.py
+
+      - name: Docker build
+        run: docker build -t credit-default-risk-engine:ci .
+
+      - name: Docker smoke test (run + /health) - a build-only check would not have caught a missing COPY
+        run: |
+          docker run -d --rm -p 8000:8000 --name cdre-ci credit-default-risk-engine:ci
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8000/health; then break; fi
+            sleep 1
+          done
+          curl -sf http://localhost:8000/health
+          docker stop cdre-ci
