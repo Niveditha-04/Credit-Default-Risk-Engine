@@ -3,10 +3,10 @@
   "note": "last_pymnt_d is an approximation of when a loan stopped performing, not an exact default date (LendingClub does not record one). A loan whose charge-off happened more than 24 months after issue, or whose last_pymnt_d is missing, cannot be placed inside or outside the 24-month window and is excluded from this check entirely (not counted as a 0 or a 1).",
   "replay_window": [
     "2016-01-01",
-    "2017-03-31"
+    "2016-10-31"
   ],
-  "n_excluded_cannot_be_labelled": 6315,
-  "n_scored": 381740,
+  "n_excluded_cannot_be_labelled": 5929,
+  "n_scored": 260038,
   "by_quarter": [
     {
       "period": "2015Q1",
@@ -67,22 +67,14 @@
     {
       "period": "2016Q4",
       "source": "replay (post-hoc, 24-month label)",
-      "n": 76019,
-      "n_positive": 8925,
-      "label_24m_rate_pct": 11.74,
-      "auc": 0.6747
-    },
-    {
-      "period": "2017Q1",
-      "source": "replay (post-hoc, 24-month label)",
-      "n": 69634,
-      "n_positive": 6969,
-      "label_24m_rate_pct": 10.01,
-      "auc": 0.685
+      "n": 23951,
+      "n_positive": 2712,
+      "label_24m_rate_pct": 11.32,
+      "auc": 0.6725
     }
   ],
   "replay_auc_range": [
-    0.6747,
+    0.6725,
     0.7045
   ],
   "test_2015_auc_range_same_label": [

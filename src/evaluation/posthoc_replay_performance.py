@@ -1,15 +1,18 @@
 """Post-hoc partial performance check on replay (2016-2018). Replay
 carries no official target (see src/data/target.py) because most of it
 has not had time to fully resolve by this data's March 2019 snapshot.
-This script builds one narrow exception: loans issued January 2016
-through March 2017 have all had at least 24 months to season by March
-2019, so a FIXED 24-month-horizon default label (identical in spirit to
-the stricter robustness check already applied to test) is derivable for
-them without waiting for full resolution. This is a post-hoc,
-exploratory label used only to compare AUC by issue quarter against the
-same label applied to test (2015); it is not the project's target, it
-is not cached anywhere for reuse, and it never feeds into the frozen
-champion, any feature, or the deployed policy.
+This script builds one narrow exception: loans issued January through
+October 2016 have all had at least 24 + 5 = 29 months to season by
+March 2019 (October 2016 + 29 months = March 2019 exactly), a 5-month
+buffer past the 24-month label horizon itself, so a FIXED 24-month
+-horizon default label (identical in spirit to the stricter robustness
+check already applied to test) is derivable for them without waiting
+for full resolution. Loans issued after October 2016 are excluded
+entirely from this window - they would not have the buffer. This is a
+post-hoc, exploratory label used only to compare AUC by issue quarter
+against the same label applied to test (2015); it is not the project's
+target, it is not cached anywhere for reuse, and it never feeds into
+the frozen champion, any feature, or the deployed policy.
 
 24-month label: for a loan issued at month 0,
   1 = charged off (loan_status Charged Off or Default) with
@@ -42,7 +45,8 @@ TEST_SCORED = METRICS_DIR / "test_scored.parquet"
 REPLAY_PARQUET = "data/processed/replay.parquet"
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
 REPLAY_WINDOW_START = "2016-01-01"
-REPLAY_WINDOW_END = "2017-03-31"
+REPLAY_WINDOW_END = "2016-10-31"  # last vintage with >= 24 + 5 months observable by the March 2019 snapshot
+STILL_OPEN_STATUSES = ["Current", "Late (16-30 days)", "Late (31-120 days)", "In Grace Period"]
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 
@@ -74,11 +78,23 @@ def main() -> None:
         "posthoc_replay_performance.py",
         len(replay_window),
         "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued "
-        "2016-01 to 2017-03 (the only replay window with >= 24 months of seasoning by "
-        "the March 2019 snapshot) to build a 24-month-horizon label for a partial, "
-        "informal performance check. Not the project's target, not cached for reuse, "
-        "no model, feature, or policy change.",
+        "2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning "
+        "by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) "
+        "to build a 24-month-horizon label for a partial, informal performance check. "
+        "Not the project's target, not cached for reuse, no model, feature, or policy change.",
     )
+
+    replay_window["quarter"] = pd.to_datetime(replay_window["issue_d"]).dt.to_period("Q").astype(str)
+    still_open_rows = []
+    for quarter, g in replay_window.groupby("quarter"):
+        row = {"quarter": quarter, "n": len(g)}
+        for status in STILL_OPEN_STATUSES:
+            row[status] = int((g["loan_status"] == status).sum())
+        still_open_rows.append(row)
+    still_open_df = pd.DataFrame(still_open_rows)
+    still_open_df.to_csv(METRICS_DIR / "posthoc_replay_still_open_by_vintage.csv", index=False)
+    print("=== Loans by status at the March 2019 snapshot, by issue quarter (censoring check) ===")
+    print(still_open_df.to_string(index=False))
 
     labelled = label_24_month(replay_window["loan_status"], replay_window["issue_d"], replay_window["last_pymnt_d"])
     replay_window = pd.concat([replay_window, labelled], axis=1)

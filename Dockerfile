@@ -26,6 +26,7 @@ COPY src/__init__.py src/__init__.py
 
 # Frozen champion artifacts, baked in at build time.
 COPY reports/metrics/frozen_model_config.json reports/metrics/frozen_model_config.json
+COPY reports/metrics/shap_global_importance.csv reports/metrics/shap_global_importance.csv
 COPY data/processed/models/lightgbm/model_chosen.joblib data/processed/models/lightgbm/model_chosen.joblib
 COPY data/processed/models/lightgbm/calibrator.joblib data/processed/models/lightgbm/calibrator.joblib
 

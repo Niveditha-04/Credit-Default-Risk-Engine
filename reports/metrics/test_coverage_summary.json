@@ -1,16 +1,17 @@
 {
-  "n_tests_passed": 282,
+  "n_tests_passed": 319,
   "core_modules_checked": [
     "src.features",
     "src.data.target",
     "src.monitoring.psi",
     "src.api"
   ],
-  "core_modules_combined_percent_covered": 57.88,
+  "core_modules_combined_percent_covered": 56.0,
   "per_file_percent_covered": {
     "src/api/__init__.py": 100.0,
     "src/api/build_assets.py": 0.0,
     "src/api/checks.py": 0.0,
+    "src/api/field_requirements.py": 0.0,
     "src/api/main.py": 100.0,
     "src/api/parity_check.py": 0.0,
     "src/api/reason_codes.py": 100.0,

@@ -1,0 +1,30 @@
+{
+  "label": "post-hoc, exploratory",
+  "rule_file": "docs/v2_decision_rule.md",
+  "evaluation_population": {
+    "window": [
+      "2016-01-01",
+      "2016-10-31"
+    ],
+    "n_scored": 260038,
+    "label_24m_rate_pct": 12.7
+  },
+  "v1": {
+    "auc": 0.6899,
+    "ece": 0.008
+  },
+  "v2": {
+    "auc": 0.6978,
+    "ece": 0.0079
+  },
+  "rule": {
+    "auc_condition": "AUC(v2) >= AUC(v1) - 0.002",
+    "auc_condition_value": "0.6978 >= 0.6879",
+    "auc_condition_met": true,
+    "ece_condition": "ECE(v2) <= ECE(v1) + 0.005",
+    "ece_condition_value": "0.0079 <= 0.013",
+    "ece_condition_met": true
+  },
+  "adopt_v2": true,
+  "note": "Adoption here means recording this decision and the numbers it was made on. It does not change the frozen v1 champion's artifacts, MLflow alias, or served model - promoting an actual v2 champion is a separate, later action."
+}

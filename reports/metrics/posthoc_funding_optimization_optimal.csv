@@ -1,0 +1,13 @@
+model,cost_of_funds_pct,optimal_selection_rate_pct,net_cash_after_cost_total,annualized_return_on_avg_capital_pct_at_optimum
+lightgbm,0,95,232764191.68,6.5977
+scorecard,0,100,229914974.11,6.2364
+sub_grade_map,0,100,229914974.11,6.2364
+xgboost,0,95,232482730.02,6.5972
+lightgbm,4,85,94361253.78,2.9447
+scorecard,4,90,89570039.42,2.6358
+sub_grade_map,4,95,85528467.8,2.4168
+xgboost,4,85,94706225.72,2.9603
+lightgbm,8,5,-2005705.59,-0.8568
+scorecard,8,5,-2489569.08,-0.9912
+sub_grade_map,8,5,-5646662.47,-2.4422
+xgboost,8,5,-2068591.66,-0.8862

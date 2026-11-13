@@ -1,0 +1,90 @@
+{
+  "label": "post-hoc",
+  "note": "Optimal selection rate maximizes TOTAL realized net cash after cost of funds (a dollar amount), not return per dollar funded - funding every loan is not always best once financing cost on the whole book is counted. Annualized return on average capital = net cash after cost / (funded amount x years to last payment x 0.5); this is an approximation (average balance 0.5, and years from last_pymnt_d rather than a true duration-weighted yield), stated as such.",
+  "optimal": [
+    {
+      "model": "lightgbm",
+      "cost_of_funds_pct": 0,
+      "optimal_selection_rate_pct": 95,
+      "net_cash_after_cost_total": 232764191.68,
+      "annualized_return_on_avg_capital_pct_at_optimum": 6.5977
+    },
+    {
+      "model": "scorecard",
+      "cost_of_funds_pct": 0,
+      "optimal_selection_rate_pct": 100,
+      "net_cash_after_cost_total": 229914974.11,
+      "annualized_return_on_avg_capital_pct_at_optimum": 6.2364
+    },
+    {
+      "model": "sub_grade_map",
+      "cost_of_funds_pct": 0,
+      "optimal_selection_rate_pct": 100,
+      "net_cash_after_cost_total": 229914974.11,
+      "annualized_return_on_avg_capital_pct_at_optimum": 6.2364
+    },
+    {
+      "model": "xgboost",
+      "cost_of_funds_pct": 0,
+      "optimal_selection_rate_pct": 95,
+      "net_cash_after_cost_total": 232482730.02,
+      "annualized_return_on_avg_capital_pct_at_optimum": 6.5972
+    },
+    {
+      "model": "lightgbm",
+      "cost_of_funds_pct": 4,
+      "optimal_selection_rate_pct": 85,
+      "net_cash_after_cost_total": 94361253.78,
+      "annualized_return_on_avg_capital_pct_at_optimum": 2.9447
+    },
+    {
+      "model": "scorecard",
+      "cost_of_funds_pct": 4,
+      "optimal_selection_rate_pct": 90,
+      "net_cash_after_cost_total": 89570039.42,
+      "annualized_return_on_avg_capital_pct_at_optimum": 2.6358
+    },
+    {
+      "model": "sub_grade_map",
+      "cost_of_funds_pct": 4,
+      "optimal_selection_rate_pct": 95,
+      "net_cash_after_cost_total": 85528467.8,
+      "annualized_return_on_avg_capital_pct_at_optimum": 2.4168
+    },
+    {
+      "model": "xgboost",
+      "cost_of_funds_pct": 4,
+      "optimal_selection_rate_pct": 85,
+      "net_cash_after_cost_total": 94706225.72,
+      "annualized_return_on_avg_capital_pct_at_optimum": 2.9603
+    },
+    {
+      "model": "lightgbm",
+      "cost_of_funds_pct": 8,
+      "optimal_selection_rate_pct": 5,
+      "net_cash_after_cost_total": -2005705.59,
+      "annualized_return_on_avg_capital_pct_at_optimum": -0.8568
+    },
+    {
+      "model": "scorecard",
+      "cost_of_funds_pct": 8,
+      "optimal_selection_rate_pct": 5,
+      "net_cash_after_cost_total": -2489569.08,
+      "annualized_return_on_avg_capital_pct_at_optimum": -0.9912
+    },
+    {
+      "model": "sub_grade_map",
+      "cost_of_funds_pct": 8,
+      "optimal_selection_rate_pct": 5,
+      "net_cash_after_cost_total": -5646662.47,
+      "annualized_return_on_avg_capital_pct_at_optimum": -2.4422
+    },
+    {
+      "model": "xgboost",
+      "cost_of_funds_pct": 8,
+      "optimal_selection_rate_pct": 5,
+      "net_cash_after_cost_total": -2068591.66,
+      "annualized_return_on_avg_capital_pct_at_optimum": -0.8862
+    }
+  ]
+}

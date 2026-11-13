@@ -1,0 +1,13 @@
+evaluation_year,model,selection_rate_pct,n_funded,default_rate_pct,realized_return_per_dollar_funded_pct
+"2014 (validation, in-sample for this model's tree count)",sub_grade_map,70,113799,10.24,8.8552
+"2014 (validation, in-sample for this model's tree count)",sub_grade_map,80,130056,11.28,8.8905
+"2014 (validation, in-sample for this model's tree count)",sub_grade_map,90,146313,12.39,8.8853
+"2014 (validation, in-sample for this model's tree count)",sub_grade_plus_lightgbm,70,113799,9.37,9.5801
+"2014 (validation, in-sample for this model's tree count)",sub_grade_plus_lightgbm,80,130056,10.57,9.4724
+"2014 (validation, in-sample for this model's tree count)",sub_grade_plus_lightgbm,90,146313,11.97,9.2505
+"2015 (test, post-hoc)",sub_grade_map,70,197950,10.65,6.9761
+"2015 (test, post-hoc)",sub_grade_map,80,226229,11.88,6.88
+"2015 (test, post-hoc)",sub_grade_map,90,254508,13.17,6.7321
+"2015 (test, post-hoc)",sub_grade_plus_lightgbm,70,197950,10.11,7.4912
+"2015 (test, post-hoc)",sub_grade_plus_lightgbm,80,226229,11.43,7.2826
+"2015 (test, post-hoc)",sub_grade_plus_lightgbm,90,254508,12.92,6.9717

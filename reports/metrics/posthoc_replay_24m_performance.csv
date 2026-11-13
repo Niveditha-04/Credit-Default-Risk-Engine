@@ -6,5 +6,4 @@ period,source,n,n_positive,label_24m_rate_pct,auc
 2016Q1,"replay (post-hoc, 24-month label)",91791,11441,12.46,0.7045
 2016Q2,"replay (post-hoc, 24-month label)",71904,9342,12.99,0.6886
 2016Q3,"replay (post-hoc, 24-month label)",72392,9539,13.18,0.6769
-2016Q4,"replay (post-hoc, 24-month label)",76019,8925,11.74,0.6747
-2017Q1,"replay (post-hoc, 24-month label)",69634,6969,10.01,0.685
+2016Q4,"replay (post-hoc, 24-month label)",23951,2712,11.32,0.6725

@@ -37,20 +37,52 @@ A stricter label, default within 24 months of issue (from payment dates, labelin
 
 Two folds, both with the champion's frozen hyperparameters (no tuning search); fold 1 reuses the already-committed train (2012-2013) -> validation (2014) numbers, fold 2 trains fresh on 2012-2014 and evaluates on test (2015), post-hoc (`reports/metrics/posthoc_walkforward.csv`, `src/evaluation/posthoc_walkforward.py`). LightGBM reuses the champion's exact tree count (273) in fold 2 rather than early-stopping against anything inside the fold, since there is no non-test holdout left to early-stop against without using test for a design decision. The scorecard reruns its full pipeline (WOE binning, IV filter, correlation reduction, VIF reduction, sign-correction logistic regression) fresh on each fold's own train data; fold 2 selects a slightly different 16-feature set than the frozen scorecard's 17: it drops `mo_sin_old_il_acct` and `num_rev_tl_bal_gt_0` and adds `mort_acc` (`reports/metrics/posthoc_walkforward_summary.json` has the exact list).
 
-| Fold | Train years | Evaluate | LightGBM AUC | Scorecard AUC | sub_grade AUC | Lift vs. scorecard | Lift vs. sub_grade |
-|---|---|---|---|---|---|---|---|
-| 1 | 2012-2013 | 2014 (primary) | 0.6834 | 0.6650 | 0.6596 | +0.0184 | +0.0238 |
-| 2 | 2012-2014 | 2015 (post-hoc) | 0.6962 | 0.6739 | 0.6786 | +0.0223 | +0.0175 |
+**Fold 1 is in-sample for model selection, not a clean holdout**: 2014 was validation's own early-stopping target (it set the tree count, 273) and the primary number the champion itself was picked on - it is not an independent test of this configuration. Only fold 2 (train 2012-2014, evaluate test 2015) is genuinely out-of-sample for this walk-forward check, since test was never used to tune or early-stop anything here or in the frozen champion.
 
-Lift vs. scorecard: mean +0.0204, range +0.0184 to +0.0223. Lift vs. sub_grade: mean +0.0207, range +0.0175 to +0.0238. Both lifts are positive in both folds - the advantage holds walking forward a year with a year more training data, not just within the single frozen validation/test split. Fold 2's LightGBM AUC (0.6962) is higher than the frozen champion's own test AUC (0.6872); with a year more training data and the champion's exact hyperparameters and tree count carried over unchanged, this is not surprising, and it is not a basis for touching the frozen champion.
+| Fold | Train years | Evaluate | Status | LightGBM AUC | Scorecard AUC | sub_grade AUC | Lift vs. scorecard | Lift vs. sub_grade |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 2012-2013 | 2014 | in-sample for tuning/calibration | 0.6834 | 0.6650 | 0.6596 | +0.0184 | +0.0238 |
+| 2 | 2012-2014 | 2015 | out-of-sample, post-hoc | 0.6962 | 0.6739 | 0.6786 | +0.0223 | +0.0175 |
+
+Per-fold lifts, not a rounded mean: fold 1 (in-sample) +0.0184 vs. scorecard and +0.0238 vs. sub_grade; fold 2 (the only genuinely out-of-sample fold) +0.0223 vs. scorecard and +0.0175 vs. sub_grade. Both lifts are positive in both folds, and in particular the lift holds in fold 2, the one fold this check can actually speak to. Fold 2's LightGBM AUC (0.6962) is higher than the frozen champion's own test AUC (0.6872); with a year more training data and the champion's exact hyperparameters and tree count carried over unchanged, this is not surprising, and it is not a basis for touching the frozen champion.
 
 ## Partial performance on replay (post-hoc, exploratory)
 
-Replay (2016-2018) carries no official target because most of it has not had time to resolve by this data's March 2019 snapshot (see Limitations). One narrow exception: loans issued January 2016 through March 2017 have all had at least 24 months to season by March 2019, so a fixed 24-month-horizon default label (same idea as the stricter robustness check above, re-derived for this window) is computable for them (`reports/metrics/posthoc_replay_24m_performance.csv`, `src/evaluation/posthoc_replay_performance.py`).
+Replay (2016-2018) carries no official target because most of it has not had time to resolve by this data's March 2019 snapshot (see Limitations). One narrow exception: loans issued January through October 2016 have all had at least 24 + 5 = 29 months to season by March 2019 (October 2016 + 29 months = March 2019 exactly), a 5-month buffer past the 24-month label horizon itself, so a fixed 24-month-horizon default label (same idea as the stricter robustness check above, re-derived for this window) is computable for them without relying on the bare minimum (`reports/metrics/posthoc_replay_24m_performance.csv`, `src/evaluation/posthoc_replay_performance.py`). Loans issued after October 2016 are excluded from this window entirely, since they would not have that buffer.
 
-Label: 1 = charged off with `last_pymnt_d` within 24 months of `issue_d`; 0 = everything else that has been observed past the 24-month mark without charging off (including loans still Current or Late at the snapshot date - the question is only "did it charge off within 24 months", not "is it fully resolved good"). Excluded entirely (cannot be labelled): charged-off loans with `last_pymnt_d` more than 24 months after issue, or missing altogether - 6,315 of 388,055 loans in this window (1.6%). `last_pymnt_d` is only an approximation of when a loan stopped performing; LendingClub does not record an exact default date.
+Label: 1 = charged off with `last_pymnt_d` within 24 months of `issue_d`; 0 = everything else that has been observed past the 24-month mark without charging off (including loans still Current or Late at the snapshot date - the question is only "did it charge off within 24 months", not "is it fully resolved good"). Excluded entirely (cannot be labelled): charged-off loans with `last_pymnt_d` more than 24 months after issue, or missing altogether - 5,929 of 265,967 loans in this restricted window (2.2%). `last_pymnt_d` is only an approximation of when a loan stopped performing; LendingClub does not record an exact default date.
 
-Applying the identical label to test (2015) by quarter, for comparison: AUC ranges 0.6877 to 0.7009 across the 4 quarters of 2015. On the replay window (2016-Q1 through 2017-Q1, 5 quarters): AUC ranges 0.6747 to 0.7045. The two ranges overlap; nothing here suggests the model's discrimination under this stricter label has degraded on more recent originations, though this remains a narrow, single-window, exploratory check, not a repeatable monitoring signal.
+As a censoring check, loans in this window that are still open and not charged off at the March 2019 snapshot, by issue quarter (`reports/metrics/posthoc_replay_still_open_by_vintage.csv`):
+
+| Issue quarter | n | Current | Late (16-30d) | Late (31-120d) | In Grace Period |
+|---|---|---|---|---|---|
+| 2016Q1 | 94,592 | 5,413 | 82 | 523 | 177 |
+| 2016Q2 | 73,666 | 22,971 | 146 | 555 | 243 |
+| 2016Q3 | 73,579 | 25,387 | 143 | 786 | 287 |
+| 2016Q4 (Oct only) | 24,130 | 9,255 | 50 | 260 | 101 |
+
+A meaningful share of the later quarters is still "Current" even at 29+ months (these are legitimately counted as 0 - survived without charging off); the "Late" and "In Grace Period" buckets, which carry more risk of a late-arriving charge-off this check would miss, are small (a few hundred loans per quarter out of 70,000+).
+
+Applying the identical label to test (2015) by quarter, for comparison: AUC ranges 0.6877 to 0.7009 across the 4 quarters of 2015. On the restricted replay window (2016-Q1 through 2016-Q4, the last partial): AUC ranges 0.6725 to 0.7045 - a wider range that fully contains test's. This is consistent with no large degradation in the model's discrimination under this stricter label on more recent originations, though this remains a narrow, single-window, exploratory check, not a repeatable monitoring signal.
+
+## v2 decision rule: results (post-hoc, exploratory)
+
+The adoption rule (v2 definition, evaluation population, label, and the rule itself) was pre-registered and committed in `docs/v2_decision_rule.md` before this evaluation was run or any v2 code was written - the git history shows that commit before this one. This section reports the outcome exactly as the rule specifies, computed by `src/models/posthoc_v2_evaluation.py` (`reports/metrics/posthoc_v2_evaluation.json`).
+
+Population: 2016 vintages, issue_d <= 2016-10-31, the same restricted, censoring-safe window as the replay check above (260,038 loans, 12.70% 24-month-label rate).
+
+| Model | AUC | ECE |
+|---|---|---|
+| v1 (frozen champion, scored fresh on this population) | 0.6899 | 0.0080 |
+| v2 (fresh-fit: LightGBM, 2012-2014, frozen hyperparameters and tree count, 8 monotone constraints) | 0.6978 | 0.0079 |
+
+Rule: adopt v2 only if both `AUC(v2) >= AUC(v1) - 0.002` and `ECE(v2) <= ECE(v1) + 0.005`.
+
+- AUC condition: 0.6978 >= 0.6879 - **met** (v2 is actually higher, not just within the slack).
+- ECE condition: 0.0079 <= 0.0130 - **met** (v2 is also slightly better calibrated).
+- **Outcome: adopt v2**, per the pre-registered rule.
+
+"Adopt" here means recording this outcome, exactly as stated in the rule file - it does not change the frozen v1 champion's artifacts, MLflow alias, or served model (verified: parity check and `verify_champion_alias` both still pass against the unchanged v1 after this evaluation ran). Promoting an actual v2 champion - retraining through the real pipeline, freezing new artifacts, registering it in MLflow - is a separate, later action this evaluation does not take.
 
 ## Ablations (post-hoc)
 
@@ -69,9 +101,9 @@ Absolute validation AUC for every ablation, with the deployed scorecard and the 
 
 Ablation (b)'s own validation AUC (0.6684) is slightly above the deployed scorecard's (0.6650), not below it - skipping the correlation/VIF/sign-correction reduction does not cost ranking power on its own. What it produces instead is 15 positive (sign-mismatched) WOE coefficients out of 63, exactly the instability those reduction steps exist to catch; a scorecard with 15 business-sense-violating coefficients is not one I would ship, regardless of its AUC.
 
-A candidate for the next model-selection round: ablation (d)'s monotone-constrained LightGBM costs about -0.0001 validation AUC relative to the champion and removes most of the income non-monotonicity (see below). It is not swapped in as the champion here, since test (2015) has already been read for the frozen champion, and choosing a replacement with test numbers in hand would not be a legitimate model-selection decision - that choice belongs to a new round that freezes a model before test is touched again.
+A candidate for the next model-selection round: ablation (d)'s monotone-constrained LightGBM has no detectable cost in validation AUC relative to the champion (-0.0001, well within the 0.0007 retraining-noise spread already measured from row order alone, `reports/metrics/training_order_sensitivity.json`) and removes most of the income non-monotonicity (see below). It is not swapped in as the champion here, since test (2015) has already been read for the frozen champion, and choosing a replacement with test numbers in hand would not be a legitimate model-selection decision - that choice belongs to a new round that freezes a model before test is touched again.
 
-For (d), the monotone constraints cost essentially nothing in AUC and mostly remove the income non-monotonicity flagged in the SHAP section above: binning test by income and taking the mean SHAP contribution of `annual_inc`, the champion's curve turns protective, peaks around $90K-110K, then partially reverses (swinging back up by 0.0926 log-odds after the peak); under the monotone constraint the same curve still peaks and then only drifts by 0.0041 log-odds afterward, a 95.6% reduction in that reversal (`reports/metrics/posthoc_ablations_summary.json`'s `income_monotonicity_check`). The reversal shrinks sharply rather than disappearing to exactly zero, since the constraint only forces the tree splits to be non-increasing in `annual_inc`, which allows a flat (not strictly decreasing) segment.
+For (d), the monotone constraints cost essentially nothing in AUC (no detectable cost, within retraining noise) and mostly remove the income non-monotonicity flagged in the SHAP section above: binning test by income and taking the mean SHAP contribution of `annual_inc`, the champion's curve turns protective, peaks around $90K-110K, then partially reverses (swinging back up by 0.0926 log-odds after the peak); under the monotone constraint the same curve still peaks and then only drifts by 0.0041 log-odds afterward, a 95.6% reduction in that reversal (`reports/metrics/posthoc_ablations_summary.json`'s `income_monotonicity_check`). The reversal shrinks sharply rather than disappearing to exactly zero, since the constraint only forces the tree splits to be non-increasing in `annual_inc`, which allows a flat (not strictly decreasing) segment.
 
 ### Paired monthly lift (post-hoc)
 
@@ -81,6 +113,8 @@ Per-month AUC on test (2015), LightGBM vs. sub_grade's ordinal rank and vs. the 
 |---|---|---|---|---|
 | LightGBM minus sub_grade | +0.0082 | +0.0043 | +0.0165 | 12 / 12 |
 | LightGBM minus scorecard | +0.0161 | +0.0107 | +0.0213 | 12 / 12 |
+
+Months within the same year share macro conditions (the same broad credit cycle, seasonality, and underwriting environment) - they are not 12 independent draws, so "12 of 12 positive" is a consistency check across the months this specific year happened to have, not 12 separate confirmations of the lift in a statistical sense.
 
 ### Economics at matched funding volume (post-hoc)
 
@@ -115,6 +149,40 @@ Each row resamples loans with replacement, then recomputes every model's "fund t
 
 Every one of the 18 differences is positive and significant at the 95% level: LightGBM's advantage over both the scorecard and the sub_grade map at matched funding volume holds at every selection rate and every cost-of-funds level checked here.
 
+### Funding-fraction optimization (post-hoc)
+
+For each model and each cost of funds (0/4/8% annual), the funding fraction on 2015 test that maximizes TOTAL realized net cash after cost - a dollar amount, not a per-dollar rate - searched over a 5%-step grid (`reports/metrics/posthoc_funding_optimization_curve.csv`, `reports/metrics/posthoc_funding_optimization_optimal.csv`, `reports/figures/posthoc_net_cash_vs_funding_volume.png`, `src/evaluation/posthoc_funding_optimization.py`):
+
+| Model | Cost of funds | Optimal selection rate | Net cash after cost | Annualized return on average capital |
+|---|---|---|---|---|
+| LightGBM | 0% | 95% | $232.8M | 6.60% |
+| XGBoost | 0% | 95% | $232.5M | 6.60% |
+| Scorecard | 0% | 100% | $229.9M | 6.24% |
+| sub_grade map | 0% | 100% | $229.9M | 6.24% |
+| LightGBM | 4% | 85% | $94.4M | 2.94% |
+| XGBoost | 4% | 85% | $94.7M | 2.96% |
+| Scorecard | 4% | 90% | $89.6M | 2.64% |
+| sub_grade map | 4% | 95% | $85.5M | 2.42% |
+| LightGBM | 8% | 5% | -$2.0M | -0.86% |
+| XGBoost | 8% | 5% | -$2.1M | -0.89% |
+| Scorecard | 8% | 5% | -$2.5M | -0.99% |
+| sub_grade map | 8% | 5% | -$5.6M | -2.44% |
+
+At 0% cost of funds, LightGBM and XGBoost's better ranking lets them profitably exclude a small risky tail (peaking at 95% funded, just above the scorecard and sub_grade map's corner solution of funding everyone); at 4% the gap widens and the optimal fraction drops further for all 4. At 8%, **every model's best achievable fraction still loses money** - the optimal selection rate collapses to the grid's lowest tested value (5%) and net cash is still negative there, so this is not a volume problem solvable by selecting more conservatively; 8% annual cost of funds makes this book unprofitable under this approximation regardless of selection volume. Annualized return on average capital = net cash after cost / (funded amount x years to last payment x 0.5) - the same average-balance approximation (0.5) already used for the cost-of-funds formula, applied here to annualize the return itself; it is an approximation, not a true duration-weighted yield, since years-to-last-payment is realized, not contractual, duration.
+
+### sub_grade alone vs. sub_grade + LightGBM (post-hoc)
+
+LightGBM with the champion's 69 features plus `sub_grade` as a feature (ablation c) vs. sub_grade's own train-year PD map, at matched funding volume, on validation (2014) and test (2015) (`reports/metrics/posthoc_subgrade_lightgbm_matched_volume.csv`, `src/evaluation/posthoc_subgrade_lightgbm_matched_volume.py`):
+
+| Year | Model | 70% | 80% | 90% |
+|---|---|---|---|---|
+| 2014 (in-sample for this model's tree count) | sub_grade map | 8.86% | 8.89% | 8.89% |
+| 2014 (in-sample for this model's tree count) | sub_grade + LightGBM | 9.58% | 9.47% | 9.25% |
+| 2015 (post-hoc) | sub_grade map | 6.98% | 6.88% | 6.73% |
+| 2015 (post-hoc) | sub_grade + LightGBM | 7.49% | 7.28% | 6.97% |
+
+sub_grade + LightGBM beats sub_grade alone at every rate in both years. 2016 is not used as a cleaner, fully-resolved holdout year instead of validation: 2016 loans are not fully resolved by this data's March 2019 snapshot (see Partial performance on replay, above), so `realized_net_cash` (built from `total_pymnt`, which keeps growing until a loan resolves) would understate cash for loans still being paid down. There is no year in this data that is both unused by this model's own tree-count selection and fully resolved - validation (2014) is reused instead, with that caveat stated plainly: 2014 was this model's early-stopping target, so its economics here are in-sample for tuning, unlike test (2015), which is genuinely out-of-sample for this ablation.
+
 ## Stability
 
 Checked by issue quarter and by `addr_state` grouping, labeled stability, not fairness, since there are no protected attributes in this data to check fairness against. See `reports/metrics/test_stability_by_quarter.csv` and `test_stability_by_region.csv`.
@@ -123,10 +191,18 @@ Checked by issue quarter and by `addr_state` grouping, labeled stability, not fa
 
 LightGBM, XGBoost, and the scorecard are each calibrated out-of-sample on a held-out slice of validation (fit on 2014-01 to 2014-09, evaluated on 2014-10 to 2014-12), then refit on all of 2014 for deployment. The champion's calibrator deploys isotonic only if it beats Platt by more than 0.0005 holdout Brier score; otherwise it deploys Platt. The live champion picked Platt. Every scoring path (`score_models.py`, `decision_policy.py`, the served MLflow model, the API) applies whichever calibrator it got through one shared function, `apply_calibrator()`, so either choice scores correctly. LightGBM's champion mean predicted PD on test (13.74%) sits close to, but below, the actual test default rate (14.88%). See `reports/metrics/test_calibration_lightgbm.csv` for the full calibration curve.
 
-Expected Calibration Error (10 bins, weighted by bin size): **0.0121**. Reliability plot: `reports/figures/posthoc_reliability_plot.png` (`src/evaluation/posthoc_calibration.py`, post-hoc for the by-month and by-FICO-band breakdowns below; the ECE and reliability plot themselves use only the already-committed 10-bin calibration table, no new test read). Calibration holds up similarly across both cuts:
+Expected Calibration Error, **on test (2015)**, 10 bins weighted by bin size: **0.0121**. Reliability plot: `reports/figures/posthoc_reliability_plot.png` (`src/evaluation/posthoc_calibration.py`, post-hoc for the by-month and by-FICO-band breakdowns below; the ECE and reliability plot themselves use only the already-committed 10-bin calibration table, no new test read). Calibration holds up similarly across both cuts, still on test (2015), not on any later data:
 
 - By issue month (2015): mean predicted PD tracks the actual default rate in every month; the largest gap is 1.89 percentage points (`reports/metrics/posthoc_calibration_by_month.csv`).
 - By FICO band: predicted and actual default rates track closely in every band from (660, 680] down to (760, 850]; the largest gap is 1.90 percentage points, and both predicted and actual rates fall monotonically as FICO rises (19.32% actual at the lowest band to 4.77% at the highest) (`reports/metrics/posthoc_calibration_by_fico_band.csv`).
+
+### Recalibration policy
+
+Not yet implemented as running code - a statement of intent for operating this model past test (2015).
+
+- **Trigger:** once a cohort of funded loans has seasoned past a fixed horizon (24 months, matching the horizon used throughout this project's post-hoc replay checks) and the calibration-in-the-large gap on that seasoned cohort - mean predicted PD minus actual default rate, the same quantity reported by month and by FICO band above - exceeds a threshold (a starting point consistent with what is already seen here: roughly 2 percentage points, since the largest gap observed on test in-sample is 1.89-1.90 points; this threshold itself would need validating against more seasoned cohorts before being relied on operationally).
+- **What gets refit:** first, only the calibrator (Platt or isotonic, `apply_calibrator()`) is refit on the newly-seasoned cohort - the same out-of-sample fit-then-holdout methodology already used for the champion's own calibration, not the underlying LightGBM model. If the gap persists or grows after a calibrator refit, that is a signal to re-open full model selection (new candidate models, a pre-registered decision rule committed before evaluation, as in `docs/v2_decision_rule.md`), not to keep refitting the calibrator indefinitely.
+- This policy has not been exercised: there is no seasoned post-test cohort with a real (non-post-hoc, non-exploratory) label available yet to trigger it.
 
 ## Segments (post-hoc)
 
@@ -149,7 +225,7 @@ Threshold chosen entirely on validation (2014) and train (2012 to 2013), by maxi
 
 Loss rate used in the EV model: loss rate on funded amount, cash basis (`1 - (total payment received - collection/recovery fee) / funded amount`), 0.3803 mean on train charged-off loans. The standard LGD definition on outstanding principal at charge-off averages 0.8906 on the same loans; the cash-basis version is used in the EV model because it matches dollars actually paid, not an accounting write-off. Sensitivity table over the cash-basis loss rate, 0.25 to 0.6, is in `reports/metrics/test_lgd_sensitivity.csv`. This EV model has no cost of capital, no operating cost, and no time value of money.
 
-Gap decomposition for LightGBM, in the order attributed (each step's dollar amount comes out of what's left after the previous step, so the prepayment/loss-severity split specifically depends on this order): $21,903,123.37 (49.1% of the $44,622,042.25 gap) is default-rate drift, the model's mean predicted PD on funded loans (13.56%) being below their actual default rate (14.70%), since calibration was fit on 2014's 13.73% default rate and test ran at 14.88%. Of the $22,718,918.88 left after that, $12,945,771.83 (57.0% of the remainder, 29.0% of the original gap) is prepayment: realized interest income on test's fully paid loans came in lower than train's assumption (80.24% vs. 82.62% of scheduled interest). $7,336,260.28 (32.3% of the remainder, 16.4% of the original gap) is loss severity: realized loss on test's charged-off loans came in higher than train's assumption (39.47% vs. 38.03%). Combined, default-rate drift, prepayment, and loss severity explain $42,185,155.48 of the $44,622,042.25 gap (94.5%); $2,436,886.77 (5.5%) is unexplained.
+Gap decomposition for LightGBM, in the order attributed (each step's dollar amount comes out of what's left after the previous step, so the prepayment/loss-severity split specifically depends on this order): $21,903,123.37 (49.1% of the $44,622,042.25 gap) is default-rate drift, the model's mean predicted PD on funded loans (13.56%) being below their actual default rate (14.70%), since calibration was fit on 2014's 13.73% default rate and test ran at 14.88%. Of the $22,718,918.88 left after that, $12,945,771.83 (57.0% of the remainder, 29.0% of the original gap) is prepayment: realized interest income on test's fully paid loans came in lower than train's assumption (80.24% vs. 82.62% of scheduled interest). $7,336,260.28 (32.3% of the remainder, 16.4% of the original gap) is loss severity: realized loss on test's charged-off loans came in higher than train's assumption (39.47% vs. 38.03%). Combined, default-rate drift, prepayment, and loss severity explain $42,185,155.48 of the $44,622,042.25 gap (94.5%); $2,436,886.77 (5.5%) is unexplained. Taken together rather than split, prepayment ($12,945,771.83) and loss severity ($7,336,260.28) are jointly $20,282,032.11 (45.4% of the original gap) - both train-year assumptions about test's realized cash flows that did not hold, independent of the attribution order used to split them from each other above.
 
 ### Fixed selection-rate sweep (test, cutoffs set on validation, $ in millions)
 
@@ -179,7 +255,13 @@ The full 69-feature table, both references side by side with each feature's SHAP
 
 ## API
 
-`/score` accepts the schema's 63 fields; any left out default to missing. The response lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. A trimmed response, for a request sending 20 of the 63 fields:
+`/score` accepts 63 fields: `issue_d` (never required - not something a live applicant supplies, defaults to today) plus 62 real-applicant fields. 19 of those 62 are required (missing returns 422): fields with under 1% missing in train, on the reasoning that a live caller omitting one is a bad request, not a natively-missing value. The other 43 stay optional - several are legitimately missing-not-at-random in training (an event, like a delinquency, that never happened). The split is computed and asserted against this same under-1% rule by `src/api/field_requirements.py` (`reports/metrics/api_field_missing_rates.csv`, `reports/metrics/api_field_requirements.json`):
+
+**Required** (< 1% missing in train): `loan_amnt`, `annual_inc`, `dti`, `fico_range_low`, `fico_range_high`, `earliest_cr_line`, `home_ownership`, `purpose`, `verification_status`, `acc_now_delinq`, `chargeoff_within_12_mths`, `collections_12_mths_ex_med`, `delinq_2yrs`, `delinq_amnt`, `inq_last_6mths`, `open_acc`, `pub_rec`, `pub_rec_bankruptcies`, `revol_bal`, `revol_util`, `tax_liens`, `total_acc`.
+
+**Optional** (>= 4% missing in train - there is a clean gap in the data between the lowest optional field's missing rate, 4.19%, and the highest required field's, 0.07%): `emp_length`, `acc_open_past_24mths`, `avg_cur_bal`, `bc_open_to_buy`, `bc_util`, `mo_sin_old_il_acct`, `mo_sin_old_rev_tl_op`, `mo_sin_rcnt_rev_tl_op`, `mo_sin_rcnt_tl`, `mort_acc`, `mths_since_last_delinq`, `mths_since_last_major_derog`, `mths_since_last_record`, `mths_since_recent_bc`, `mths_since_recent_bc_dlq`, `mths_since_recent_inq`, `mths_since_recent_revol_delinq`, `num_accts_ever_120_pd`, `num_actv_bc_tl`, `num_actv_rev_tl`, `num_bc_sats`, `num_bc_tl`, `num_il_tl`, `num_op_rev_tl`, `num_rev_accts`, `num_rev_tl_bal_gt_0`, `num_sats`, `num_tl_120dpd_2m`, `num_tl_30dpd`, `num_tl_90g_dpd_24m`, `num_tl_op_past_12m`, `pct_tl_nvr_dlq`, `percent_bc_gt_75`, `tot_coll_amt`, `tot_cur_bal`, `tot_hi_cred_lim`, `total_bal_ex_mort`, `total_bc_limit`, `total_il_high_credit_limit`, `total_rev_hi_lim`.
+
+The response still lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. A trimmed response, for a request sending 20 of the 62 fields:
 
 ```json
 {

@@ -124,5 +124,35 @@
     "script": "posthoc_segments.py",
     "row_count": 282787,
     "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:36:00.662617+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:36:59.566102+00:00",
+    "script": "posthoc_v2_evaluation.py",
+    "row_count": 260038,
+    "action": "Post-hoc, exploratory: scores v1 (frozen champion, unchanged) and a freshly-fit, in-memory-only v2 on 2016 vintages (issue <= 2016-10-31, 24-month label) to evaluate the pre-registered adoption rule in docs/v2_decision_rule.md, committed before this script was run. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:38:04.462049+00:00",
+    "script": "posthoc_funding_optimization.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to find, per model and cost of funds, the funding fraction that maximizes total realized net cash after cost, and the annualized return on average capital at that optimum. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:38:34.885535+00:00",
+    "script": "posthoc_funding_optimization.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to find, per model and cost of funds, the funding fraction that maximizes total realized net cash after cost, and the annualized return on average capital at that optimum. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T06:39:34.235852+00:00",
+    "script": "posthoc_subgrade_lightgbm_matched_volume.py",
+    "row_count": 282787,
+    "action": "Post-hoc: refits LightGBM with champion features + sub_grade (ablation c), scores it on validation (2014) and test (2015, post-hoc), and compares matched -volume economics against sub_grade alone. No model, feature, or policy change."
   }
 ]
