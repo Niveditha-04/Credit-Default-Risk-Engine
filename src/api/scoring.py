@@ -78,7 +78,7 @@ class ScoringEngine:
         with open(API_DIR / "feature_ranges.json") as f:
             self.feature_ranges: dict = json.load(f)
 
-        shap_importance = pd.read_csv(METRICS_DIR / "shap_global_importance.csv", index_col=0)
+        shap_importance = pd.read_csv(METRICS_DIR / "shap_global_importance_served.csv", index_col=0)
         self.top10_shap_features = set(shap_importance.sort_values("mean_abs_shap_rank").head(10).index)
 
     def build_raw_row(self, payload: dict) -> pd.DataFrame:

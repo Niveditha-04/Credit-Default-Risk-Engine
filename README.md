@@ -91,7 +91,7 @@ v2 was promoted after passing the pre-registered rule above. v1's artifacts are 
 - **Calibration, not evaluation:** v2's own Platt calibrator was fit out-of-sample within 2015 (fit Jan-Sep, holdout-check Oct-Dec, refit on the full year), the same discipline used for v1's calibration on 2014. This is a new, explicit read of test, after v2 was already selected on 2016 vintages - it tunes probability scaling only, not the model.
 - **MLflow:** v1 (the version that was `champion`) now also carries alias `v1_champion`; v2 is a new registered version with alias `champion`.
 - **Verified:** parity check 1,000/1,000 exact matches against v2; `verify_champion_alias` max abs diff 0.0; Docker build plus a `/health` and `/score` smoke test, all passing.
-- **Known gap:** the API's top-10-SHAP missing-field warning (see How to run) still uses v1's SHAP ranking (`reports/metrics/shap_global_importance.csv`) - that analysis has not been rerun for v2 yet.
+- **Serving assets rebuilt for v2:** the API's top-10-SHAP missing-field warning, risk bands, feature ranges, and required-field list are all recomputed on v2's own training and calibration populations (`reports/metrics/shap_global_importance_served.csv`, `src/api/risk_bands.json`, `src/api/feature_ranges.json`, `reports/metrics/api_field_requirements.json`), each stamped with v2's model hash so a test fails if any of them ever go stale. The SHAP ranking's order shifted slightly from v1's; the same 10 features still lead, so the warning logic's behavior is unchanged.
 - **Model hash** (SHA-256 of `model_chosen.joblib`, also in every `/score` response's `model_version` field): v1 `b8437eb84d6a...`, v2 (served now) `d7dda06ef209...`.
 
 Full promotion detail is in `docs/validation_report.md`.
@@ -173,7 +173,7 @@ curl -s -X POST http://localhost:8000/score -H "Content-Type: application/json" 
 docker stop cdre
 ```
 
-`make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included, see Data above). On macOS, LightGBM needs `brew install libomp` first; the Docker image installs `libgomp1` on Linux. The request above sends all 62 real-applicant fields (`issue_d` is deliberately left out - it is not something a live applicant supplies, see the schema). 19 of the 62 are required (< 1% missing in train); the other 43 are optional, several legitimately missing-not-at-random in training. Both groups, the response lists what it didn't get (`missing_fields`), a full `/score` response example, the calibrator selection rule, and API latency numbers are in `docs/validation_report.md`.
+`make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included, see Data above). On macOS, LightGBM needs `brew install libomp` first; the Docker image installs `libgomp1` on Linux. The request above sends all 62 real-applicant fields (`issue_d` is deliberately left out - it is not something a live applicant supplies, see the schema). 19 of the 62 are required (< 1% missing in 2012-2014, train + validation); the other 43 are optional, several legitimately missing-not-at-random in training. Both groups, the response lists what it didn't get (`missing_fields`), a full `/score` response example, the calibrator selection rule, and API latency numbers are in `docs/validation_report.md`.
 
 ## Project structure
 

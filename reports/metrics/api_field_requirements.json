@@ -1,4 +1,6 @@
 {
+  "computed_on": "train + validation (2012-2014), the served model's training population",
+  "source_model_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
   "required_threshold_pct": 1.0,
   "required_fields": [
     "acc_now_delinq",

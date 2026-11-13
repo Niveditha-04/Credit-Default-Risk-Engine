@@ -32,6 +32,9 @@ LATENCY_PAYLOAD = {
     "revol_util": 45.0, "revol_bal": 8000.0, "open_acc": 10.0,
     "total_acc": 20.0, "pub_rec": 0.0, "pub_rec_bankruptcies": 0.0,
     "inq_last_6mths": 1.0, "mort_acc": 1.0, "acc_open_past_24mths": 3.0,
+    "acc_now_delinq": 0.0, "chargeoff_within_12_mths": 0.0,
+    "collections_12_mths_ex_med": 0.0, "delinq_2yrs": 0.0,
+    "delinq_amnt": 0.0, "tax_liens": 0.0,
 }
 
 

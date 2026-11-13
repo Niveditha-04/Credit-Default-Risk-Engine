@@ -1,46 +1,47 @@
 {
-  "methodology": "Quintiles (20% each) of the champion's calibrated PD on validation (2014).",
-  "defined_on": "validation",
+  "methodology": "Quintiles (20% each) of the served model's calibrated PD on test (2015), the year its calibrator was fit on. Never computed on the 2016 vintages used for the pre-registered decision rule.",
+  "defined_on": "test (2015)",
+  "source_model_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
   "bands": [
     {
       "band": "Very Low",
-      "pd_min": 0.008027,
-      "pd_max": 0.068563,
+      "pd_min": 0.006785,
+      "pd_max": 0.070598,
       "pd_max_inclusive": false,
-      "validation_n": 32514,
-      "validation_default_rate_pct": 4.41
+      "test_n": 56558,
+      "test_default_rate_pct": 4.31
     },
     {
       "band": "Low",
-      "pd_min": 0.068563,
-      "pd_max": 0.10384,
+      "pd_min": 0.070598,
+      "pd_max": 0.109921,
       "pd_max_inclusive": false,
-      "validation_n": 32514,
-      "validation_default_rate_pct": 8.67
+      "test_n": 56557,
+      "test_default_rate_pct": 9.03
     },
     {
       "band": "Medium",
-      "pd_min": 0.10384,
-      "pd_max": 0.142921,
+      "pd_min": 0.109921,
+      "pd_max": 0.153838,
       "pd_max_inclusive": false,
-      "validation_n": 32514,
-      "validation_default_rate_pct": 12.29
+      "test_n": 56557,
+      "test_default_rate_pct": 13.53
     },
     {
       "band": "High",
-      "pd_min": 0.142921,
-      "pd_max": 0.198809,
+      "pd_min": 0.153838,
+      "pd_max": 0.21757,
       "pd_max_inclusive": false,
-      "validation_n": 32514,
-      "validation_default_rate_pct": 17.34
+      "test_n": 56557,
+      "test_default_rate_pct": 18.65
     },
     {
       "band": "Very High",
-      "pd_min": 0.198809,
-      "pd_max": 0.582343,
+      "pd_min": 0.21757,
+      "pd_max": 0.750635,
       "pd_max_inclusive": true,
-      "validation_n": 32514,
-      "validation_default_rate_pct": 25.92
+      "test_n": 56558,
+      "test_default_rate_pct": 28.9
     }
   ]
 }
