@@ -1,8 +1,8 @@
 {
-  "registry_alias_points_to_version": 3,
-  "registry_booster_sha256": "b8437eb84d6ad4ca8e1797225ccf4c1d0a06ae2ba11453423305bb2916d54e4e",
-  "local_baked_booster_sha256": "b8437eb84d6ad4ca8e1797225ccf4c1d0a06ae2ba11453423305bb2916d54e4e",
+  "registry_alias_points_to_version": 4,
+  "registry_booster_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
+  "local_baked_booster_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
   "registry_matches_local_artifact": true,
-  "served_model_version_string": "lightgbm_chosen@git:53597a48f88c+sha256:b8437eb84d6a",
+  "served_model_version_string": "lightgbm_chosen@git:53597a48f88c+sha256:d7dda06ef209",
   "served_sha256_prefix_matches_local": true
 }

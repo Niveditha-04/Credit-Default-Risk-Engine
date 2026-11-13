@@ -8,43 +8,43 @@
   "acc_open_past_24mths": {
     "type": "numeric",
     "min": 0.0,
-    "max": 33.0,
-    "pct_missing_in_train": 4.19
+    "max": 53.0,
+    "pct_missing_in_train": 1.97
   },
   "annual_inc": {
     "type": "numeric",
-    "min": 5000.0,
-    "max": 7141778.0,
+    "min": 3000.0,
+    "max": 7500000.0,
     "pct_missing_in_train": 0.0
   },
   "avg_cur_bal": {
     "type": "numeric",
     "min": 0.0,
     "max": 958084.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "bc_open_to_buy": {
     "type": "numeric",
     "min": 0.0,
     "max": 497445.0,
-    "pct_missing_in_train": 5.04
+    "pct_missing_in_train": 2.94
   },
   "bc_util": {
     "type": "numeric",
     "min": 0.0,
     "max": 339.6,
-    "pct_missing_in_train": 5.08
+    "pct_missing_in_train": 3.0
   },
   "chargeoff_within_12_mths": {
     "type": "numeric",
     "min": 0.0,
-    "max": 5.0,
+    "max": 7.0,
     "pct_missing_in_train": 0.0
   },
   "collections_12_mths_ex_med": {
     "type": "numeric",
     "min": 0.0,
-    "max": 4.0,
+    "max": 20.0,
     "pct_missing_in_train": 0.0
   },
   "delinq_2yrs": {
@@ -62,19 +62,19 @@
   "dti": {
     "type": "numeric",
     "min": 0.0,
-    "max": 34.99,
+    "max": 39.99,
     "pct_missing_in_train": 0.0
   },
   "earliest_cr_line": {
     "type": "date",
-    "min": "1950-11-01",
-    "max": "2010-11-01"
+    "min": "1948-01-01",
+    "max": "2011-11-01"
   },
   "emp_length": {
     "type": "numeric",
     "min": 0.0,
     "max": 10.0,
-    "pct_missing_in_train": 4.67
+    "pct_missing_in_train": 5.34
   },
   "fico_range_high": {
     "type": "numeric",
@@ -91,6 +91,7 @@
   "home_ownership": {
     "type": "categorical",
     "known_values": [
+      "ANY",
       "MORTGAGE",
       "NONE",
       "OTHER",
@@ -113,187 +114,187 @@
   "mo_sin_old_il_acct": {
     "type": "numeric",
     "min": 0.0,
-    "max": 491.0,
-    "pct_missing_in_train": 19.41
+    "max": 501.0,
+    "pct_missing_in_train": 11.05
   },
   "mo_sin_old_rev_tl_op": {
     "type": "numeric",
-    "min": 5.0,
-    "max": 760.0,
-    "pct_missing_in_train": 15.67
+    "min": 3.0,
+    "max": 793.0,
+    "pct_missing_in_train": 7.36
   },
   "mo_sin_rcnt_rev_tl_op": {
     "type": "numeric",
     "min": 0.0,
-    "max": 228.0,
-    "pct_missing_in_train": 15.67
+    "max": 372.0,
+    "pct_missing_in_train": 7.36
   },
   "mo_sin_rcnt_tl": {
     "type": "numeric",
     "min": 0.0,
-    "max": 211.0,
-    "pct_missing_in_train": 15.67
+    "max": 226.0,
+    "pct_missing_in_train": 7.36
   },
   "mort_acc": {
     "type": "numeric",
     "min": 0.0,
-    "max": 31.0,
-    "pct_missing_in_train": 4.19
+    "max": 34.0,
+    "pct_missing_in_train": 1.97
   },
   "mths_since_last_delinq": {
     "type": "numeric",
     "min": 0.0,
-    "max": 152.0,
-    "pct_missing_in_train": 57.27
+    "max": 188.0,
+    "pct_missing_in_train": 52.84
   },
   "mths_since_last_major_derog": {
     "type": "numeric",
     "min": 0.0,
-    "max": 165.0,
-    "pct_missing_in_train": 82.61
+    "max": 188.0,
+    "pct_missing_in_train": 76.32
   },
   "mths_since_last_record": {
     "type": "numeric",
-    "min": 1.0,
+    "min": 0.0,
     "max": 121.0,
-    "pct_missing_in_train": 90.38
+    "pct_missing_in_train": 85.44
   },
   "mths_since_recent_bc": {
     "type": "numeric",
     "min": 0.0,
-    "max": 554.0,
-    "pct_missing_in_train": 4.93
+    "max": 616.0,
+    "pct_missing_in_train": 2.84
   },
   "mths_since_recent_bc_dlq": {
     "type": "numeric",
     "min": 0.0,
-    "max": 152.0,
-    "pct_missing_in_train": 80.54
+    "max": 170.0,
+    "pct_missing_in_train": 76.62
   },
   "mths_since_recent_inq": {
     "type": "numeric",
     "min": 0.0,
-    "max": 24.0,
-    "pct_missing_in_train": 15.43
+    "max": 25.0,
+    "pct_missing_in_train": 12.27
   },
   "mths_since_recent_revol_delinq": {
     "type": "numeric",
     "min": 0.0,
-    "max": 165.0,
-    "pct_missing_in_train": 71.01
+    "max": 180.0,
+    "pct_missing_in_train": 67.04
   },
   "num_accts_ever_120_pd": {
     "type": "numeric",
     "min": 0.0,
-    "max": 29.0,
-    "pct_missing_in_train": 15.67
+    "max": 33.0,
+    "pct_missing_in_train": 7.36
   },
   "num_actv_bc_tl": {
     "type": "numeric",
     "min": 0.0,
     "max": 30.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "num_actv_rev_tl": {
     "type": "numeric",
     "min": 0.0,
-    "max": 37.0,
-    "pct_missing_in_train": 15.67
+    "max": 38.0,
+    "pct_missing_in_train": 7.36
   },
   "num_bc_sats": {
     "type": "numeric",
     "min": 0.0,
     "max": 35.0,
-    "pct_missing_in_train": 9.02
+    "pct_missing_in_train": 4.23
   },
   "num_bc_tl": {
     "type": "numeric",
     "min": 0.0,
     "max": 65.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "num_il_tl": {
     "type": "numeric",
     "min": 0.0,
-    "max": 58.0,
-    "pct_missing_in_train": 15.67
+    "max": 150.0,
+    "pct_missing_in_train": 7.36
   },
   "num_op_rev_tl": {
     "type": "numeric",
     "min": 0.0,
-    "max": 58.0,
-    "pct_missing_in_train": 15.67
+    "max": 62.0,
+    "pct_missing_in_train": 7.36
   },
   "num_rev_accts": {
     "type": "numeric",
     "min": 0.0,
-    "max": 94.0,
-    "pct_missing_in_train": 15.67
+    "max": 105.0,
+    "pct_missing_in_train": 7.36
   },
   "num_rev_tl_bal_gt_0": {
     "type": "numeric",
     "min": 0.0,
-    "max": 37.0,
-    "pct_missing_in_train": 15.67
+    "max": 38.0,
+    "pct_missing_in_train": 7.36
   },
   "num_sats": {
     "type": "numeric",
     "min": 0.0,
-    "max": 62.0,
-    "pct_missing_in_train": 9.02
+    "max": 84.0,
+    "pct_missing_in_train": 4.23
   },
   "num_tl_120dpd_2m": {
     "type": "numeric",
     "min": 0.0,
     "max": 2.0,
-    "pct_missing_in_train": 15.82
+    "pct_missing_in_train": 9.54
   },
   "num_tl_30dpd": {
     "type": "numeric",
     "min": 0.0,
     "max": 4.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "num_tl_90g_dpd_24m": {
     "type": "numeric",
     "min": 0.0,
     "max": 24.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "num_tl_op_past_12m": {
     "type": "numeric",
     "min": 0.0,
-    "max": 25.0,
-    "pct_missing_in_train": 15.67
+    "max": 26.0,
+    "pct_missing_in_train": 7.36
   },
   "open_acc": {
     "type": "numeric",
     "min": 0.0,
-    "max": 62.0,
+    "max": 84.0,
     "pct_missing_in_train": 0.0
   },
   "pct_tl_nvr_dlq": {
     "type": "numeric",
     "min": 15.0,
     "max": 100.0,
-    "pct_missing_in_train": 15.75
+    "pct_missing_in_train": 7.4
   },
   "percent_bc_gt_75": {
     "type": "numeric",
     "min": 0.0,
     "max": 100.0,
-    "pct_missing_in_train": 5.04
+    "pct_missing_in_train": 2.97
   },
   "pub_rec": {
     "type": "numeric",
     "min": 0.0,
-    "max": 54.0,
+    "max": 63.0,
     "pct_missing_in_train": 0.0
   },
   "pub_rec_bankruptcies": {
     "type": "numeric",
     "min": 0.0,
-    "max": 8.0,
+    "max": 12.0,
     "pct_missing_in_train": 0.0
   },
   "purpose": {
@@ -323,62 +324,62 @@
   "revol_util": {
     "type": "numeric",
     "min": 0.0,
-    "max": 140.4,
-    "pct_missing_in_train": 0.07
+    "max": 892.3,
+    "pct_missing_in_train": 0.06
   },
   "tax_liens": {
     "type": "numeric",
     "min": 0.0,
-    "max": 53.0,
+    "max": 63.0,
     "pct_missing_in_train": 0.0
   },
   "tot_coll_amt": {
     "type": "numeric",
     "min": 0.0,
-    "max": 75081.0,
-    "pct_missing_in_train": 15.67
+    "max": 9152545.0,
+    "pct_missing_in_train": 7.36
   },
   "tot_cur_bal": {
     "type": "numeric",
     "min": 0.0,
     "max": 8000078.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "tot_hi_cred_lim": {
     "type": "numeric",
     "min": 0.0,
     "max": 9999999.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "total_acc": {
     "type": "numeric",
     "min": 2.0,
-    "max": 105.0,
+    "max": 156.0,
     "pct_missing_in_train": 0.0
   },
   "total_bal_ex_mort": {
     "type": "numeric",
     "min": 0.0,
-    "max": 2644442.0,
-    "pct_missing_in_train": 4.19
+    "max": 2688920.0,
+    "pct_missing_in_train": 1.97
   },
   "total_bc_limit": {
     "type": "numeric",
     "min": 0.0,
-    "max": 522210.0,
-    "pct_missing_in_train": 4.19
+    "max": 760000.0,
+    "pct_missing_in_train": 1.97
   },
   "total_il_high_credit_limit": {
     "type": "numeric",
     "min": 0.0,
-    "max": 902504.0,
-    "pct_missing_in_train": 15.67
+    "max": 1241783.0,
+    "pct_missing_in_train": 7.36
   },
   "total_rev_hi_lim": {
     "type": "numeric",
     "min": 0.0,
     "max": 9999999.0,
-    "pct_missing_in_train": 15.67
+    "pct_missing_in_train": 7.36
   },
   "verification_status": {
     "type": "categorical",
@@ -387,5 +388,9 @@
       "Source Verified",
       "Verified"
     ]
+  },
+  "_metadata": {
+    "computed_on": "train + validation (2012-2014), the served model's training population",
+    "source_model_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054"
   }
 }

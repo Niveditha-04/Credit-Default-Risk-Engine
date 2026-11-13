@@ -166,5 +166,23 @@
     "script": "promote_v2.py",
     "row_count": 282787,
     "action": "Explicit, authorized read of test (2015) for CALIBRATION ONLY, not evaluation: v2 was already selected against v1 on 2016 vintages, before this read, under the pre-registered rule in docs/v2_decision_rule.md. This fits v2's own Platt calibrator, out-of-sample within 2015 itself, the same discipline already used for v1's calibration on 2014. No model selection happens here."
+  },
+  {
+    "timestamp_utc": "2026-11-13T07:18:43.482357+00:00",
+    "script": "shap_for_serving.py",
+    "row_count": 282787,
+    "action": "Serving asset, not evaluation: re-read test.parquet to rank features by mean |SHAP| for the currently-served model, used only by the API's missing-field warning. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-13T07:26:02.914099+00:00",
+    "script": "build_assets.py:compute_risk_bands",
+    "row_count": 282787,
+    "action": "Serving asset, not evaluation: re-read test.parquet to find PD quintile cut points (the year the served model's calibrator was fit on) for the API's risk-band labels. No metric about the model's performance is computed or reported."
+  },
+  {
+    "timestamp_utc": "2026-11-13T07:27:10.621519+00:00",
+    "script": "build_assets.py:compute_risk_bands",
+    "row_count": 282787,
+    "action": "Serving asset, not evaluation: re-read test.parquet to find PD quintile cut points (the year the served model's calibrator was fit on) for the API's risk-band labels. No metric about the model's performance is computed or reported."
   }
 ]

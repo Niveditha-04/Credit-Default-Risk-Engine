@@ -1,0 +1,19 @@
+{
+  "source_model_sha256": "d7dda06ef2094b6edc5a649746f39aae142701666d78cd0570c2401d7f8b7054",
+  "source_model_path": "data/processed/models/lightgbm/model_chosen.joblib",
+  "computed_on": "test (2015), full set, no sampling",
+  "n_rows": 282787,
+  "top_10": [
+    "fico_mean",
+    "acc_open_past_24mths",
+    "loan_to_income",
+    "dti",
+    "annual_inc",
+    "purpose",
+    "home_ownership",
+    "num_tl_op_past_12m",
+    "mths_since_recent_bc",
+    "mths_since_recent_inq"
+  ],
+  "used_by": "src.api.scoring.ScoringEngine for the missing_top10_shap_feature_lowers_fidelity warning"
+}

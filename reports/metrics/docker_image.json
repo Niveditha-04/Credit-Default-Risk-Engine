@@ -1,11 +1,11 @@
 {
   "image": "credit-default-risk-engine:latest",
-  "image_id": "f7337384c9d0",
-  "size_bytes": 161600526,
+  "image_id": "4820887945c2",
+  "size_bytes": 161612279,
   "size_mb": 161.6,
   "docker_images_reported_size": "758MB",
-  "free_disk_bytes_at_record_time": 8894681088,
-  "free_disk_gb_at_record_time": 8.9,
+  "free_disk_bytes_at_record_time": 6336212992,
+  "free_disk_gb_at_record_time": 6.3,
   "base_image": "python:3.11-slim",
   "note": "requirements-serve.txt does not include shap or matplotlib (see src/api/scoring.py - reason codes use booster.predict(pred_contrib=True) instead), which keeps this image small."
 }

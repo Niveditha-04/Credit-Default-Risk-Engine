@@ -5,29 +5,29 @@
     "cpu": "Apple M4",
     "cpu_count": 10,
     "load_average_1_5_15min": [
-      2.583984375,
-      2.76904296875,
-      2.75439453125
+      3.8955078125,
+      4.4453125,
+      4.43505859375
     ],
     "note": "load average is whatever else was running on this laptop at measurement time (OS, browser, etc.) - nothing else from this project (no concurrent build, test, or training script) was running. Not a dedicated/isolated benchmark host."
   },
   "n_requests_per_condition": 1000,
   "with_reason_codes": {
     "n": 1000,
-    "p50_ms": 16.292,
-    "p95_ms": 18.072,
-    "p99_ms": 22.126,
-    "mean_ms": 16.841,
-    "min_ms": 15.457,
-    "max_ms": 115.555
+    "p50_ms": 17.245,
+    "p95_ms": 21.608,
+    "p99_ms": 35.138,
+    "mean_ms": 18.292,
+    "min_ms": 16.208,
+    "max_ms": 167.87
   },
   "without_reason_codes": {
     "n": 1000,
-    "p50_ms": 13.618,
-    "p95_ms": 14.861,
-    "p99_ms": 17.106,
-    "mean_ms": 13.983,
-    "min_ms": 12.978,
-    "max_ms": 67.116
+    "p50_ms": 14.618,
+    "p95_ms": 20.678,
+    "p99_ms": 29.535,
+    "mean_ms": 15.704,
+    "min_ms": 13.533,
+    "max_ms": 155.19
   }
 }

@@ -278,13 +278,13 @@ The full 69-feature table, both references side by side with each feature's SHAP
 
 ## API
 
-`/score` accepts 63 fields: `issue_d` (never required - not something a live applicant supplies, defaults to today) plus 62 real-applicant fields. 19 of those 62 are required (missing returns 422): fields with under 1% missing in train, on the reasoning that a live caller omitting one is a bad request, not a natively-missing value. The other 43 stay optional - several are legitimately missing-not-at-random in training (an event, like a delinquency, that never happened). The split is computed and asserted against this same under-1% rule by `src/api/field_requirements.py` (`reports/metrics/api_field_missing_rates.csv`, `reports/metrics/api_field_requirements.json`):
+`/score` accepts 63 fields: `issue_d` (never required - not something a live applicant supplies, defaults to today) plus 62 real-applicant fields. 19 of those 62 are required (missing returns 422): fields with under 1% missing in 2012-2014 (train + validation, the served model's training population), on the reasoning that a live caller omitting one is a bad request, not a natively-missing value. The other 43 stay optional - several are legitimately missing-not-at-random in training (an event, like a delinquency, that never happened). The split is computed and asserted against this same under-1% rule by `src/api/field_requirements.py` (`reports/metrics/api_field_missing_rates.csv`, `reports/metrics/api_field_requirements.json`), and did not change when the population moved from train alone to train + validation.
 
-**Required** (< 1% missing in train): `loan_amnt`, `annual_inc`, `dti`, `fico_range_low`, `fico_range_high`, `earliest_cr_line`, `home_ownership`, `purpose`, `verification_status`, `acc_now_delinq`, `chargeoff_within_12_mths`, `collections_12_mths_ex_med`, `delinq_2yrs`, `delinq_amnt`, `inq_last_6mths`, `open_acc`, `pub_rec`, `pub_rec_bankruptcies`, `revol_bal`, `revol_util`, `tax_liens`, `total_acc`.
+**Required** (< 1% missing in 2012-2014): `loan_amnt`, `annual_inc`, `dti`, `fico_range_low`, `fico_range_high`, `earliest_cr_line`, `home_ownership`, `purpose`, `verification_status`, `acc_now_delinq`, `chargeoff_within_12_mths`, `collections_12_mths_ex_med`, `delinq_2yrs`, `delinq_amnt`, `inq_last_6mths`, `open_acc`, `pub_rec`, `pub_rec_bankruptcies`, `revol_bal`, `revol_util`, `tax_liens`, `total_acc`.
 
-**Optional** (>= 4% missing in train - there is a clean gap in the data between the lowest optional field's missing rate, 4.19%, and the highest required field's, 0.07%): `emp_length`, `acc_open_past_24mths`, `avg_cur_bal`, `bc_open_to_buy`, `bc_util`, `mo_sin_old_il_acct`, `mo_sin_old_rev_tl_op`, `mo_sin_rcnt_rev_tl_op`, `mo_sin_rcnt_tl`, `mort_acc`, `mths_since_last_delinq`, `mths_since_last_major_derog`, `mths_since_last_record`, `mths_since_recent_bc`, `mths_since_recent_bc_dlq`, `mths_since_recent_inq`, `mths_since_recent_revol_delinq`, `num_accts_ever_120_pd`, `num_actv_bc_tl`, `num_actv_rev_tl`, `num_bc_sats`, `num_bc_tl`, `num_il_tl`, `num_op_rev_tl`, `num_rev_accts`, `num_rev_tl_bal_gt_0`, `num_sats`, `num_tl_120dpd_2m`, `num_tl_30dpd`, `num_tl_90g_dpd_24m`, `num_tl_op_past_12m`, `pct_tl_nvr_dlq`, `percent_bc_gt_75`, `tot_coll_amt`, `tot_cur_bal`, `tot_hi_cred_lim`, `total_bal_ex_mort`, `total_bc_limit`, `total_il_high_credit_limit`, `total_rev_hi_lim`.
+**Optional** (>= 1% missing in 2012-2014, with a clean gap between the lowest optional field and the highest required field): `emp_length`, `acc_open_past_24mths`, `avg_cur_bal`, `bc_open_to_buy`, `bc_util`, `mo_sin_old_il_acct`, `mo_sin_old_rev_tl_op`, `mo_sin_rcnt_rev_tl_op`, `mo_sin_rcnt_tl`, `mort_acc`, `mths_since_last_delinq`, `mths_since_last_major_derog`, `mths_since_last_record`, `mths_since_recent_bc`, `mths_since_recent_bc_dlq`, `mths_since_recent_inq`, `mths_since_recent_revol_delinq`, `num_accts_ever_120_pd`, `num_actv_bc_tl`, `num_actv_rev_tl`, `num_bc_sats`, `num_bc_tl`, `num_il_tl`, `num_op_rev_tl`, `num_rev_accts`, `num_rev_tl_bal_gt_0`, `num_sats`, `num_tl_120dpd_2m`, `num_tl_30dpd`, `num_tl_90g_dpd_24m`, `num_tl_op_past_12m`, `pct_tl_nvr_dlq`, `percent_bc_gt_75`, `tot_coll_amt`, `tot_cur_bal`, `tot_hi_cred_lim`, `total_bal_ex_mort`, `total_bc_limit`, `total_il_high_credit_limit`, `total_rev_hi_lim`.
 
-The response still lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. **This top-10 SHAP ranking (`reports/metrics/shap_global_importance.csv`) has not been recomputed for v2** - the warning logic still uses v1's ranking; this is a known gap, not yet fixed. A trimmed response, now served by v2, for a request sending the 19 required fields plus `emp_length` (20 of the 62 fields):
+The response still lists what it didn't get (`missing_fields`) and warns when a missing field is one of the model's top-10 global SHAP drivers (`warnings`, `reason: missing_top10_shap_feature_lowers_fidelity`), since the served score then runs on less information than the model saw on most of its training rows. This top-10 SHAP ranking (`reports/metrics/shap_global_importance_served.csv`) is recomputed for the served model on test (2015): the ranked order shifts slightly from the prior model's ranking, but the set of 10 features is identical, so the warning logic's behavior is unchanged. A trimmed response for a request sending the 19 required fields plus `emp_length` (20 of the 62 fields):
 
 ```json
 {
@@ -310,12 +310,14 @@ The response still lists what it didn't get (`missing_fields`) and warns when a 
 
 ## API latency (local laptop, not a production benchmark)
 
-1,000 sequential requests, one container, no load balancer, on an Apple M4:
+1,000 sequential requests, one container, no load balancer, on an Apple M4, served model:
 
 | Condition | p50 | p95 | p99 |
 |---|---|---|---|
-| With reason codes | 16.29 ms | 18.07 ms | 22.13 ms |
-| Without reason codes | 13.62 ms | 14.86 ms | 17.11 ms |
+| With reason codes | 17.25 ms | 21.61 ms | 35.14 ms |
+| Without reason codes | 14.62 ms | 20.68 ms | 29.54 ms |
+
+Numbers in `reports/metrics/api_latency.json`. Re-measured on the current served model: the request/response shapes and the SHAP call behind reason codes are unchanged, but a fresh measurement on the running image is cheap and keeps this table honest rather than assumed.
 
 ## Test-set access log
 

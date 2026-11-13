@@ -4,7 +4,7 @@
   "git_status_clean_at_freeze": true,
   "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
   "champion": "lightgbm_chosen",
-  "champion_reason": "lightgbm_chosen is the champion: within 0.0021 validation AUC of XGBoost (the best alternative) while using 273 trees instead of 2122 - a much simpler model for a negligible performance difference. XGBoost and the scorecard are carried forward as comparison models in the test evaluation, not candidates for champion.",
+  "champion_reason": "lightgbm_chosen is the champion (v2, refit on 2012-2014 with monotone constraints), chosen by a rule pre-registered in docs/v2_decision_rule.md before any v2 code ran: adopt v2 over v1 if AUC(v2) >= AUC(v1) - 0.002 and ECE(v2) <= ECE(v1) + 0.005 on 2016 vintages (issue <= 2016-10-31, 24-month label). Result: AUC(v2)=0.6978 vs. AUC(v1)=0.6899, ECE(v2)=0.0079 vs. ECE(v1)=0.0080 - both conditions met, and a corrected-label robustness check (reports/metrics/posthoc_v2_label_robustness.json) reached the same adopt-v2 decision. v1 itself had been selected over XGBoost on the same simplicity logic this field used to state (within 0.0021 validation AUC of XGBoost using 273 trees instead of 2122); v2 keeps v1's exact tree count and hyperparameters, so that comparison still describes why the underlying LightGBM recipe was picked. v1's full history is under lightgbm_v1_history.",
   "champion_vs_xgboost_validation_auc_gap": 0.0021,
   "seeds": {
     "global": 42,
@@ -489,6 +489,6 @@
       "gap_flagged": false,
       "validation_auc_above_investigate_threshold": false
     },
-    "note": "The v1 champion (original frozen model). Superseded by v2 under the pre-registered rule in docs/v2_decision_rule.md. Artifacts preserved at data/processed/models/lightgbm_v1_history, registered in MLflow with alias 'v1'."
+    "note": "v1, evaluated on test (2015) exactly once and selected over XGBoost on simplicity (within 0.0021 validation AUC using 273 trees instead of 2122). Kept as history after v2 became champion under the pre-registered rule in docs/v2_decision_rule.md. Artifacts preserved at data/processed/models/lightgbm_v1_history, registered in MLflow with alias 'v1_champion' ('v1' itself is a reserved MLflow alias pattern)."
   }
 }
