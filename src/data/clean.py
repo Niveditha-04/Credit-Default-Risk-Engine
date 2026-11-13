@@ -20,7 +20,7 @@ from src.data.columns import (
 
 RAW_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_raw.parquet")
 OUT_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_cleaned.parquet")
-OUT_METRICS = Path("reports/metrics/phase2_cleaning.json")
+OUT_METRICS = Path("reports/metrics/cleaning_summary.json")
 
 
 def check_column_coverage(con: duckdb.DuckDBPyConnection) -> list[str]:
@@ -66,7 +66,7 @@ def build_select_expr(col: str) -> str:
     if col == "dti":
         # A debt-to-income ratio cannot be negative. 2 rows in the raw file
         # have dti = -1 (likely a sentinel), 1 of which is in our 2012-2018
-        # term=36/individual population (logged in phase2_cleaning.json).
+        # term=36/individual population (logged in cleaning_summary.json).
         # dti > 100 is treated as impossible too: 2,561 rows in the raw
         # file, dominated by a dti=999 sentinel cluster (135 rows, by far
         # the single most common value above 100) - none fall in our
