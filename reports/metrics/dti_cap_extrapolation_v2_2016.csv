@@ -1,4 +1,4 @@
 bucket,n,mean_predicted_pd_pct,actual_default_rate_pct,gap_actual_minus_predicted_pp,gap_ci95_lower_pp,gap_ci95_upper_pp,gap_exceeds_noise
-DTI <= 35,252405,14.432,12.464,-1.968,-2.097,-1.839,True
+DTI <= 35 (reference),252405,14.432,12.464,-1.968,-2.097,-1.839,True
 35 < DTI <= 40,5886,21.908,20.133,-1.775,-2.799,-0.751,True
 "DTI > 40 (above v2's train range, 39.99)",1746,22.609,22.222,-0.387,-2.337,1.563,False

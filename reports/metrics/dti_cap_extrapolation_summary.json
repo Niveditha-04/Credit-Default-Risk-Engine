@@ -24,9 +24,9 @@
       "gap_exceeds_noise": true
     }
   ],
-  "v2_on_2016_holdout": [
+  "v2_on_2016_holdout_absolute_gaps_not_cross_bucket_comparable": [
     {
-      "bucket": "DTI <= 35",
+      "bucket": "DTI <= 35 (reference)",
       "n": 252405,
       "mean_predicted_pd_pct": 14.432,
       "actual_default_rate_pct": 12.464,
@@ -54,6 +54,30 @@
       "gap_ci95_lower_pp": -2.337,
       "gap_ci95_upper_pp": 1.563,
       "gap_exceeds_noise": false
+    }
+  ],
+  "v2_on_2016_holdout_relative_to_in_range": [
+    {
+      "comparison": "35 < DTI <= 40 minus DTI <= 35",
+      "n_other": 5886,
+      "n_ref": 252405,
+      "diff_in_gap_pp": 0.193,
+      "ci95_lower_pp": -0.846,
+      "ci95_upper_pp": 1.142,
+      "n_boot": 1000,
+      "seed": 42,
+      "exceeds_noise": false
+    },
+    {
+      "comparison": "DTI > 40 minus DTI <= 35",
+      "n_other": 1746,
+      "n_ref": 252405,
+      "diff_in_gap_pp": 1.581,
+      "ci95_lower_pp": -0.296,
+      "ci95_upper_pp": 3.428,
+      "n_boot": 1000,
+      "seed": 42,
+      "exceeds_noise": false
     }
   ]
 }
