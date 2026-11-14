@@ -1,0 +1,3 @@
+bucket,n,mean_predicted_pd_pct,actual_default_rate_pct,gap_actual_minus_predicted_pp,gap_ci95_lower_pp,gap_ci95_upper_pp,gap_exceeds_noise
+DTI <= 34.99 (within v1's train range),273086,13.602,14.61,1.007,0.875,1.14,True
+DTI > 34.99 (above v1's train range),9701,17.531,22.596,5.065,4.232,5.897,True

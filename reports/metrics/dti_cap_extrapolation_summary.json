@@ -1,0 +1,59 @@
+{
+  "label": "post-hoc, descriptive only - no model, feature, or policy change",
+  "v1_train_max_dti": 34.99,
+  "v2_train_max_dti": 39.99,
+  "v1_on_test": [
+    {
+      "bucket": "DTI <= 34.99 (within v1's train range)",
+      "n": 273086,
+      "mean_predicted_pd_pct": 13.602,
+      "actual_default_rate_pct": 14.61,
+      "gap_actual_minus_predicted_pp": 1.007,
+      "gap_ci95_lower_pp": 0.875,
+      "gap_ci95_upper_pp": 1.14,
+      "gap_exceeds_noise": true
+    },
+    {
+      "bucket": "DTI > 34.99 (above v1's train range)",
+      "n": 9701,
+      "mean_predicted_pd_pct": 17.531,
+      "actual_default_rate_pct": 22.596,
+      "gap_actual_minus_predicted_pp": 5.065,
+      "gap_ci95_lower_pp": 4.232,
+      "gap_ci95_upper_pp": 5.897,
+      "gap_exceeds_noise": true
+    }
+  ],
+  "v2_on_2016_holdout": [
+    {
+      "bucket": "DTI <= 35",
+      "n": 252405,
+      "mean_predicted_pd_pct": 14.432,
+      "actual_default_rate_pct": 12.464,
+      "gap_actual_minus_predicted_pp": -1.968,
+      "gap_ci95_lower_pp": -2.097,
+      "gap_ci95_upper_pp": -1.839,
+      "gap_exceeds_noise": true
+    },
+    {
+      "bucket": "35 < DTI <= 40",
+      "n": 5886,
+      "mean_predicted_pd_pct": 21.908,
+      "actual_default_rate_pct": 20.133,
+      "gap_actual_minus_predicted_pp": -1.775,
+      "gap_ci95_lower_pp": -2.799,
+      "gap_ci95_upper_pp": -0.751,
+      "gap_exceeds_noise": true
+    },
+    {
+      "bucket": "DTI > 40 (above v2's train range, 39.99)",
+      "n": 1746,
+      "mean_predicted_pd_pct": 22.609,
+      "actual_default_rate_pct": 22.222,
+      "gap_actual_minus_predicted_pp": -0.387,
+      "gap_ci95_lower_pp": -2.337,
+      "gap_ci95_upper_pp": 1.563,
+      "gap_exceeds_noise": false
+    }
+  ]
+}
