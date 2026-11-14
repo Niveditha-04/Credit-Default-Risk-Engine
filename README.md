@@ -51,6 +51,8 @@ All models, features, and the approval threshold were frozen on validation befor
 | Scorecard | 0.6711 (0.6686-0.6735) | 0.3421 | 0.2480 | 0.1211 |
 | sub_grade | 0.6786 (0.6760-0.6812) | 0.3573 | 0.2619 | 0.1215 |
 
+XGBoost is ahead by **0.0014**, within the **0.0007** retraining-noise spread; I kept LightGBM, chosen on validation, **273** vs. **2,122** trees.
+
 Return per $100 funded, 0% cost of funds (`reports/metrics/posthoc_matched_volume_economics.csv`):
 
 | Model | 70% | 80% | 90% |
@@ -77,6 +79,7 @@ v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`do
 | Trained on | 2012-2013 | 2012-2014 |
 | Monotone constraints | none | **8** |
 | AUC, 2016 holdout (24-month label) | 0.6899 | **0.6978** |
+| AUC, 2015 test (post-hoc) | 0.6872 | **0.6959** |
 | Served now | no (history) | **yes** |
 
 ## Findings
@@ -86,6 +89,7 @@ v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`do
 - **DTI cap moved:** LendingClub's own DTI ceiling rose from **34.99%** (train) to **49.96%** (2016); v1 under-predicts loans above its own cap by **+5.07 pp** vs. **+1.01 pp** in range.
 - **Retraining gain:** one more year of data (2012-2014 vs. 2012-2013) raises test AUC from **0.6872** to **0.6962**.
 - **Rate, not mix:** **7 of 11** month-over-month 2015 default-rate changes exceed sampling noise; the moves are within-segment rate shifts, not a change in applicant mix (mean mix effect **0.08 pp** vs. rate effect **0.77 pp**).
+- **AUC is range-restricted:** FICO stayed at or above **660** in every year used, and LendingClub had already pre-screened every applicant before this data existed (`reports/metrics/eligibility_caps_by_year.csv`).
 
 Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/test_gap_decomposition_lightgbm.json`, `reports/metrics/test_gap_remainder_diagnostic.json`).
 
@@ -132,7 +136,7 @@ Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** defaul
 - Accepted loans only: I never see applicants LendingClub rejected.
 - Modeling data is 2012-2015, plus a 2016 holdout check for v2; no claim beyond that window.
 - No protected attributes in this data, and none built as proxies, so no fairness test was run.
-- LGD is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/test_lgd_sensitivity.csv`.
+- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/test_lgd_sensitivity.csv`.
 - Drift monitoring replays closed historical periods; it has never run against a live feed.
 
 ## How to run

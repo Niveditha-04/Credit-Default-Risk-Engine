@@ -93,7 +93,7 @@ Replay's range fully contains test's: no large discrimination drop under this la
 
 ## v2 decision rule: results (post-hoc)
 
-Pre-registered and committed in `docs/v2_decision_rule.md` before any v2 code ran. Population: 2016 vintages, issue <= 2016-10-31, 260,038 loans, 12.70% label rate (`reports/metrics/posthoc_v2_evaluation.json`).
+Pre-registered and committed in `docs/v2_decision_rule.md` before any v2 code ran. Population: 2016 vintages, issue <= 2016-10-31, 260,038 loans, 12.70% label rate (`reports/metrics/posthoc_v2_evaluation.json`). `docs/v2_decision_rule.md` is kept exactly as pre-registered, including its reference to `src/evaluation/posthoc_calibration.py`. That ECE definition lives in `src/evaluation/posthoc_validation.py` in this repo's current layout.
 
 | Model | AUC | ECE |
 |---|---|---|
