@@ -226,5 +226,17 @@
     "script": "dti_cap_extrapolation.py",
     "row_count": 260038,
     "action": "Post-hoc, descriptive only: re-scores the served v2 model on the 2016 holdout (already used for the pre-registered decision rule) to check whether its calibration gap differs for loans above its own train-time DTI cap (39.99). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:54:17.001307+00:00",
+    "script": "dti_cap_extrapolation.py",
+    "row_count": 282787,
+    "action": "Post-hoc, descriptive only: re-read saved test_scored.parquet (plus test.parquet for dti, not stored in test_scored.parquet) to check whether v1's calibration gap differs for loans above its own train-time DTI cap (34.99). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:54:18.350204+00:00",
+    "script": "dti_cap_extrapolation.py",
+    "row_count": 260038,
+    "action": "Post-hoc, descriptive only: re-scores the served v2 model on the 2016 holdout (already used for the pre-registered decision rule) to check whether its calibration gap differs for loans above its own train-time DTI cap (39.99). No model, feature, or policy change."
   }
 ]

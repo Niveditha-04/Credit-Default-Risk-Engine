@@ -1,0 +1,3 @@
+comparison,n_other,n_ref,diff_in_gap_pp,ci95_lower_pp,ci95_upper_pp,n_boot,seed,exceeds_noise
+35 < DTI <= 40 minus DTI <= 35,5886,252405,0.193,-0.846,1.142,1000,42,False
+DTI > 40 minus DTI <= 35,1746,252405,1.581,-0.296,3.428,1000,42,False
