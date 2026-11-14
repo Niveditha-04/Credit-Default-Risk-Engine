@@ -1,0 +1,5 @@
+policy,pd_cutoff,n_total,n_approved,n_declined,approval_rate_pct,default_rate_approved_pct,n_defaults_total,n_defaults_captured_by_decline,n_defaults_missed_still_approved,default_capture_rate_pct,default_miss_rate_pct,precision_of_declines_pct,good_loans_declined_per_default_avoided,loss_dollars_avoided_on_declined_defaults,interest_income_forgone_on_declined_good_loans,realized_net_cash_approved_book
+70% approval rate (fixed),0.1679,282787,197950,84837,70.0,10.4,42089,21508,20581,51.1,48.9,25.35,2.944,105075364.57,138059868.25,196930470.42
+80% approval rate (fixed),0.2003,282787,226229,56558,80.0,11.63,42089,15774,26315,37.48,62.52,27.89,2.586,77888988.31,93182482.52,214621479.91
+90% approval rate (fixed),0.2501,282787,254508,28279,90.0,12.99,42089,9022,33067,21.44,78.56,31.9,2.134,45804165.26,46797420.28,228921719.1
+"chosen policy (EV-maximizing, set on validation)",0.3998,282787,281109,1678,99.41,14.7,42089,752,41337,1.79,98.21,44.82,1.231,4260218.83,2611625.73,231563567.21

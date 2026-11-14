@@ -1,0 +1,172 @@
+{
+  "label": "post-hoc, descriptive only - no model, feature, or policy change",
+  "n_months": 12,
+  "n_month_over_month_changes": 11,
+  "n_flagged_exceeds_noise": 7,
+  "flagged_transitions": [
+    "2015-01 to 2015-02",
+    "2015-02 to 2015-03",
+    "2015-06 to 2015-07",
+    "2015-08 to 2015-09",
+    "2015-09 to 2015-10",
+    "2015-10 to 2015-11",
+    "2015-11 to 2015-12"
+  ],
+  "decomposition_by_transition": [
+    {
+      "transition": "2015-01 to 2015-02",
+      "actual_change_pp": -0.712,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": -0.179,
+      "rate_effect_total_pp": -0.533,
+      "model_predicted_pd_change_pp": -0.139,
+      "residual_unexplained_by_model_mix_pp": -0.573,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 41.3
+    },
+    {
+      "transition": "2015-01 to 2015-02",
+      "actual_change_pp": -0.712,
+      "dimension": "purpose",
+      "mix_effect_total_pp": -0.055,
+      "rate_effect_total_pp": -0.656,
+      "model_predicted_pd_change_pp": -0.139,
+      "residual_unexplained_by_model_mix_pp": -0.573,
+      "single_dominant_group": "debt_consolidation",
+      "dominant_group_share_of_total_abs_effect_pct": 68.0
+    },
+    {
+      "transition": "2015-02 to 2015-03",
+      "actual_change_pp": 1.234,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": 0.115,
+      "rate_effect_total_pp": 1.119,
+      "model_predicted_pd_change_pp": 0.144,
+      "residual_unexplained_by_model_mix_pp": 1.09,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 49.7
+    },
+    {
+      "transition": "2015-02 to 2015-03",
+      "actual_change_pp": 1.234,
+      "dimension": "purpose",
+      "mix_effect_total_pp": -0.047,
+      "rate_effect_total_pp": 1.281,
+      "model_predicted_pd_change_pp": 0.144,
+      "residual_unexplained_by_model_mix_pp": 1.09,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 35.7
+    },
+    {
+      "transition": "2015-06 to 2015-07",
+      "actual_change_pp": -0.74,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": -0.115,
+      "rate_effect_total_pp": -0.625,
+      "model_predicted_pd_change_pp": -0.123,
+      "residual_unexplained_by_model_mix_pp": -0.617,
+      "single_dominant_group": "(660, 680]",
+      "dominant_group_share_of_total_abs_effect_pct": 55.0
+    },
+    {
+      "transition": "2015-06 to 2015-07",
+      "actual_change_pp": -0.74,
+      "dimension": "purpose",
+      "mix_effect_total_pp": -0.093,
+      "rate_effect_total_pp": -0.646,
+      "model_predicted_pd_change_pp": -0.123,
+      "residual_unexplained_by_model_mix_pp": -0.617,
+      "single_dominant_group": "debt_consolidation",
+      "dominant_group_share_of_total_abs_effect_pct": 62.1
+    },
+    {
+      "transition": "2015-08 to 2015-09",
+      "actual_change_pp": 0.692,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": -0.169,
+      "rate_effect_total_pp": 0.861,
+      "model_predicted_pd_change_pp": 0.002,
+      "residual_unexplained_by_model_mix_pp": 0.69,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 45.8
+    },
+    {
+      "transition": "2015-08 to 2015-09",
+      "actual_change_pp": 0.692,
+      "dimension": "purpose",
+      "mix_effect_total_pp": 0.048,
+      "rate_effect_total_pp": 0.644,
+      "model_predicted_pd_change_pp": 0.002,
+      "residual_unexplained_by_model_mix_pp": 0.69,
+      "single_dominant_group": "debt_consolidation",
+      "dominant_group_share_of_total_abs_effect_pct": 58.8
+    },
+    {
+      "transition": "2015-09 to 2015-10",
+      "actual_change_pp": -0.792,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": 0.085,
+      "rate_effect_total_pp": -0.878,
+      "model_predicted_pd_change_pp": -0.247,
+      "residual_unexplained_by_model_mix_pp": -0.545,
+      "single_dominant_group": "(660, 680]",
+      "dominant_group_share_of_total_abs_effect_pct": 54.5
+    },
+    {
+      "transition": "2015-09 to 2015-10",
+      "actual_change_pp": -0.792,
+      "dimension": "purpose",
+      "mix_effect_total_pp": -0.042,
+      "rate_effect_total_pp": -0.75,
+      "model_predicted_pd_change_pp": -0.247,
+      "residual_unexplained_by_model_mix_pp": -0.545,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 44.4
+    },
+    {
+      "transition": "2015-10 to 2015-11",
+      "actual_change_pp": 0.618,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": -0.055,
+      "rate_effect_total_pp": 0.673,
+      "model_predicted_pd_change_pp": 0.224,
+      "residual_unexplained_by_model_mix_pp": 0.394,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 46.5
+    },
+    {
+      "transition": "2015-10 to 2015-11",
+      "actual_change_pp": 0.618,
+      "dimension": "purpose",
+      "mix_effect_total_pp": 0.011,
+      "rate_effect_total_pp": 0.608,
+      "model_predicted_pd_change_pp": 0.224,
+      "residual_unexplained_by_model_mix_pp": 0.394,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 26.9
+    },
+    {
+      "transition": "2015-11 to 2015-12",
+      "actual_change_pp": 0.813,
+      "dimension": "fico_band",
+      "mix_effect_total_pp": 0.072,
+      "rate_effect_total_pp": 0.741,
+      "model_predicted_pd_change_pp": 0.2,
+      "residual_unexplained_by_model_mix_pp": 0.613,
+      "single_dominant_group": "(660, 680]",
+      "dominant_group_share_of_total_abs_effect_pct": 75.0
+    },
+    {
+      "transition": "2015-11 to 2015-12",
+      "actual_change_pp": 0.813,
+      "dimension": "purpose",
+      "mix_effect_total_pp": 0.056,
+      "rate_effect_total_pp": 0.758,
+      "model_predicted_pd_change_pp": 0.2,
+      "residual_unexplained_by_model_mix_pp": 0.613,
+      "single_dominant_group": "no single dominant group",
+      "dominant_group_share_of_total_abs_effect_pct": 42.3
+    }
+  ],
+  "conclusion": "No single driver explains the flagged month-to-month movement in the 2015 default rate. Across the 14 flagged-transition x dimension decompositions, mix (compositional, FICO-band or purpose) effects are small and dominate in only 0 of 14 cases (mean |mix effect| 0.082 pp vs. mean |rate effect| 0.769 pp): most of the movement is within-group default-rate change, not a shift in who applied. The model's own mean predicted PD moves in the same direction as the actual change every time but explains only a small share of its size, leaving most of each flagged change as residual - month-to-month noise in realized outcomes that the model's risk mix did not anticipate."
+}

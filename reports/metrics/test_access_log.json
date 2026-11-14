@@ -184,5 +184,29 @@
     "script": "build_assets.py:compute_risk_bands",
     "row_count": 282787,
     "action": "Serving asset, not evaluation: re-read test.parquet to find PD quintile cut points (the year the served model's calibrator was fit on) for the API's risk-band labels. No metric about the model's performance is computed or reported."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:15:20.635337+00:00",
+    "script": "decision_quality.py",
+    "row_count": 282787,
+    "action": "Post-hoc, descriptive only: re-read saved test_scored.parquet to describe what the existing 70/80/90% and chosen-policy cutoffs (set on validation) actually do to the champion's (v1) book on test - default capture, decline precision, and realized dollars on each side. No cutoff is selected or changed here."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:15:55.162504+00:00",
+    "script": "decision_quality.py",
+    "row_count": 282787,
+    "action": "Post-hoc, descriptive only: re-read saved test_scored.parquet to describe what the existing 70/80/90% and chosen-policy cutoffs (set on validation) actually do to the champion's (v1) book on test - default capture, decline precision, and realized dollars on each side. No cutoff is selected or changed here."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:17:37.957427+00:00",
+    "script": "kpi_movement.py",
+    "row_count": 282787,
+    "action": "Post-hoc, descriptive only: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to explain month-to-month movement in the already-known 2015 default rate. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T06:18:02.288729+00:00",
+    "script": "kpi_movement.py",
+    "row_count": 282787,
+    "action": "Post-hoc, descriptive only: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to explain month-to-month movement in the already-known 2015 default rate. No model, feature, or policy change."
   }
 ]
