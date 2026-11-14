@@ -53,7 +53,7 @@ from src.models.mlflow_utils import (
     register_champion_standalone,
     setup_mlflow,
 )
-from src.models.posthoc_v2_evaluation import (
+from src.models.posthoc_v2 import (
     FROZEN_LGB_PARAMS,
     FROZEN_N_TREES,
     MONOTONE_DIRECTIONS,
@@ -205,7 +205,7 @@ def main() -> None:
         ),
         "n_features": len(champion_feats),
         "features": champion_feats,
-        "hyperparameters": {**{k: v for k, v in FROZEN_LGB_PARAMS.items()}, "monotone_constraints": "see MONOTONE_DIRECTIONS in src/models/posthoc_v2_evaluation.py"},
+        "hyperparameters": {**{k: v for k, v in FROZEN_LGB_PARAMS.items()}, "monotone_constraints": "see MONOTONE_DIRECTIONS in src/models/posthoc_v2.py"},
         "n_trees": FROZEN_N_TREES,
         "trained_on": "2012-2014 (train + validation concatenated)",
         "model_path": str(FROZEN_LGB_DIR / "model_chosen.joblib"),

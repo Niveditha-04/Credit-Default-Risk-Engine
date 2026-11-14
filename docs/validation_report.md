@@ -57,7 +57,7 @@ A stricter label, default within 24 months of issue (from payment dates, labelin
 
 ## Walk-forward (post-hoc)
 
-Two folds, both with the champion's frozen hyperparameters (no tuning search); fold 1 reuses the already-committed train (2012-2013) -> validation (2014) numbers, fold 2 trains fresh on 2012-2014 and evaluates on test (2015), post-hoc (`reports/metrics/posthoc_walkforward.csv`, `src/evaluation/posthoc_walkforward.py`). LightGBM reuses the champion's exact tree count (273) in fold 2 rather than early-stopping against anything inside the fold, since there is no non-test holdout left to early-stop against without using test for a design decision. The scorecard reruns its full pipeline (WOE binning, IV filter, correlation reduction, VIF reduction, sign-correction logistic regression) fresh on each fold's own train data; fold 2 selects a slightly different 16-feature set than the frozen scorecard's 17: it drops `mo_sin_old_il_acct` and `num_rev_tl_bal_gt_0` and adds `mort_acc` (`reports/metrics/posthoc_walkforward_summary.json` has the exact list).
+Two folds, both with the champion's frozen hyperparameters (no tuning search); fold 1 reuses the already-committed train (2012-2013) -> validation (2014) numbers, fold 2 trains fresh on 2012-2014 and evaluates on test (2015), post-hoc (`reports/metrics/posthoc_walkforward.csv`, `src/evaluation/posthoc_validation.py`). LightGBM reuses the champion's exact tree count (273) in fold 2 rather than early-stopping against anything inside the fold, since there is no non-test holdout left to early-stop against without using test for a design decision. The scorecard reruns its full pipeline (WOE binning, IV filter, correlation reduction, VIF reduction, sign-correction logistic regression) fresh on each fold's own train data; fold 2 selects a slightly different 16-feature set than the frozen scorecard's 17: it drops `mo_sin_old_il_acct` and `num_rev_tl_bal_gt_0` and adds `mort_acc` (`reports/metrics/posthoc_walkforward_summary.json` has the exact list).
 
 **Fold 1 is in-sample for model selection, not a clean holdout**: 2014 was validation's own early-stopping target (it set the tree count, 273) and the primary number the champion itself was picked on - it is not an independent test of this configuration. Only fold 2 (train 2012-2014, evaluate test 2015) is genuinely out-of-sample for this walk-forward check, since test was never used to tune or early-stop anything here or in the frozen champion.
 
@@ -70,7 +70,7 @@ Per-fold lifts, not a rounded mean: fold 1 (in-sample) +0.0184 vs. scorecard and
 
 ## Partial performance on replay (post-hoc, exploratory)
 
-Replay (2016-2018) carries no official target because most of it has not had time to resolve by this data's March 2019 snapshot (see Limitations). One narrow exception: loans issued January through October 2016 have all had at least 24 + 5 = 29 months to season by March 2019 (October 2016 + 29 months = March 2019 exactly), a 5-month buffer past the 24-month label horizon itself, so a fixed 24-month-horizon default label (same idea as the stricter robustness check above, re-derived for this window) is computable for them without relying on the bare minimum (`reports/metrics/posthoc_replay_24m_performance.csv`, `src/evaluation/posthoc_replay_performance.py`). Loans issued after October 2016 are excluded from this window entirely, since they would not have that buffer.
+Replay (2016-2018) carries no official target because most of it has not had time to resolve by this data's March 2019 snapshot (see Limitations). One narrow exception: loans issued January through October 2016 have all had at least 24 + 5 = 29 months to season by March 2019 (October 2016 + 29 months = March 2019 exactly), a 5-month buffer past the 24-month label horizon itself, so a fixed 24-month-horizon default label (same idea as the stricter robustness check above, re-derived for this window) is computable for them without relying on the bare minimum (`reports/metrics/posthoc_replay_24m_performance.csv`, `src/evaluation/posthoc_validation.py`). Loans issued after October 2016 are excluded from this window entirely, since they would not have that buffer.
 
 Label: 1 = charged off with `last_pymnt_d` within 24 months of `issue_d`; 0 = everything else that has been observed past the 24-month mark without charging off (including loans still Current or Late at the snapshot date - the question is only "did it charge off within 24 months", not "is it fully resolved good"). Excluded entirely (cannot be labelled): charged-off loans with `last_pymnt_d` more than 24 months after issue, or missing altogether - 5,929 of 265,967 loans in this restricted window (2.2%). `last_pymnt_d` is only an approximation of when a loan stopped performing; LendingClub does not record an exact default date.
 
@@ -89,7 +89,7 @@ Applying the identical label to test (2015) by quarter, for comparison: AUC rang
 
 ## v2 decision rule: results (post-hoc, exploratory)
 
-The adoption rule (v2 definition, evaluation population, label, and the rule itself) was pre-registered and committed in `docs/v2_decision_rule.md` before this evaluation was run or any v2 code was written - the git history shows that commit before this one. This section reports the outcome exactly as the rule specifies, computed by `src/models/posthoc_v2_evaluation.py` (`reports/metrics/posthoc_v2_evaluation.json`).
+The adoption rule (v2 definition, evaluation population, label, and the rule itself) was pre-registered and committed in `docs/v2_decision_rule.md` before this evaluation was run or any v2 code was written - the git history shows that commit before this one. This section reports the outcome exactly as the rule specifies, computed by `src/models/posthoc_v2.py` (`reports/metrics/posthoc_v2_evaluation.json`).
 
 Population: 2016 vintages, issue_d <= 2016-10-31, the same restricted, censoring-safe window as the replay check above (260,038 loans, 12.70% 24-month-label rate).
 
@@ -108,7 +108,7 @@ Rule: adopt v2 only if both `AUC(v2) >= AUC(v1) - 0.002` and `ECE(v2) <= ECE(v1)
 
 ### Label robustness check (post-hoc, exploratory - does not change the result above)
 
-Rerun on the same 2016-vintage population with a second, "corrected" 24-month label, chosen only after the pre-registered result above was already recorded: a charge-off more than 24 months after issue now counts as 0 (survived the 24-month window before eventually failing, rather than being excluded), and a charge-off with no recorded `last_pymnt_d` at all now counts as 1 (no payment ever made reads as an immediate failure, rather than being excluded) (`reports/metrics/posthoc_v2_label_robustness.json`, `src/models/posthoc_v2_label_robustness.py`).
+Rerun on the same 2016-vintage population with a second, "corrected" 24-month label, chosen only after the pre-registered result above was already recorded: a charge-off more than 24 months after issue now counts as 0 (survived the 24-month window before eventually failing, rather than being excluded), and a charge-off with no recorded `last_pymnt_d` at all now counts as 1 (no payment ever made reads as an immediate failure, rather than being excluded) (`reports/metrics/posthoc_v2_label_robustness.json`, `src/models/posthoc_v2.py`).
 
 | Label | n scored | Label rate | v1 AUC | v1 ECE | v2 AUC | v2 ECE | Rule outcome |
 |---|---|---|---|---|---|---|---|
@@ -129,9 +129,23 @@ v2 has been promoted to the served model (`src/models/promote_v2.py`, `reports/m
 
 Model hashes (SHA-256 of `model_chosen.joblib`): v1 `b8437eb84d6a...` (history), v2 `d7dda06ef209...` (now served). The served model's `model_version` field in every `/score` response is self-describing and independently verifiable from these: `lightgbm_chosen@git:<commit>+sha256:<first 12 hex chars of the served booster's hash>`.
 
+### v2 on test (2015), post-hoc
+
+v2 was selected against v1 on 2016 vintages (above) and calibrated on 2015 (Promotion, step 1), but its own AUC, Gini, and KS on the full 2015 test population were never computed until this check (`reports/metrics/posthoc_v2_test_2015.json`, `src/models/posthoc_v2.py`). 2015 is therefore not a clean holdout for v2 the way it was for v1: v2's calibrator already saw these labels, even though calibration (a monotone, score-preserving transform) does not itself change AUC, Gini, or KS.
+
+| Metric | v2 on test (2015) |
+|---|---|
+| AUC (95% CI) | 0.6959 (0.6934 to 0.6985) |
+| Gini | 0.3919 |
+| KS | 0.2850 |
+| AUC diff vs. v1 (95% CI) | +0.0087 (0.0079 to 0.0097), significant |
+| AUC diff vs. sub_grade (95% CI) | +0.0173 (0.0151 to 0.0194), significant |
+
+v2's AUC here (0.6959) is above v1's own test AUC (0.6872, Results table above), consistent with the walk-forward check's finding that a year more training data raises AUC on 2015 (0.6872 to 0.6962, Walk-forward above) - v2 adds that extra year plus monotone constraints. This is a descriptive post-hoc read, not a basis for any further model change.
+
 ## Ablations (post-hoc)
 
-Four ablations, all fit with the frozen champion's own hyperparameters (num_leaves=15, learning_rate=0.08, min_child_samples=1500, feature_fraction=0.6, bagging_fraction=0.8, bagging_freq=1, lambda_l1=0.1, lambda_l2=1.0) and no tuning search. Validation (2014) is the primary number for every ablation, matching how the champion itself was selected; test (2015) AUC is reported for context only and is explicitly post-hoc (`reports/metrics/posthoc_ablations_summary.json`, `src/models/posthoc_ablations.py`):
+Four ablations, all fit with the frozen champion's own hyperparameters (num_leaves=15, learning_rate=0.08, min_child_samples=1500, feature_fraction=0.6, bagging_fraction=0.8, bagging_freq=1, lambda_l1=0.1, lambda_l2=1.0) and no tuning search. Validation (2014) is the primary number for every ablation, matching how the champion itself was selected; test (2015) AUC is reported for context only and is explicitly post-hoc (`reports/metrics/posthoc_ablations_summary.json`, `src/models/posthoc_v2.py`):
 
 Absolute validation AUC for every ablation, with the deployed scorecard and the champion as reference rows, ordered so each row builds on the one above it:
 
@@ -152,7 +166,7 @@ For (d), the monotone constraints cost essentially nothing in AUC (no detectable
 
 ### Paired monthly lift (post-hoc)
 
-Per-month AUC on test (2015), LightGBM vs. sub_grade's ordinal rank and vs. the scorecard, all 12 months (`reports/metrics/posthoc_monthly_lift.csv`, `src/evaluation/posthoc_monthly_lift.py`):
+Per-month AUC on test (2015), LightGBM vs. sub_grade's ordinal rank and vs. the scorecard, all 12 months (`reports/metrics/posthoc_monthly_lift.csv`, `src/evaluation/posthoc_validation.py`):
 
 | Comparison | Mean lift | Min | Max | Months positive |
 |---|---|---|---|---|
@@ -163,7 +177,7 @@ Months within the same year share macro conditions (the same broad credit cycle,
 
 ### Economics at matched funding volume (post-hoc)
 
-For each model, funds exactly the top 70/80/90% of test loans by that model's own score (an evaluation device, not a policy: the deployed policy's cutoff is fixed on validation, see Selection economics above). Realized return per dollar funded = realized net cash / funded amount, summed over the funded loans (`reports/metrics/posthoc_matched_volume_economics.csv`, `reports/figures/posthoc_return_per_dollar_vs_selection_rate.png`, `src/evaluation/posthoc_matched_volume_economics.py`):
+For each model, funds exactly the top 70/80/90% of test loans by that model's own score (an evaluation device, not a policy: the deployed policy's cutoff is fixed on validation, see Selection economics above). Realized return per dollar funded = realized net cash / funded amount, summed over the funded loans (`reports/metrics/posthoc_matched_volume_economics.csv`, `reports/figures/posthoc_return_per_dollar_vs_selection_rate.png`, `src/evaluation/posthoc_economics.py`):
 
 | Model | 70% | 80% | 90% |
 |---|---|---|---|
@@ -196,7 +210,7 @@ Every one of the 18 differences is positive and significant at the 95% level: Li
 
 ### Funding-fraction optimization (post-hoc)
 
-For each model and each cost of funds (0/4/8% annual), the funding fraction on 2015 test that maximizes TOTAL realized net cash after cost - a dollar amount, not a per-dollar rate - searched over a 5%-step grid (`reports/metrics/posthoc_funding_optimization_curve.csv`, `reports/metrics/posthoc_funding_optimization_optimal.csv`, `reports/figures/posthoc_net_cash_vs_funding_volume.png`, `src/evaluation/posthoc_funding_optimization.py`):
+For each model and each cost of funds (0/4/8% annual), the funding fraction on 2015 test that maximizes TOTAL realized net cash after cost - a dollar amount, not a per-dollar rate - searched over a 5%-step grid (`reports/metrics/posthoc_funding_optimization_curve.csv`, `reports/metrics/posthoc_funding_optimization_optimal.csv`, `reports/figures/posthoc_net_cash_vs_funding_volume.png`, `src/evaluation/posthoc_economics.py`):
 
 | Model | Cost of funds | Optimal selection rate | Net cash after cost | Annualized return on average capital |
 |---|---|---|---|---|
@@ -217,7 +231,7 @@ At 0% cost of funds, LightGBM and XGBoost's better ranking lets them profitably 
 
 ### sub_grade alone vs. sub_grade + LightGBM (post-hoc)
 
-LightGBM with the champion's 69 features plus `sub_grade` as a feature (ablation c) vs. sub_grade's own train-year PD map, at matched funding volume, on validation (2014) and test (2015) (`reports/metrics/posthoc_subgrade_lightgbm_matched_volume.csv`, `src/evaluation/posthoc_subgrade_lightgbm_matched_volume.py`):
+LightGBM with the champion's 69 features plus `sub_grade` as a feature (ablation c) vs. sub_grade's own train-year PD map, at matched funding volume, on validation (2014) and test (2015) (`reports/metrics/posthoc_subgrade_lightgbm_matched_volume.csv`, `src/evaluation/posthoc_economics.py`):
 
 | Year | Model | 70% | 80% | 90% |
 |---|---|---|---|---|
@@ -236,7 +250,7 @@ Checked by issue quarter and by `addr_state` grouping, labeled stability, not fa
 
 LightGBM, XGBoost, and the scorecard are each calibrated out-of-sample on a held-out slice of validation (fit on 2014-01 to 2014-09, evaluated on 2014-10 to 2014-12), then refit on all of 2014 for deployment. The champion's calibrator deploys isotonic only if it beats Platt by more than 0.0005 holdout Brier score; otherwise it deploys Platt. The live champion picked Platt. Every scoring path (`score_models.py`, `decision_policy.py`, the served MLflow model, the API) applies whichever calibrator it got through one shared function, `apply_calibrator()`, so either choice scores correctly. LightGBM's champion mean predicted PD on test (13.74%) sits close to, but below, the actual test default rate (14.88%). See `reports/metrics/test_calibration_lightgbm.csv` for the full calibration curve.
 
-Expected Calibration Error, **on test (2015)**, 10 bins weighted by bin size: **0.0121**. Reliability plot: `reports/figures/posthoc_reliability_plot.png` (`src/evaluation/posthoc_calibration.py`, post-hoc for the by-month and by-FICO-band breakdowns below; the ECE and reliability plot themselves use only the already-committed 10-bin calibration table, no new test read). Calibration holds up similarly across both cuts, still on test (2015), not on any later data:
+Expected Calibration Error, **on test (2015)**, 10 bins weighted by bin size: **0.0121**. Reliability plot: `reports/figures/posthoc_reliability_plot.png` (`src/evaluation/posthoc_validation.py`, post-hoc for the by-month and by-FICO-band breakdowns below; the ECE and reliability plot themselves use only the already-committed 10-bin calibration table, no new test read). Calibration holds up similarly across both cuts, still on test (2015), not on any later data:
 
 - By issue month (2015): mean predicted PD tracks the actual default rate in every month; the largest gap is 1.89 percentage points (`reports/metrics/posthoc_calibration_by_month.csv`).
 - By FICO band: predicted and actual default rates track closely in every band from (660, 680] down to (760, 850]; the largest gap is 1.90 percentage points, and both predicted and actual rates fall monotonically as FICO rises (19.32% actual at the lowest band to 4.77% at the highest) (`reports/metrics/posthoc_calibration_by_fico_band.csv`).
@@ -251,7 +265,7 @@ Not yet implemented as running code - a statement of intent for operating this m
 
 ## Segments (post-hoc)
 
-LightGBM AUC and default rate on test, by segment (`reports/metrics/posthoc_segment_table.csv`, `src/evaluation/posthoc_segments.py`):
+LightGBM AUC and default rate on test, by segment (`reports/metrics/posthoc_segment_table.csv`, `src/evaluation/posthoc_validation.py`):
 
 - **FICO band:** AUC rises from 0.6481 at (660, 680] to 0.7417 at (760, 850] - the model discriminates better among safer borrowers, where there is more room between a typical good loan and a typical bad one. Default rate falls from 19.32% to 4.77% across the same bands.
 - **Purpose (top 6 by volume, rest combined):** AUC ranges 0.6677 to 0.6945, narrower than the FICO-band spread - `credit_card` is both the lowest-default (12.23%) and highest-AUC (0.6945) purpose; `all_other_purposes_combined` is the highest-default (18.48%) and one of the lower-AUC segments (0.6764).

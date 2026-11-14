@@ -39,7 +39,7 @@ import pandas as pd
 from src.evaluation.score_models import load_frozen_config, score_lightgbm
 from src.evaluation.test_access_log import log_access
 from src.models.gbm import feature_list
-from src.models.posthoc_v2_evaluation import build_eval_population
+from src.models.posthoc_v2 import build_eval_population
 
 METRICS_DIR = Path("reports/metrics")
 TEST_SCORED = METRICS_DIR / "test_scored.parquet"

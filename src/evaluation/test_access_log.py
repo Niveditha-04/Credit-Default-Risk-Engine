@@ -5,7 +5,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pandas as pd
+
 LOG_PATH = Path("reports/metrics/test_access_log.json")
+TEST_SCORED = Path("reports/metrics/test_scored.parquet")
 
 
 def log_access(script: str, row_count: int, action: str) -> None:
@@ -25,3 +28,13 @@ def log_access(script: str, row_count: int, action: str) -> None:
     with open(LOG_PATH, "w") as f:
         json.dump(entries, f, indent=2)
     print(f"[test_access_log] {script}: {row_count} rows - {action}")
+
+
+def load_test_scored(script: str, reason: str) -> pd.DataFrame:
+    """Shared loader for every post-hoc check that re-reads the one-time
+    test scoring pass: reads reports/metrics/test_scored.parquet and logs
+    the access in the same call, so every caller logs with the same
+    row count it actually read."""
+    df = pd.read_parquet(TEST_SCORED)
+    log_access(script, len(df), reason)
+    return df

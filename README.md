@@ -18,6 +18,11 @@ This project is both a credit-modelling exercise and an MLOps one: the scorecard
 - At matched 70% funding, realized return per dollar over the loan's life: LightGBM 7.57%, scorecard 7.28%, sub_grade 6.97%. The differences are significant at 0%, 4%, and 8% annual cost of funds, and the gap vs. sub_grade widens as cost of funds rises (`reports/metrics/posthoc_matched_volume_comparison_table.csv`).
 - Refitting on 2012-2014 (one more year, same frozen hyperparameters) raises 2015 AUC from 0.6872 to 0.6962: retraining on the latest resolved year matters (walk-forward check, `reports/metrics/posthoc_walkforward.csv`).
 - A monotone-constrained variant has no detectable validation AUC cost and removes most of the income non-monotonicity I found in SHAP; selected against v1 on a pre-registered rule, it is now **v2, the model the API actually serves** (`reports/metrics/posthoc_ablations_summary.json`).
+- v2 itself scores 0.6959 AUC on test (2015), checked separately after its own selection and calibration, +0.0087 over v1 and +0.0173 over sub_grade, both significant (`reports/metrics/posthoc_v2_test_2015.json`).
+
+![ROC, KS, and cumulative gains, test 2015](reports/figures/test_roc_ks_gains.png)
+![Reliability plot, LightGBM, test 2015](reports/figures/posthoc_reliability_plot.png)
+![Decision trade-off: approval rate vs. defaults caught and good loans declined](reports/figures/decision_tradeoff_curve.png)
 
 ## Data
 
@@ -116,7 +121,7 @@ Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-
 
 ## Tests and coverage
 
-351 tests total: 348 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only (`reports/metrics/test_coverage_summary.json`). Coverage is 100% for `src/api` (main, schemas, scoring, reason_codes), `src/features/feature_engineering.py`, and `src/monitoring/psi.py`; 98.51% for `src/features/build_features.py`; 98.28% for `src/features/allow_list.py`; 97.87% for `src/data/target.py`. The rest of those four modules' files are one-time pipeline scripts I run by hand against real data, not pytest tests, so they show 0%.
+344 tests total: 341 run in CI against small synthetic fixtures, 3 need the real trained model and run locally only (`reports/metrics/test_coverage_summary.json`). Coverage is 100% for `src/api` (main, schemas, scoring, reason_codes), `src/features/feature_engineering.py`, and `src/monitoring/psi.py`; 98.51% for `src/features/build_features.py`; 98.28% for `src/features/allow_list.py`; 97.87% for `src/data/target.py`. The rest of those four modules' files are one-time pipeline scripts I run by hand against real data, not pytest tests, so they show 0%.
 
 ## How to run
 

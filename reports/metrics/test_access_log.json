@@ -238,5 +238,197 @@
     "script": "dti_cap_extrapolation.py",
     "row_count": 260038,
     "action": "Post-hoc, descriptive only: re-scores the served v2 model on the 2016 holdout (already used for the pre-registered decision rule) to check whether its calibration gap differs for loans above its own train-time DTI cap (39.99). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:30:34.602265+00:00",
+    "script": "posthoc_calibration.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, not stored in test_scored.parquet) to compute calibration by issue month and by FICO band. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:30:34.826351+00:00",
+    "script": "posthoc_monthly_lift.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift by issue month. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:30:35.232188+00:00",
+    "script": "posthoc_segments.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:30:35.997227+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:31:15.120852+00:00",
+    "script": "posthoc_calibration.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, not stored in test_scored.parquet) to compute calibration by issue month and by FICO band. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:31:15.328107+00:00",
+    "script": "posthoc_monthly_lift.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift by issue month. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:31:15.724479+00:00",
+    "script": "posthoc_segments.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:31:16.392519+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:13.428288+00:00",
+    "script": "posthoc_calibration.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, not stored in test_scored.parquet) to compute calibration by issue month and by FICO band. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:13.641724+00:00",
+    "script": "posthoc_monthly_lift.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift by issue month. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:14.046859+00:00",
+    "script": "posthoc_segments.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:14.721303+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:17.841344+00:00",
+    "script": "posthoc_walkforward.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to evaluate a walk-forward fold (train 2012-2014, frozen LightGBM hyperparameters and tree count, no tuning; scorecard refit through its own pipeline) against test (2015). No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:32:39.531168+00:00",
+    "script": "posthoc_validation.py:run_roc_ks_gains",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to draw ROC, KS, and cumulative -gains curves for v1 LightGBM, the scorecard, and sub_grade's ordinal rank on test (2015). No model, feature, or policy change; every AUC drawn here already matches reports/metrics/test_core_metrics.json."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:34:41.360952+00:00",
+    "script": "posthoc_calibration.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, not stored in test_scored.parquet) to compute calibration by issue month and by FICO band. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:34:41.580572+00:00",
+    "script": "posthoc_monthly_lift.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift by issue month. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:34:41.986775+00:00",
+    "script": "posthoc_segments.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean and purpose, not stored in test_scored.parquet) to compute a segment table (FICO band, purpose, loan size band, issue quarter). No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:34:42.695560+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:34:46.323150+00:00",
+    "script": "posthoc_walkforward.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to evaluate a walk-forward fold (train 2012-2014, frozen LightGBM hyperparameters and tree count, no tuning; scorecard refit through its own pipeline) against test (2015). No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:35:08.739053+00:00",
+    "script": "posthoc_validation.py:run_roc_ks_gains",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to draw ROC, KS, and cumulative -gains curves for v1 LightGBM, the scorecard, and sub_grade's ordinal rank on test (2015). No model, feature, or policy change; every AUC drawn here already matches reports/metrics/test_core_metrics.json."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:35:17.465579+00:00",
+    "script": "posthoc_matched_volume_economics.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to fund each model's own top N% of test loans by its own score, an evaluation device, not a policy. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:48:14.442305+00:00",
+    "script": "posthoc_funding_optimization.py",
+    "row_count": 282787,
+    "action": "Post-hoc: re-read saved test_scored.parquet to find, per model and cost of funds, the funding fraction that maximizes total realized net cash after cost, and the annualized return on average capital at that optimum. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:48:16.620893+00:00",
+    "script": "posthoc_subgrade_lightgbm_matched_volume.py",
+    "row_count": 282787,
+    "action": "Post-hoc: refits LightGBM with champion features + sub_grade (ablation c), scores it on validation (2014) and test (2015, post-hoc), and compares matched -volume economics against sub_grade alone. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:48:38.863286+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:51:23.430710+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:52:57.264082+00:00",
+    "script": "posthoc_v2_evaluation.py",
+    "row_count": 260038,
+    "action": "Post-hoc, exploratory: scores v1 (frozen champion, unchanged) and a freshly-fit, in-memory-only v2 on 2016 vintages (issue <= 2016-10-31, 24-month label) to evaluate the pre-registered adoption rule in docs/v2_decision_rule.md, committed before this script was run. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:53:07.964374+00:00",
+    "script": "posthoc_v2_label_robustness.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory robustness check (does not change the already-recorded pre-registered v2 decision): rescores v1 and a freshly-refit v2 on the same 2016-vintage population with a second, corrected 24-month label, chosen after the pre-registered evaluation already ran. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:53:19.648576+00:00",
+    "script": "posthoc_v2.py:run_v2_on_test_2015",
+    "row_count": 282787,
+    "action": "Post-hoc: scores the served v2 model (saved booster and calibrator, no refit) on test (2015) to report its own AUC/Gini/KS with bootstrap CIs. v2's Platt calibrator was already fit on 2015 (a calibration step, not model selection), so 2015 is not a clean holdout for v2 the way it was for v1. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:58:07.877998+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:59:39.447590+00:00",
+    "script": "posthoc_v2_evaluation.py",
+    "row_count": 260038,
+    "action": "Post-hoc, exploratory: scores v1 (frozen champion, unchanged) and a freshly-fit, in-memory-only v2 on 2016 vintages (issue <= 2016-10-31, 24-month label) to evaluate the pre-registered adoption rule in docs/v2_decision_rule.md, committed before this script was run. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T13:59:49.157508+00:00",
+    "script": "posthoc_v2_label_robustness.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory robustness check (does not change the already-recorded pre-registered v2 decision): rescores v1 and a freshly-refit v2 on the same 2016-vintage population with a second, corrected 24-month label, chosen after the pre-registered evaluation already ran. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T14:00:00.288262+00:00",
+    "script": "posthoc_v2.py:run_v2_on_test_2015",
+    "row_count": 282787,
+    "action": "Post-hoc: scores the served v2 model (saved booster and calibrator, no refit) on test (2015) to report its own AUC/Gini/KS with bootstrap CIs. v2's Platt calibrator was already fit on 2015 (a calibration step, not model selection), so 2015 is not a clean holdout for v2 the way it was for v1. No model, feature, or policy change."
   }
 ]
