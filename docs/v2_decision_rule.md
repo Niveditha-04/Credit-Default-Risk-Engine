@@ -24,7 +24,7 @@ The same fixed 24-month-horizon label already used elsewhere in this project for
 ## Metrics
 
 - **AUC**: on the 2016-vintage population above, this label, v1's existing predictions (already-frozen model, scored fresh on this population - a new, post-hoc read) and v2's predictions (freshly fit, scored on this same population).
-- **ECE**: Expected Calibration Error, 10 bins weighted by bin size, same definition already used for v1 on test (`src/evaluation/posthoc_validation.py`), applied to both v1 and v2 on this 2016-vintage population and label.
+- **ECE**: Expected Calibration Error, 10 bins weighted by bin size, same definition already used for v1 on test (`src/evaluation/posthoc_calibration.py`), applied to both v1 and v2 on this 2016-vintage population and label.
 
 ## Adoption rule
 

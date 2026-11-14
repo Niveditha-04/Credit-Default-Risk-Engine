@@ -61,7 +61,7 @@ LightGBM's own exact TreeSHAP, log-odds scale, same call used offline and in the
 - Accepted loans only, no rejected-applicant counterfactual.
 - Origination-time data, modeling population 2012-2015, plus a 2016 holdout check for v2.
 - No protected attributes in this data; not evaluated for fairness.
-- LGD is an estimate from train-year charged-off loans (`reports/metrics/test_lgd_sensitivity.csv`).
+- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans (`reports/metrics/test_lgd_sensitivity.csv`).
 - Drift monitoring is a historical replay of 2016-2018, not a live monitor.
 
 ## Serving
