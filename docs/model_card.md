@@ -4,7 +4,7 @@
 
 LightGBM gradient-boosted trees, 273 trees, with monotone constraints on 8 features (`fico_mean` decreasing; `dti`, `loan_to_income`, `revol_util`, `bc_util`, `inq_last_6mths`, `acc_open_past_24mths` increasing; `annual_inc` decreasing), plus a Platt calibrator fit on 2015. 69 features feed it. Trained on 2012 to 2014 (train and validation concatenated), with hyperparameters `num_leaves=15, learning_rate=0.08, min_child_samples=1500, feature_fraction=0.6, bagging_fraction=0.8, bagging_freq=1, lambda_l1=0.1, lambda_l2=1.0` and tree count 273, the same recipe v1 (below) already used.
 
-v2 is selected over v1 by a rule pre-registered in `docs/v2_decision_rule.md` before any of v2's code ran: adopt v2 if, on 2016 vintages (issue through October 2016, 24-month default label), its AUC is no more than 0.002 below v1's and its Expected Calibration Error (ECE) is no more than 0.005 above v1's.
+v2 is selected over v1 by a champion/challenger evaluation with a decision rule pre-registered in `docs/v2_decision_rule.md` before any of v2's code ran: adopt the challenger (v2) if, on 2016 vintages (issue through October 2016, 24-month default label), its AUC is no more than 0.002 below the champion's (v1) and its Expected Calibration Error (ECE) is no more than 0.005 above the champion's.
 
 | | v1 (frozen, unchanged) | v2 |
 |---|---|---|
