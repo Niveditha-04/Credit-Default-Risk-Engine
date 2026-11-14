@@ -8,6 +8,22 @@ Time-based split, no shuffling across time: train on 2012 to 2013, tune and cali
 
 36-month, individual-application loans. Train 143,892 loans (12.70% default), validation 162,570 (13.73%), test 282,787 (14.88%). 147 test-year loans were still unresolved at data-pull time and are excluded from the labeled population.
 
+### Eligibility caps by issue year (2012 to 2018)
+
+LendingClub's own FICO floor holds at 660 in every year used here, but its DTI ceiling does not (`reports/metrics/eligibility_caps_by_year.csv`):
+
+| Issue year | n | Min FICO | Max DTI | Share with DTI > 35 |
+|---|---|---|---|---|
+| 2012 | 43,470 | 660.0 | 34.99 | 0.00% |
+| 2013 | 100,422 | 660.0 | 34.99 | 0.00% |
+| 2014 | 162,570 | 660.0 | 39.99 | 1.38% |
+| 2015 | 282,934 | 660.0 | 39.99 | 3.42% |
+| 2016 | 318,277 | 660.0 | 49.96 | 2.49% |
+| 2017 | 296,484 | 660.0 | 39.99 | 0.98% |
+| 2018 | 304,292 | 660.0 | 39.99 | 3.37% |
+
+So "every loan has DTI <= 34.99%" is only true for train (2012-2013). The cap rose to 39.99 by 2014 (already inside validation), briefly to 49.96 in 2016, and stayed near 39.99 for the rest of replay. `src/api/feature_ranges.json`'s own DTI max (39.99, computed on train plus validation, 2012-2014) reflects this. See the README's drift section for how this interacts with `dti` and `loan_to_income`'s own PSI.
+
 ## Results (test, 2015)
 
 | Model | AUC | 95% CI | Gini | KS | Brier | Brier skill score |
@@ -267,6 +283,39 @@ Rather than the single EV-maximizing cutoff above, this sweeps 3 fixed target se
 | sub_grade map | 90% | 92.88% | 13.59% | $266.6M | $224.6M |
 
 At these validation-set cutoffs, LightGBM and the scorecard realize nearly the same cash (0 to 1.1% apart) - a different methodology from the matched-funding-volume comparison below, which ranks loans by each model's own test-set score instead of a cutoff fixed on validation, and does show a significant LightGBM edge. Only XGBoost's test predictions were saved, so it appears in the main results table but not here. sub_grade can't hit a target rate exactly either: it has only 35 discrete levels.
+
+### Decision quality (post-hoc, descriptive only)
+
+A second, different "70%" and "90%" from the table above: the champion's own exact-rank selection (the lowest-risk 70% or 90% of test loans by its own score, not a PD value learned on validation) (`reports/metrics/test_decision_quality.csv`):
+
+| Approval rate (exact rank on test) | Default rate approved | % of defaults caught by declining | Good loans declined per default avoided | Realized net cash |
+|---|---|---|---|---|
+| 70.00% | 10.40% | 51.10% | 2.94 | $196.9M |
+| 90.00% | 12.99% | 21.44% | 2.13 | $228.9M |
+| 99.41% (chosen policy) | 14.70% | 1.79% | 1.23 | $231.6M |
+
+This is not the same cutoff as the "Fixed selection-rate sweep" above (a PD value learned on validation, applied unchanged to test, landing at 69.91% actual for a 70% target), so the two tables' dollar figures ($196.8M vs. $196.9M at "70%") are each correct under their own definition, not a disagreement. See `docs/decision_memo.md` for the same table read as a lending decision.
+
+### KPI movement (post-hoc, descriptive only)
+
+Why the 2015 monthly default rate moved the way it did, computed by `src/evaluation/kpi_movement.py`. A 95% CI (normal approximation) on each month's default rate and on each month-over-month change: 7 of 11 changes exceed 95% sampling noise, so most moves are real, not sampling noise (`reports/metrics/kpi_movement_monthly.csv`):
+
+| Month | n | Default rate | 95% CI |
+|---|---|---|---|
+| 2015-01 | 23,631 | 14.879% | 14.425 to 15.333 |
+| 2015-02 | 16,023 | 14.167% | 13.627 to 14.707 |
+| 2015-03 | 16,914 | 15.401% | 14.857 to 15.945 |
+| 2015-04 | 23,619 | 15.538% | 15.076 to 16.000 |
+| 2015-05 | 21,539 | 15.228% | 14.748 to 15.708 |
+| 2015-06 | 19,064 | 15.359% | 14.847 to 15.871 |
+| 2015-07 | 30,864 | 14.619% | 14.225 to 15.013 |
+| 2015-08 | 23,938 | 14.245% | 13.802 to 14.688 |
+| 2015-09 | 18,765 | 14.937% | 14.427 to 15.447 |
+| 2015-10 | 33,150 | 14.145% | 13.770 to 14.520 |
+| 2015-11 | 25,157 | 14.763% | 14.325 to 15.202 |
+| 2015-12 | 30,123 | 15.576% | 15.167 to 15.986 |
+
+For each of the 7 flagged changes, a symmetric (midpoint) mix/rate decomposition by FICO band and by purpose (`reports/metrics/kpi_movement_decomposition.csv`): across all 14 flagged-transition x dimension splits, the compositional (mix) effect is small and never the larger half (mean |mix effect| 0.082 pp vs. mean |rate effect| 0.769 pp; mix dominant in 0 of 14). A model-based split tells the same story from a different angle: the champion's own mean predicted PD moves in the same direction as the actual change in every one of the 7 flagged months, but only accounts for a small fraction of the size of the move; most of each flagged change is residual (`reports/metrics/kpi_movement_summary.json`). No single compositional driver explains these real month-to-month moves. They read as vintage effects the model's features do not capture, something to monitor through the calibration-in-the-large recalibration trigger below, not a trend in applicant mix.
 
 ## Drift (historical replay)
 

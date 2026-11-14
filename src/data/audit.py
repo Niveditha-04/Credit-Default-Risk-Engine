@@ -108,6 +108,34 @@ def event_timing_audit(con: duckdb.DuckDBPyConnection) -> None:
     print(json.dumps(summary, indent=2))
 
 
+def eligibility_caps_by_year(con: duckdb.DuckDBPyConnection) -> None:
+    """LendingClub's own origination-time eligibility caps, by issue
+    year, for the 36-month individual population used throughout this
+    project: FICO floor and DTI ceiling. Checks whether either cap moved
+    over time, since a claim like "every loan has DTI <= X" is only as
+    good as the years it was actually checked against."""
+    df = con.execute(
+        f"""
+        SELECT
+            EXTRACT(year FROM issue_d) AS issue_year,
+            count(*) AS n,
+            min(fico_range_low) AS min_fico_range_low,
+            sum(CASE WHEN fico_range_low < 660 THEN 1 ELSE 0 END) AS n_fico_lt_660,
+            max(dti) AS max_dti,
+            sum(CASE WHEN dti > 35 THEN 1 ELSE 0 END) AS n_dti_gt_35,
+            round(100.0 * sum(CASE WHEN dti > 35 THEN 1 ELSE 0 END) / count(*), 3) AS pct_dti_gt_35
+        FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
+        WHERE term = 36 AND application_type = 'Individual'
+          AND EXTRACT(year FROM issue_d) BETWEEN 2012 AND 2018
+        GROUP BY 1
+        ORDER BY 1
+        """
+    ).fetchdf()
+    df.to_csv("reports/metrics/eligibility_caps_by_year.csv", index=False)
+    print("eligibility_caps_by_year.csv:")
+    print(df.to_string(index=False))
+
+
 def duplicate_id_check(con: duckdb.DuckDBPyConnection) -> dict:
     row = con.execute(
         f"""
@@ -126,6 +154,7 @@ def main() -> None:
     status_by_year(con)
     maturity_audit(con)
     event_timing_audit(con)
+    eligibility_caps_by_year(con)
     duplicate_id_check(con)
 
 

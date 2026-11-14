@@ -199,15 +199,17 @@ def main() -> None:
         mean_abs_mix = float(narrative["mix_effect_total_pp"].abs().mean())
         mean_abs_rate = float(narrative["rate_effect_total_pp"].abs().mean())
         conclusion = (
-            f"No single driver explains the flagged month-to-month movement in the 2015 default "
-            f"rate. Across the {len(narrative)} flagged-transition x dimension decompositions, mix "
+            f"{len(flagged)} of {len(changes)} month-over-month changes exceed 95% sampling noise, so "
+            f"most moves are real, not noise. No single compositional driver explains them, though: "
+            f"across the {len(narrative)} flagged-transition x dimension decompositions, mix "
             f"(compositional, FICO-band or purpose) effects are small and dominate in only "
             f"{mix_dominates_count} of {len(narrative)} cases (mean |mix effect| {mean_abs_mix:.3f} pp "
-            f"vs. mean |rate effect| {mean_abs_rate:.3f} pp): most of the movement is within-group "
-            f"default-rate change, not a shift in who applied. The model's own mean predicted PD "
+            f"vs. mean |rate effect| {mean_abs_rate:.3f} pp) - the moves come from within-group "
+            f"default-rate shifts, not from a change in who applied. The model's own mean predicted PD "
             f"moves in the same direction as the actual change every time but explains only a small "
-            f"share of its size, leaving most of each flagged change as residual - month-to-month "
-            f"noise in realized outcomes that the model's risk mix did not anticipate."
+            f"share of its size: these read as vintage effects the model's features do not capture, to "
+            f"be watched through the calibration-in-the-large recalibration trigger rather than "
+            f"explained by a single group."
         )
     else:
         conclusion = "No month-over-month change exceeded noise at 95% confidence; no decomposition run."
