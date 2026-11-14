@@ -28,6 +28,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from src.evaluation.score_models import v1_lightgbm_cfg
+
 METRICS_DIR = Path("reports/metrics")
 TEST_PARQUET = "data/processed/test.parquet"
 TRAIN_PARQUET = "data/processed/train.parquet"
@@ -71,9 +73,13 @@ def cis_overlap(row_a: pd.Series, row_b: pd.Series) -> bool:
 
 
 def shap_followup_checks() -> None:
+    """v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): these
+    are follow-up checks on v1's own SHAP output, the model this
+    project calls "the champion" everywhere else these findings are
+    cited (reports/metrics/shap_followup_checks_summary.json)."""
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    cfg = frozen["lightgbm_chosen"]
+    cfg = v1_lightgbm_cfg(frozen)
     booster = joblib.load(cfg["model_path"])
     feats = cfg["features"]
 

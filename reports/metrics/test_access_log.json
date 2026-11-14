@@ -430,5 +430,47 @@
     "script": "posthoc_v2.py:run_v2_on_test_2015",
     "row_count": 282787,
     "action": "Post-hoc: scores the served v2 model (saved booster and calibrator, no refit) on test (2015) to report its own AUC/Gini/KS with bootstrap CIs. v2's Platt calibrator was already fit on 2015 (a calibration step, not model selection), so 2015 is not a clean holdout for v2 the way it was for v1. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:13:08.798861+00:00",
+    "script": "economics_gap.py (gap_remainder_diagnostic)",
+    "row_count": 282787,
+    "action": "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:15:42.052503+00:00",
+    "script": "run_drift.py",
+    "row_count": 282787,
+    "action": "Read test.parquet (2015) for historical replay: feature values for data/prediction drift and the target for 2015-only performance drift, separate from the one-time evaluation scoring pass. No model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:18:35.134957+00:00",
+    "script": "posthoc_replay_performance.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued 2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) to build a 24-month-horizon label for a partial, informal performance check. Not the project's target, not cached for reuse, no model, feature, or policy change."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:18:54.775952+00:00",
+    "script": "posthoc_ablations.py",
+    "row_count": 282787,
+    "action": "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the frozen champion's own hyperparameters (no tuning search). Validation (2014) is the primary number for every ablation; test AUC here is post-hoc only, never used to pick or tune any of these ablations. No change to the frozen champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:20:10.881218+00:00",
+    "script": "posthoc_v2_evaluation.py",
+    "row_count": 260038,
+    "action": "Post-hoc, exploratory: scores v1 (frozen champion, unchanged) and a freshly-fit, in-memory-only v2 on 2016 vintages (issue <= 2016-10-31, 24-month label) to evaluate the pre-registered adoption rule in docs/v2_decision_rule.md, committed before this script was run. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:20:19.067536+00:00",
+    "script": "posthoc_v2_label_robustness.py",
+    "row_count": 265967,
+    "action": "Post-hoc, exploratory robustness check (does not change the already-recorded pre-registered v2 decision): rescores v1 and a freshly-refit v2 on the same 2016-vintage population with a second, corrected 24-month label, chosen after the pre-registered evaluation already ran. No change to the frozen v1 champion."
+  },
+  {
+    "timestamp_utc": "2026-11-14T16:20:27.580960+00:00",
+    "script": "posthoc_v2.py:run_v2_on_test_2015",
+    "row_count": 282787,
+    "action": "Post-hoc: scores the served v2 model (saved booster and calibrator, no refit) on test (2015) to report its own AUC/Gini/KS with bootstrap CIs. v2's Platt calibrator was already fit on 2015 (a calibration step, not model selection), so 2015 is not a clean holdout for v2 the way it was for v1. No model, feature, or policy change."
   }
 ]

@@ -54,10 +54,14 @@ def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     for col in ["home_ownership", "purpose", "verification_status"]:
         validation[col] = validation[col].astype("category")
 
-    from src.evaluation.score_models import score_lightgbm, score_scorecard
+    from src.evaluation.score_models import (
+        score_lightgbm,
+        score_scorecard,
+        v1_lightgbm_cfg,
+    )
 
     out = validation[["id", "target"]].copy()
-    out["pd_lightgbm"] = score_lightgbm(validation, frozen["lightgbm_chosen"])
+    out["pd_lightgbm"] = score_lightgbm(validation, v1_lightgbm_cfg(frozen))
     out["pd_scorecard"] = score_scorecard(validation, frozen["scorecard"])
 
     train_cleaned = con.execute(

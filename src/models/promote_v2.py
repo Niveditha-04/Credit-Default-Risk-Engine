@@ -1,12 +1,21 @@
-"""Promotes v2 to the served, frozen LightGBM champion.
+"""Reproduces v2, the served LightGBM champion (refit on 2012-2014, the
+frozen v1 hyperparameters and tree count, 8 monotone constraints, Platt
+calibrator fit on 2015).
 
-v2 (LightGBM, refit on 2012-2014, the frozen v1 hyperparameters and tree
-count, 8 monotone constraints) was defined and evaluated against a
-pre-registered rule in docs/v2_decision_rule.md, committed before any
-v2 code ran. That evaluation (reports/metrics/posthoc_v2_evaluation.json)
-said adopt v2 on 2016 vintages, confirmed by a label robustness check
-(reports/metrics/posthoc_v2_label_robustness.json). This script carries
-that decision out. v1's artifacts are preserved as history, not deleted.
+Every run refits v2 and writes it to data/processed/models/candidates/
+v2_promotion/lightgbm/ - the frozen, served data/processed/models/lightgbm/
+path, frozen_model_config.json, and MLflow are untouched unless --promote
+is passed on the command line, same convention as src.models.gbm's own
+--promote flag. This never reads reports/metrics/test_scored.parquet,
+the locked one-time test evaluation file, and never writes to it.
+
+v2 was defined and evaluated against a pre-registered rule in
+docs/v2_decision_rule.md, committed before any v2 code ran. That
+evaluation (reports/metrics/posthoc_v2_evaluation.json) said adopt v2 on
+2016 vintages, confirmed by a label robustness check
+(reports/metrics/posthoc_v2_label_robustness.json). v1's artifacts are
+preserved as history, not deleted, the one time this script is run
+with --promote.
 
 Steps:
 1. Refit v2 (same deterministic configuration already evaluated - no
@@ -17,25 +26,30 @@ Steps:
    -check Oct-Dec, refit on the full year for deployment), the same
    discipline already used for v1's own calibration on 2014. Logged as
    a new, explicit, authorized read of test.
-3. Backs up v1's current frozen artifacts to
-   data/processed/models/lightgbm_v1_history/ before anything is
-   overwritten.
-4. Writes v2's booster, calibrator, and (unchanged - same 69 features,
-   same order) features.json to a candidate directory, then promotes
-   that candidate over the frozen data/processed/models/lightgbm/ path
-   using src.models.gbm's own promote_candidate_artifacts (unlocks,
-   copies, re-locks read-only).
+3. Writes v2's booster, calibrator, and (unchanged - same 69 features,
+   same order) features.json to a candidate directory.
+
+With --promote, in addition:
+4. Backs up the frozen data/processed/models/lightgbm/ path (v1's
+   artifacts, the only time this is the live model) to
+   data/processed/models/lightgbm_v1_history/, then promotes the v2
+   candidate over the frozen path using src.models.gbm's own
+   promote_candidate_artifacts (unlocks, copies, re-locks read-only).
 5. Updates reports/metrics/frozen_model_config.json: lightgbm_chosen now
-   describes v2; the previous lightgbm_chosen content is preserved
-   verbatim under a new key, lightgbm_v1_history. scorecard and xgboost
-   sections are untouched.
-6. In MLflow: sets alias "v1" on the current champion version (so it
-   stays addressable by name), then registers v2 as a new version and
-   lets register_champion_standalone() set "champion" on it.
+   describes v2; the previous lightgbm_chosen content is preserved under
+   a new key, lightgbm_v1_history, with its model_path/calibrator.path
+   pointed at the backed-up files (not the live path, which this step
+   is about to overwrite). scorecard and xgboost sections are untouched.
+6. In MLflow: sets alias "v1_champion" on the current champion version
+   (so it stays addressable by name; MLflow reserves alias names
+   matching ^v\\d+$, so a literal "v1" alias is rejected), then registers
+   v2 as a new version and lets register_champion_standalone() set
+   "champion" on it.
 """
 
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import joblib
@@ -150,6 +164,10 @@ def calibrate_v2_on_test(booster: lgb.Booster, champion_feats: list[str]) -> tup
     return final_calibrator, evidence
 
 
+def promote_requested() -> bool:
+    return "--promote" in sys.argv
+
+
 def main() -> None:
     train = pd.read_parquet(TRAIN_PARQUET)
     champion_feats = feature_list(list(train.columns))
@@ -162,7 +180,24 @@ def main() -> None:
     calibrator, calib_evidence = calibrate_v2_on_test(booster, champion_feats)
     print(json.dumps(calib_evidence, indent=2))
 
-    print("\n=== Step 3: back up v1's frozen artifacts ===")
+    print("\n=== Step 3: write v2 candidate ===")
+    candidate_dir = MODELS_DIR / "candidates" / "v2_promotion" / "lightgbm"
+    candidate_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(booster, candidate_dir / "model_chosen.joblib")
+    joblib.dump(calibrator, candidate_dir / "calibrator.joblib")
+    shutil.copy2(FROZEN_LGB_DIR / "features.json", candidate_dir / "features.json")
+    candidate_hash = sha256_of(candidate_dir / "model_chosen.joblib")
+    print(f"v2 candidate written to {candidate_dir} (SHA-256 {candidate_hash}).")
+
+    if not promote_requested():
+        print(
+            "\n--promote not passed: stopping here. The frozen data/processed/models/lightgbm/ "
+            "path, frozen_model_config.json, and MLflow are untouched. Rerun with --promote "
+            "to deploy this candidate as the served model."
+        )
+        return
+
+    print("\n=== --promote passed: back up v1's frozen artifacts ===")
     if V1_HISTORY_DIR.exists():
         shutil.rmtree(V1_HISTORY_DIR)
     V1_HISTORY_DIR.mkdir(parents=True)
@@ -171,15 +206,11 @@ def main() -> None:
         lock_frozen_file(V1_HISTORY_DIR / fname)
     print(f"v1 artifacts backed up to {V1_HISTORY_DIR}")
 
-    print("\n=== Step 4: write v2 candidate and promote over the frozen path ===")
-    candidate_dir = MODELS_DIR / "candidates" / "v2_promotion" / "lightgbm"
-    candidate_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump(booster, candidate_dir / "model_chosen.joblib")
-    joblib.dump(calibrator, candidate_dir / "calibrator.joblib")
-    shutil.copy2(FROZEN_LGB_DIR / "features.json", candidate_dir / "features.json")
+    print("\n=== Step 4: promote the v2 candidate over the frozen path ===")
     promote_candidate_artifacts(candidate_dir, FROZEN_LGB_DIR)
 
     v2_hash = sha256_of(FROZEN_LGB_DIR / "model_chosen.joblib")
+    assert v2_hash == candidate_hash, "promoted artifact hash does not match the candidate just written"
     print(f"v2 model_chosen.joblib SHA-256: {v2_hash}")
 
     print("\n=== Step 5: update frozen_model_config.json ===")
@@ -189,9 +220,11 @@ def main() -> None:
     v1_chosen = frozen["lightgbm_chosen"]
     frozen["lightgbm_v1_history"] = {
         **v1_chosen,
-        "note": "The v1 champion (original frozen model). Superseded by v2 under the "
-        "pre-registered rule in docs/v2_decision_rule.md. Artifacts preserved at "
-        f"{V1_HISTORY_DIR}, registered in MLflow with alias 'v1'.",
+        "model_path": str(V1_HISTORY_DIR / "model_chosen.joblib"),
+        "calibrator": {**v1_chosen["calibrator"], "path": str(V1_HISTORY_DIR / "calibrator.joblib")},
+        "note": "v1, the champion before v2. Artifacts preserved, read-only, at "
+        f"{V1_HISTORY_DIR}, registered in MLflow with alias 'v1_champion' ('v1' itself is a "
+        "reserved MLflow alias pattern).",
     }
     frozen["lightgbm_chosen"] = {
         "model_type": "lightgbm",

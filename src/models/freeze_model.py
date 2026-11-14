@@ -165,6 +165,23 @@ def main() -> None:
         },
     }
 
+    # If v2 has already been promoted (src.models.promote_v2 --promote),
+    # the existing file's lightgbm_chosen describes v2, not this freshly
+    # -derived v1 content, and lightgbm_v1_history holds v1's real
+    # history. A plain overwrite would silently discard both and revert
+    # the served model's config back to v1 without actually touching the
+    # served artifacts - carry both forward unchanged instead.
+    if OUT_PATH.exists():
+        with open(OUT_PATH) as f:
+            existing = json.load(f)
+        if "lightgbm_v1_history" in existing:
+            print(
+                f"{OUT_PATH} already has lightgbm_v1_history (v2 is promoted): "
+                "keeping its lightgbm_chosen and lightgbm_v1_history, refreshing everything else."
+            )
+            config["lightgbm_chosen"] = existing["lightgbm_chosen"]
+            config["lightgbm_v1_history"] = existing["lightgbm_v1_history"]
+
     with open(OUT_PATH, "w") as f:
         json.dump(config, f, indent=2, default=str)
     print(f"Wrote {OUT_PATH}")

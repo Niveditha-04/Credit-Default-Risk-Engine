@@ -23,6 +23,7 @@ import pandas as pd
 
 from src.evaluation.score_models import load_frozen_config, score_all
 from src.evaluation.test_access_log import log_access
+from src.models.gbm import lock_frozen_file
 
 TEST_PARQUET = "data/processed/test.parquet"
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
@@ -30,6 +31,13 @@ OUT_PATH = Path("reports/metrics/test_scored.parquet")
 
 
 def main() -> None:
+    if OUT_PATH.exists():
+        raise RuntimeError(
+            f"{OUT_PATH} already exists. Test (2015) is touched exactly once; this script "
+            "must not run a second time. Delete it first only if you explicitly intend to "
+            "redo the one-time evaluation pass."
+        )
+
     frozen = load_frozen_config()
 
     test = pd.read_parquet(TEST_PARQUET)
@@ -62,6 +70,7 @@ def main() -> None:
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     out.to_parquet(OUT_PATH, index=False)
+    lock_frozen_file(OUT_PATH)
 
     log_access(
         "score_test.py", len(out),

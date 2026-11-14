@@ -36,7 +36,11 @@ from optbinning import BinningProcess
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, roc_curve
 
-from src.evaluation.score_models import load_frozen_config, score_lightgbm
+from src.evaluation.score_models import (
+    load_frozen_config,
+    score_lightgbm,
+    v1_lightgbm_cfg,
+)
 from src.evaluation.test_access_log import load_test_scored, log_access
 from src.evaluation.test_evaluation import ks_statistic, sub_grade_ordinal
 from src.models.gbm import feature_list
@@ -365,18 +369,9 @@ def run_replay_performance() -> None:
 
     # This check is specifically about v1 (the champion at the time it was
     # written, same scope as the walk-forward check's fold 1 above):
-    # frozen_model_config.json's lightgbm_chosen now describes v2, so
-    # cfg is built from lightgbm_v1_history instead. lightgbm_v1_history's
-    # own model_path/calibrator.path fields still point at the live
-    # lightgbm/ path (now v2's artifacts, not updated when v2 was
-    # promoted), so both are overridden here to the actual backed-up v1
-    # files under lightgbm_v1_history/, the only place v1's own booster
-    # and calibrator still live.
+    # v1_lightgbm_cfg, never lightgbm_chosen, which now describes v2.
     frozen = load_frozen_config()
-    cfg = dict(frozen["lightgbm_v1_history"])
-    cfg["model_path"] = "data/processed/models/lightgbm_v1_history/model_chosen.joblib"
-    cfg["calibrator"] = dict(cfg["calibrator"])
-    cfg["calibrator"]["path"] = "data/processed/models/lightgbm_v1_history/calibrator.joblib"
+    cfg = v1_lightgbm_cfg(frozen)
     merged["pd_lightgbm"] = score_lightgbm(merged, cfg)
     merged["quarter"] = pd.to_datetime(merged["issue_d"]).dt.to_period("Q").astype(str)
 

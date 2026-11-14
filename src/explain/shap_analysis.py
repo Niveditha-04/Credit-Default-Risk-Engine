@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from src.evaluation.score_models import v1_lightgbm_cfg
 from src.explain.labels import PLAIN_ENGLISH
 
 METRICS_DIR = Path("reports/metrics")
@@ -55,7 +56,7 @@ def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
 def load_test() -> tuple[pd.DataFrame, pd.DataFrame, list]:
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    cfg = frozen["lightgbm_chosen"]
+    cfg = v1_lightgbm_cfg(frozen)
     feats = cfg["features"]
 
     test = pd.read_parquet(TEST_PARQUET)
@@ -69,7 +70,7 @@ def main() -> None:
 
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    booster = joblib.load(frozen["lightgbm_chosen"]["model_path"])
+    booster = joblib.load(v1_lightgbm_cfg(frozen)["model_path"])
 
     test, X, feats = load_test()
     print(f"Test set: {len(test)} rows (no sampling), {len(feats)} features")
@@ -238,7 +239,7 @@ def main() -> None:
     print("\n=== Per-applicant illustrative reason codes (NOT legal adverse action notices) ===")
     from src.evaluation.score_models import score_lightgbm
 
-    calibrated_pd = score_lightgbm(test, frozen["lightgbm_chosen"])
+    calibrated_pd = score_lightgbm(test, v1_lightgbm_cfg(frozen))
     ids = test["id"].to_numpy()
     percentiles = [5, 25, 50, 75, 95]
     reason_codes = []

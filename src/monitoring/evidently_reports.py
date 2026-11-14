@@ -18,7 +18,7 @@ import pandas as pd
 from evidently import DataDefinition, Dataset, Report
 from evidently.presets import DataDriftPreset
 
-from src.evaluation.score_models import load_frozen_config
+from src.evaluation.score_models import load_frozen_config, v1_lightgbm_cfg
 from src.monitoring.run_drift import TRAIN_PSI_REFERENCE_CUTOFF
 
 DRIFT_DIR = Path("reports/drift")
@@ -34,7 +34,7 @@ def build_dataset(df: pd.DataFrame, features: list[str]) -> Dataset:
 def main() -> None:
     DRIFT_DIR.mkdir(parents=True, exist_ok=True)
     frozen = load_frozen_config()
-    features = frozen["lightgbm_chosen"]["features"]
+    features = v1_lightgbm_cfg(frozen)["features"]
 
     train_full = pd.read_parquet("data/processed/train.parquet")
     train_ref = train_full[train_full["issue_d"] >= TRAIN_PSI_REFERENCE_CUTOFF].reset_index(drop=True)

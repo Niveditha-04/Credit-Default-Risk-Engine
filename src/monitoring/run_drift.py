@@ -46,7 +46,11 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from src.evaluation.score_models import load_frozen_config, score_lightgbm
+from src.evaluation.score_models import (
+    load_frozen_config,
+    score_lightgbm,
+    v1_lightgbm_cfg,
+)
 from src.evaluation.test_access_log import log_access
 from src.monitoring.psi import (
     bin_counts_categorical,
@@ -259,7 +263,12 @@ def confirm_loan_to_income_cap_signal(train: pd.DataFrame, population: pd.DataFr
 def main() -> None:
     DRIFT_DIR.mkdir(parents=True, exist_ok=True)
     frozen = load_frozen_config()
-    cfg = frozen["lightgbm_chosen"]
+    # v1 explicitly: this historical replay scores every month with the
+    # champion as of when it was run (v1); rescoring with whatever is
+    # currently served (lightgbm_chosen) would silently redo the entire
+    # replay against a different model than the one every drift number
+    # in README/docs describes.
+    cfg = v1_lightgbm_cfg(frozen)
     features = cfg["features"]
 
     train_full = pd.read_parquet(TRAIN_PARQUET)

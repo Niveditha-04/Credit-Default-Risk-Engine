@@ -35,7 +35,11 @@ from optbinning import BinningProcess
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 
-from src.evaluation.score_models import load_frozen_config, score_lightgbm
+from src.evaluation.score_models import (
+    load_frozen_config,
+    score_lightgbm,
+    v1_lightgbm_cfg,
+)
 from src.evaluation.test_access_log import log_access
 from src.evaluation.test_evaluation import (
     ks_statistic,
@@ -107,22 +111,6 @@ def label_24_month(loan_status: pd.Series, issue_d: pd.Series, last_pymnt_d: pd.
     label = fast_default.astype(float)
     label[cannot_label] = float("nan")
     return pd.DataFrame({"label_24m": label, "excluded": cannot_label})
-
-
-def v1_scoring_cfg(frozen: dict) -> dict:
-    """v1's scoring config, read from lightgbm_v1_history, with
-    model_path/calibrator.path corrected: frozen_model_config.json's
-    lightgbm_v1_history still points both at the live lightgbm/ path it
-    shared with v1 before v2 was promoted over it, so those fields are
-    overridden here to the actual backed-up v1 files under
-    lightgbm_v1_history/ - the only place v1's own booster and
-    calibrator still live. Shared by sections 2 and 3, both of which
-    score "v1" against v2 and would otherwise silently score v2 twice."""
-    cfg = dict(frozen["lightgbm_v1_history"])
-    cfg["model_path"] = "data/processed/models/lightgbm_v1_history/model_chosen.joblib"
-    cfg["calibrator"] = dict(cfg["calibrator"])
-    cfg["calibrator"]["path"] = "data/processed/models/lightgbm_v1_history/calibrator.joblib"
-    return cfg
 
 
 def expected_calibration_error(y: pd.Series, pred, n_bins: int = 10) -> float:
@@ -345,24 +333,19 @@ def run_ablations() -> None:
     print("\n=== Income monotonicity check (post-hoc, test) ===")
     # "Champion" throughout this section means v1 (the model every
     # ablation here reuses hyperparameters from, and the model ablation
-    # d's monotone constraints led to v2 from) - same v1_history path
-    # correction as src.evaluation.posthoc_validation's replay-performance
-    # and walk-forward sections, needed because frozen_model_config.json's
-    # lightgbm_chosen now describes v2 after v2's promotion, and
-    # lightgbm_v1_history's own model_path/calibrator.path fields were
-    # never updated off the live lightgbm/ path they shared with v1
-    # before that promotion.
+    # d's monotone constraints led to v2 from) - v1_lightgbm_cfg, never
+    # lightgbm_chosen, which now describes v2 after v2's promotion.
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    v1_history = frozen["lightgbm_v1_history"]
-    champion_booster = joblib.load("data/processed/models/lightgbm_v1_history/model_chosen.joblib")
-    champion_feats = v1_history["features"]
+    v1_cfg = v1_lightgbm_cfg(frozen)
+    champion_booster = joblib.load(v1_cfg["model_path"])
+    champion_feats = v1_cfg["features"]
     champion_check = income_monotonicity_check(champion_booster, champion_feats, test, "champion")
     ablation_d_check = income_monotonicity_check(booster_d, feats_d, test, "ablation_d_monotone")
     print(json.dumps(champion_check, indent=2))
     print(json.dumps(ablation_d_check, indent=2))
 
-    champion_val_auc = v1_history["train_validation_metrics"]["validation_auc"]
+    champion_val_auc = v1_cfg["train_validation_metrics"]["validation_auc"]
     with open(METRICS_DIR / "test_core_metrics.json") as f:
         champion_test_auc = json.load(f)["lightgbm"]["auc"]
 
@@ -466,7 +449,7 @@ def run_v2_evaluation() -> None:
     champion_feats = feature_list(list(train.columns))
 
     frozen = load_frozen_config()
-    population["pd_v1"] = score_lightgbm(population, v1_scoring_cfg(frozen))
+    population["pd_v1"] = score_lightgbm(population, v1_lightgbm_cfg(frozen))
 
     v2_booster = fit_v2(champion_feats)
     population["pd_v2"] = v2_booster.predict(population[champion_feats], num_iteration=v2_booster.best_iteration)
@@ -575,7 +558,7 @@ def run_v2_label_robustness() -> None:
     champion_feats = feature_list(list(train.columns))
 
     frozen = load_frozen_config()
-    population["pd_v1"] = score_lightgbm(population, v1_scoring_cfg(frozen))
+    population["pd_v1"] = score_lightgbm(population, v1_lightgbm_cfg(frozen))
 
     v2_booster = fit_v2(champion_feats)
     population["pd_v2"] = v2_booster.predict(population[champion_feats], num_iteration=v2_booster.best_iteration)

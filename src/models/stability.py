@@ -13,6 +13,7 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import roc_auc_score
 
+from src.evaluation.score_models import v1_lightgbm_cfg
 from src.models.gbm import CATEGORICAL_COLUMNS, new_run_id
 
 METRICS_DIR = Path("reports/metrics")
@@ -36,9 +37,14 @@ def diagnose_lightgbm_row_order_bagging() -> None:
 
     Does not touch any frozen artifact: trains in memory only, writes
     nothing to data/processed/models/."""
+    # v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): v2's
+    # hyperparameters carry monotone_constraints that v1's don't, so
+    # using lightgbm_chosen here would silently train a different model
+    # than the one reports/metrics/training_order_sensitivity.json
+    # (cited in README) actually describes.
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    cfg = frozen["lightgbm_chosen"]
+    cfg = v1_lightgbm_cfg(frozen)
     feats = cfg["features"]
     n_trees = cfg["n_trees"]
     base_params = dict(cfg["hyperparameters"])
