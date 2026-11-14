@@ -41,6 +41,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from src.evaluation.score_models import v1_lightgbm_cfg
 from src.models.math_utils import apply_calibrator
 
 METRICS_DIR = Path("reports/metrics")
@@ -116,9 +117,12 @@ def estimate_prepayment_ratio_from_train(con: duckdb.DuckDBPyConnection) -> dict
 
 
 def load_champion_predictions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): this
+    policy was set once, on validation, before v2 existed, and must
+    never move just because a later model was promoted."""
     with open(METRICS_DIR / "frozen_model_config.json") as f:
         frozen = json.load(f)
-    lgb_cfg = frozen["lightgbm_chosen"]
+    lgb_cfg = v1_lightgbm_cfg(frozen)
 
     booster = joblib.load(lgb_cfg["model_path"])
     calibrator = joblib.load(lgb_cfg["calibrator"]["path"])
