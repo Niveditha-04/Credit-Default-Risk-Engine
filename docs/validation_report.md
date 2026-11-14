@@ -24,6 +24,12 @@ LendingClub's own FICO floor holds at 660 in every year used here, but its DTI c
 
 So "every loan has DTI <= 34.99%" is only true for train (2012-2013). The cap rose to 39.99 by 2014 (already inside validation), briefly to 49.96 in 2016, and stayed near 39.99 for the rest of replay. `src/api/feature_ranges.json`'s own DTI max (39.99, computed on train plus validation, 2012-2014) reflects this. See the README's drift section for how this interacts with `dti` and `loan_to_income`'s own PSI.
 
+### Extrapolation past the training DTI cap (post-hoc, descriptive only)
+
+v1 trained only on train (max DTI 34.99), so any test (2015) loan above that cap is scored outside the range v1 ever saw. On test, v1's calibration-in-the-large gap (actual default rate minus mean predicted PD) is +1.01 pp for DTI <= 34.99 (n=273,086) but +5.07 pp for DTI > 34.99 (n=9,701), both with 95% CIs that exclude zero (`reports/metrics/dti_cap_extrapolation_v1_test.csv`). v1 does under-predict loans above its own training cap, by about 5 times the gap it already has within range.
+
+v2 trained on train plus validation (max DTI 39.99); checked the same way on the 2016 holdout (24-month label), its gap is -1.97 pp for DTI <= 35 (n=252,405), -1.78 pp for 35 < DTI <= 40 (n=5,886), and -0.39 pp for DTI > 40, above v2's own cap (n=1,746, CI includes zero, `reports/metrics/dti_cap_extrapolation_v2_2016.csv`). All three are over-prediction, not under-prediction, and the above-cap bucket's gap is smaller, not larger, though its sample is much thinner. v2 shows no evidence of the same under-prediction pattern v1 shows, at least not yet and not at this sample size.
+
 ## Results (test, 2015)
 
 | Model | AUC | 95% CI | Gini | KS | Brier | Brier skill score |

@@ -179,6 +179,18 @@ def test_unseen_category_warns_but_does_not_crash(client):
     assert any(w["field"] == "purpose" and "unseen" in w["reason"] for w in warnings)
 
 
+def test_dti_above_training_cap_warns_but_does_not_crash(client):
+    """DTI has no upper bound in the schema (real values go as high as
+    49.96 in 2016, reports/metrics/eligibility_caps_by_year.csv), so a
+    high DTI is accepted (200) but flagged as outside the training range
+    (src/api/feature_ranges.json's max, currently 39.99)."""
+    high_dti = dict(VALID_PAYLOAD, dti=45.0)
+    r = client.post("/score", json=high_dti)
+    assert r.status_code == 200
+    warnings = r.json()["warnings"]
+    assert any(w["field"] == "dti" and "outside_training_range" in w["reason"] for w in warnings)
+
+
 def test_missing_optional_fields_do_not_crash(client):
     minimal = dict(VALID_PAYLOAD)
     r = client.post("/score", json=minimal)
