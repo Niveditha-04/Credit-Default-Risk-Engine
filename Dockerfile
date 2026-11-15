@@ -21,11 +21,12 @@ COPY src/features/feature_engineering.py src/features/feature_engineering.py
 COPY src/features/__init__.py src/features/__init__.py
 COPY src/models/math_utils.py src/models/math_utils.py
 COPY src/models/__init__.py src/models/__init__.py
+COPY src/report_paths.py src/report_paths.py
 COPY src/__init__.py src/__init__.py
 
 # Frozen champion artifacts, baked in at build time.
-COPY reports/metrics/frozen_model_config.json reports/metrics/frozen_model_config.json
-COPY reports/metrics/shap_global_importance_served.csv reports/metrics/shap_global_importance_served.csv
+COPY reports/metrics/models/frozen_model_config.json reports/metrics/models/frozen_model_config.json
+COPY reports/metrics/explain/shap_global_importance_served.csv reports/metrics/explain/shap_global_importance_served.csv
 COPY data/processed/models/lightgbm/model_chosen.joblib data/processed/models/lightgbm/model_chosen.joblib
 COPY data/processed/models/lightgbm/calibrator.joblib data/processed/models/lightgbm/calibrator.joblib
 
