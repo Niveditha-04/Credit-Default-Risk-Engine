@@ -11,13 +11,13 @@ import shutil
 import subprocess
 import tempfile
 import time
-from pathlib import Path
 
 import httpx
 import mlflow
 import numpy as np
 
-METRICS_DIR = Path("reports/metrics")
+from src.report_paths import metrics_path
+
 BASE_URL = "http://localhost:8000"
 N_REQUESTS = 1000
 IMAGE = "credit-default-risk-engine:latest"
@@ -107,7 +107,7 @@ def latency_test() -> None:
         "with_reason_codes": _summarize(with_reasons),
         "without_reason_codes": _summarize(without_reasons),
     }
-    with open(METRICS_DIR / "api_latency.json", "w") as f:
+    with open(metrics_path("api_latency.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 
@@ -135,7 +135,7 @@ def record_docker_image_size() -> None:
         "note": "requirements-serve.txt does not include shap or matplotlib (see src/api/scoring.py - "
         "reason codes use booster.predict(pred_contrib=True) instead), which keeps this image small.",
     }
-    with open(METRICS_DIR / "docker_image.json", "w") as f:
+    with open(metrics_path("docker_image.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 
@@ -164,7 +164,7 @@ def verify_served_model_version() -> None:
     client = mlflow.MlflowClient()
     alias_version = client.get_model_version_by_alias(REGISTERED_MODEL_NAME, "champion")
 
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     local_path = frozen["lightgbm_chosen"]["model_path"]
     local_sha = _sha256_of(local_path)
@@ -188,7 +188,7 @@ def verify_served_model_version() -> None:
     assert result["registry_matches_local_artifact"], result
     assert result["served_sha256_prefix_matches_local"], result
 
-    with open(METRICS_DIR / "served_model_version_check.json", "w") as f:
+    with open(metrics_path("served_model_version_check.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 

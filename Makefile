@@ -3,7 +3,7 @@
 VENV = .venv/bin
 RAW_CSV_GZ = data/raw/accepted_2007_to_2018Q4.csv.gz
 RAW_PARQUET = data/interim/accepted_2007_to_2018Q4_raw.parquet
-RAW_PROFILE = reports/metrics/raw_data_profile.json
+RAW_PROFILE = reports/metrics/data/raw_data_profile.json
 # Passed through to promote_v2.py. Empty by default: `make promote` only
 # refits v2 and writes it to data/processed/models/candidates/, leaving
 # the served model, frozen_model_config.json, and MLflow untouched.
@@ -14,6 +14,7 @@ setup:
 	python3.11 -m venv .venv
 	$(VENV)/pip install --upgrade pip
 	$(VENV)/pip install -r requirements-dev.txt
+	mkdir -p reports/extra
 
 # Raw file -> cleaned, typed table with target/split assigned. Skips the
 # CSV.gz -> parquet conversion when the raw file's hash already matches
@@ -46,7 +47,7 @@ train: features
 
 # v1's recipe: runs src.models.gbm with --promote (the LightGBM/XGBoost
 # tuning search, seeded but not guaranteed bit-for-bit identical to a
-# previous run - see reports/metrics/training_order_sensitivity.json),
+# previous run - see reports/metrics/models/training_order_sensitivity.json),
 # then copies the result over the frozen data/processed/models/
 # artifacts and registers it in MLflow with the "champion" alias. Kept
 # as its own target, separate from `promote` (v2, below), since v2 is
@@ -63,7 +64,7 @@ promote-v1: train
 # artifacts first), updates frozen_model_config.json, and registers v2
 # in MLflow as champion. Needs freeze to already have run (reads
 # frozen_model_config.json's allow-list to validate v2's own features).
-# Never reads or writes reports/metrics/test_scored.parquet, the locked
+# Never reads or writes reports/metrics/evaluation/test_scored.parquet, the locked
 # one-time test evaluation file - only test.parquet, for calibration.
 promote: freeze
 	$(VENV)/python -m src.models.promote_v2 $(PROMOTE_V2_FLAG)
@@ -73,7 +74,7 @@ promote: freeze
 calibrate:
 	$(VENV)/python -m src.models.calibrate_comparison_models
 
-# Writes reports/metrics/frozen_model_config.json: the one file the test
+# Writes reports/metrics/models/frozen_model_config.json: the one file the test
 # evaluation loads every model, feature list, and calibrator from.
 freeze:
 	$(VENV)/python -m src.models.freeze_model

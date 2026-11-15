@@ -51,11 +51,11 @@ All models, features, and the approval threshold were frozen on validation befor
 | Scorecard | 0.6711 (0.6686-0.6735) | 0.3421 | 0.2480 | 0.1211 |
 | sub_grade | 0.6786 (0.6760-0.6812) | 0.3573 | 0.2619 | 0.1215 |
 
-(`reports/metrics/test_core_metrics.json`, `reports/metrics/test_bootstrap_ci.json`)
+(`reports/metrics/evaluation/test_core_metrics.json`, `reports/metrics/evaluation/test_bootstrap_ci.json`)
 
 XGBoost is ahead by **0.0014**, within the **0.0007** retraining-noise spread; I kept LightGBM, chosen on validation, **273** vs. **2,122** trees.
 
-Return per $100 funded, 0% cost of funds (`reports/metrics/posthoc_matched_volume_economics.csv`):
+Return per $100 funded, 0% cost of funds (`reports/metrics/evaluation/posthoc_matched_volume_economics.csv`):
 
 | Model | 70% | 80% | 90% |
 |---|---|---|---|
@@ -64,7 +64,7 @@ Return per $100 funded, 0% cost of funds (`reports/metrics/posthoc_matched_volum
 | Scorecard | $7.28 | $7.04 | $6.80 |
 | sub_grade map | $6.97 | $6.88 | $6.74 |
 
-Decision quality, LightGBM exact rank on test (`reports/metrics/test_decision_quality.csv`):
+Decision quality, LightGBM exact rank on test (`reports/metrics/evaluation/test_decision_quality.csv`):
 
 | Approval rate | Default rate approved | Defaults caught | Good loans declined per default avoided | Realized net cash |
 |---|---|---|---|---|
@@ -91,9 +91,9 @@ v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`do
 - **DTI cap moved:** LendingClub's own DTI ceiling rose from **34.99%** (train) to **49.96%** (2016); v1 under-predicts loans above its own cap by **+5.07 pp** vs. **+1.01 pp** in range.
 - **Retraining gain:** one more year of data (2012-2014 vs. 2012-2013) raises test AUC from **0.6872** to **0.6962**.
 - **Rate, not mix:** **7 of 11** month-over-month 2015 default-rate changes exceed sampling noise; the moves are within-segment rate shifts, not a change in applicant mix (mean mix effect **0.08 pp** vs. rate effect **0.77 pp**).
-- **AUC is range-restricted:** FICO stayed at or above **660** in every year used, and LendingClub had already pre-screened every applicant before this data existed (`reports/metrics/eligibility_caps_by_year.csv`).
+- **AUC is range-restricted:** FICO stayed at or above **660** in every year used, and LendingClub had already pre-screened every applicant before this data existed (`reports/metrics/data/eligibility_caps_by_year.csv`).
 
-Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/test_gap_decomposition_lightgbm.json`, `reports/metrics/test_gap_remainder_diagnostic.json`).
+Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/evaluation/test_gap_decomposition_lightgbm.json`, `reports/metrics/evaluation/test_gap_remainder_diagnostic.json`).
 
 ## Drift (historical replay, 2015-2018)
 
@@ -129,7 +129,7 @@ Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** defaul
 | 10 | home_ownership | 0.0690 |
 
 - Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-to-income raise it.
-- `annual_inc` alone is most protective around $90K-110K, then weakens above that; a monotone-constrained variant (v2's ablation) removes most of this reversal (`reports/metrics/posthoc_ablations_summary.json`).
+- `annual_inc` alone is most protective around $90K-110K, then weakens above that; a monotone-constrained variant (v2's ablation) removes most of this reversal (`reports/metrics/evaluation/posthoc_ablations_summary.json`).
 
 ![SHAP dependence, top 6 features](reports/figures/shap_dependence_top6.png)
 
@@ -138,7 +138,7 @@ Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** defaul
 - Accepted loans only: I never see applicants LendingClub rejected.
 - Modeling data is 2012-2015, plus a 2016 holdout check for v2; no claim beyond that window.
 - No protected attributes in this data, and none built as proxies, so no fairness test was run.
-- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/test_lgd_sensitivity.csv`.
+- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/evaluation/test_lgd_sensitivity.csv`.
 - Drift monitoring replays closed historical periods; it has never run against a live feed.
 
 ## How to run

@@ -10,8 +10,8 @@ import duckdb
 import pandas as pd
 
 CLEANED_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_cleaned.parquet")
-FIELD_ROLLOUT_OUT_CSV = Path("reports/metrics/field_rollout.csv")
-MISSING_BY_YEAR_OUT_CSV = Path("reports/metrics/missing_by_year.csv")
+FIELD_ROLLOUT_OUT_CSV = Path("reports/metrics/data/field_rollout.csv")
+MISSING_BY_YEAR_OUT_CSV = Path("reports/metrics/data/missing_by_year.csv")
 
 RESOLVED_STATUSES = ("Fully Paid", "Charged Off", "Default")
 
@@ -79,7 +79,7 @@ def status_by_year(con: duckdb.DuckDBPyConnection) -> None:
         ORDER BY 1, 2, 3
         """
     ).fetchdf()
-    df.to_csv("reports/metrics/status_by_year.csv", index=False)
+    df.to_csv("reports/metrics/data/status_by_year.csv", index=False)
     print(f"status_by_year.csv: {len(df)} rows")
 
 
@@ -104,7 +104,7 @@ def maturity_audit(con: duckdb.DuckDBPyConnection) -> None:
         ORDER BY 1, 2
         """
     ).fetchdf()
-    df.to_csv("reports/metrics/maturity_audit.csv", index=False)
+    df.to_csv("reports/metrics/data/maturity_audit.csv", index=False)
     print(f"maturity_audit.csv: {len(df)} rows")
 
 
@@ -138,7 +138,8 @@ def event_timing_audit(con: duckdb.DuckDBPyConnection) -> None:
         ORDER BY 1
         """
     ).fetchdf()
-    summary_df.to_csv("reports/metrics/event_timing_audit.csv", index=False)
+    Path("reports/extra").mkdir(parents=True, exist_ok=True)
+    summary_df.to_csv("reports/extra/event_timing_audit.csv", index=False)
 
     total_after_36 = con.execute(
         f"SELECT sum(CASE WHEN {months_expr} > 36 THEN 1 ELSE 0 END) {base_pop}"
@@ -156,7 +157,7 @@ def event_timing_audit(con: duckdb.DuckDBPyConnection) -> None:
             "charged-off loan actually stopped paying."
         ),
     }
-    with open("reports/metrics/event_timing_audit_summary.json", "w") as f:
+    with open("reports/metrics/data/event_timing_audit_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -184,7 +185,7 @@ def eligibility_caps_by_year(con: duckdb.DuckDBPyConnection) -> None:
         ORDER BY 1
         """
     ).fetchdf()
-    df.to_csv("reports/metrics/eligibility_caps_by_year.csv", index=False)
+    df.to_csv("reports/metrics/data/eligibility_caps_by_year.csv", index=False)
     print("eligibility_caps_by_year.csv:")
     print(df.to_string(index=False))
 
@@ -297,6 +298,7 @@ def duplicate_id_check(con: duckdb.DuckDBPyConnection) -> dict:
 
 
 def main() -> None:
+    Path("reports/metrics/data").mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
     missing_by_year(con)

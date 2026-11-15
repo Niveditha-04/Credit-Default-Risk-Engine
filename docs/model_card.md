@@ -20,7 +20,7 @@ v2 was chosen over v1 by a rule pre-registered in `docs/v2_decision_rule.md` bef
 | ECE | 0.0080 | 0.0079 | <= v1 + 0.005 |
 | Met | - | yes | both conditions |
 
-A second, "corrected" label (checked after the rule's result was already known) reaches the same outcome: v1 AUC 0.6860, v2 AUC 0.6938, ECE 0.0104 both (`reports/metrics/posthoc_v2_label_robustness.json`). ECE here compares both models against a 24-month proxy, not either one's real target, so it is a relative check, not an absolute calibration claim.
+A second, "corrected" label (checked after the rule's result was already known) reaches the same outcome: v1 AUC 0.6860, v2 AUC 0.6938, ECE 0.0104 both (`reports/metrics/evaluation/posthoc_v2_label_robustness.json`). ECE here compares both models against a 24-month proxy, not either one's real target, so it is a relative check, not an absolute calibration claim.
 
 ## A logistic regression scorecard
 
@@ -54,19 +54,19 @@ v2 trains on train + validation; its calibrator is fit on test (2015). v1 was ev
 
 ## Explanations
 
-LightGBM's own exact TreeSHAP, log-odds scale, same call used offline and in the served API. Top drivers on test: `fico_mean`, `acc_open_past_24mths`, `loan_to_income`, `dti`, `annual_inc` (`reports/metrics/shap_global_importance_served.csv`). Each prediction returns its own top-3 risk-increasing drivers, labeled illustrative only.
+LightGBM's own exact TreeSHAP, log-odds scale, same call used offline and in the served API. Top drivers on test: `fico_mean`, `acc_open_past_24mths`, `loan_to_income`, `dti`, `annual_inc` (`reports/metrics/explain/shap_global_importance_served.csv`). Each prediction returns its own top-3 risk-increasing drivers, labeled illustrative only.
 
 ## Limitations
 
 - Accepted loans only, no rejected-applicant counterfactual.
 - Origination-time data, modeling population 2012-2015, plus a 2016 holdout check for v2.
 - No protected attributes in this data; not evaluated for fairness.
-- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans (`reports/metrics/test_lgd_sensitivity.csv`).
+- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans (`reports/metrics/evaluation/test_lgd_sensitivity.csv`).
 - Drift monitoring is a historical replay of 2016-2018, not a live monitor.
 
 ## Serving
 
-FastAPI, `GET /health` and `POST /score`, Docker (`python:3.11-slim` + `libgomp1`). Latency: `reports/metrics/api_latency.json`.
+FastAPI, `GET /health` and `POST /score`, Docker (`python:3.11-slim` + `libgomp1`). Latency: `reports/metrics/models/api_latency.json`.
 
 ## History: v1
 

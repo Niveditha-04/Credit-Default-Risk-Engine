@@ -45,10 +45,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
 
 from src.models.math_utils import apply_calibrator, logit
+from src.report_paths import metrics_path
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
+EXTRA_DIR = Path("reports/extra")
 MODELS_DIR = Path("data/processed/models")
 CANDIDATES_DIR = MODELS_DIR / "candidates"
 
@@ -61,7 +63,7 @@ ISOTONIC_SELECTION_MARGIN = 0.0005
 # Every run writes to its own data/processed/models/candidates/<run_id>/
 # directory rather than the frozen data/processed/models/<model>/ paths.
 # LightGBM's seeded bagging and feature subsampling depend on row order
-# (see reports/metrics/training_order_sensitivity.json), so a rerun's
+# (see reports/metrics/models/training_order_sensitivity.json), so a rerun's
 # artifacts are not guaranteed bit-for-bit identical to the frozen
 # champion and must not land on top of it by accident. Only an explicit
 # --promote flag copies a candidate run's artifacts over the frozen ones
@@ -103,7 +105,7 @@ def promote_candidate_artifacts(candidate_dir: Path, frozen_dir: Path) -> None:
 
 SEED = 42
 METADATA_COLUMNS = {"id", "issue_d", "split", "target"}
-FROZEN_CONFIG_PATH = METRICS_DIR / "frozen_model_config.json"
+FROZEN_CONFIG_PATH = metrics_path("frozen_model_config.json")
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 N_TUNING_TRIALS_LGB = 20
@@ -114,7 +116,7 @@ EARLY_STOPPING_ROUNDS = 50
 
 TRAIN_VAL_AUC_GAP_FLAG = 0.05
 VALIDATION_AUC_INVESTIGATE_THRESHOLD = 0.75
-SCORECARD_VALIDATION_AUC = 0.665  # reports/metrics/scorecard_validation_metrics.json
+SCORECARD_VALIDATION_AUC = 0.665  # reports/metrics/models/scorecard_validation_metrics.json
 SIMPLICITY_AUC_TOLERANCE = 0.002  # "simplest config within 0.002 AUC of the best"
 
 
@@ -141,7 +143,7 @@ def feature_list(train_columns: list[str]) -> list[str]:
         missing = [c for c in frozen_features if c not in derived]
         raise AssertionError(
             "Feature list does not exactly match the frozen allow-list "
-            f"(reports/metrics/frozen_model_config.json). Extra columns present now "
+            f"(reports/metrics/models/frozen_model_config.json). Extra columns present now "
             f"that are not in the frozen list: {extra}. Columns in the frozen list "
             f"missing now: {missing}."
         )
@@ -393,7 +395,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
     train, validation, feats = load_data()
     print(f"Feature list: {len(feats)} features")
     print("Exact allow-list check passed: feature list matches frozen_model_config.json exactly")
-    with open(METRICS_DIR / "gbm_feature_list.json", "w") as f:
+    with open(metrics_path("gbm_feature_list.json"), "w") as f:
         json.dump(feats, f, indent=2)
 
     y_train = train["target"].values
@@ -418,9 +420,10 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
     best_xgb, xgb_trials = tune_xgboost(train, validation, feats, y_train, y_validation, log_to_mlflow=log_to_mlflow)
 
     all_trials = lgb_trials + xgb_trials
-    with open(METRICS_DIR / "gbm_tuning_trials.json", "w") as f:
+    with open(metrics_path("gbm_tuning_trials.json"), "w") as f:
         json.dump(all_trials, f, indent=2, default=str)
-    pd.DataFrame(all_trials).to_csv(METRICS_DIR / "gbm_tuning_trials.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(all_trials).to_csv(EXTRA_DIR / "gbm_tuning_trials.csv", index=False)
 
     # Model selection: best AUC across both LightGBM searches, then the
     # SIMPLEST (fewest trees) trial within SIMPLICITY_AUC_TOLERANCE of it.
@@ -478,7 +481,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
             "untouched and gives the honest read."
         ),
     }
-    with open(METRICS_DIR / "gbm_validation_metrics.json", "w") as f:
+    with open(metrics_path("gbm_validation_metrics.json"), "w") as f:
         json.dump(eval_metrics, f, indent=2)
     print(json.dumps(eval_metrics, indent=2))
 
@@ -498,7 +501,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
         {"feature": chosen_booster.feature_name(), "gain": chosen_booster.feature_importance(importance_type="gain")}
     ).sort_values("gain", ascending=False)
     importance["gain_pct_of_total"] = round(100 * importance["gain"] / importance["gain"].sum(), 2)
-    importance.to_csv(METRICS_DIR / "gbm_feature_importance.csv", index=False)
+    importance.to_csv(metrics_path("gbm_feature_importance.csv"), index=False)
     print(importance.head(15).to_string(index=False))
 
     rollout_related = [
@@ -516,7 +519,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
     calib_result, chosen_calib_method, final_calibrator = calibrate_out_of_sample(
         validation, chosen_val_pred, y_validation
     )
-    with open(METRICS_DIR / "gbm_calibration.json", "w") as f:
+    with open(metrics_path("gbm_calibration.json"), "w") as f:
         json.dump(calib_result, f, indent=2)
     print(json.dumps(calib_result, indent=2))
 
@@ -587,7 +590,7 @@ def run_with_mlflow() -> None:
         feats = result["feats"]
         candidate_dir = Path(result["candidate_dir"])
 
-        with open(METRICS_DIR / "gbm_validation_metrics.json") as f:
+        with open(metrics_path("gbm_validation_metrics.json")) as f:
             val_metrics = json.load(f)
         chosen = val_metrics["chosen"]
         mlflow.log_params({
@@ -605,7 +608,7 @@ def run_with_mlflow() -> None:
 
         # Test (2015) is NOT rescored here - attached from the already
         # committed evaluation files for reference only.
-        test_metrics_path = METRICS_DIR / "test_core_metrics.json"
+        test_metrics_path = metrics_path("test_core_metrics.json")
         if test_metrics_path.exists():
             with open(test_metrics_path) as f:
                 test_metrics = json.load(f)
@@ -616,11 +619,12 @@ def run_with_mlflow() -> None:
                 })
 
         for fname in [
-            "gbm_feature_list.json", "gbm_tuning_trials.csv", "gbm_validation_metrics.json",
+            "gbm_feature_list.json", "gbm_validation_metrics.json",
             "gbm_feature_importance.csv", "gbm_calibration.json", "frozen_model_config.json",
             "shap_summary.json", "shap_global_importance.csv",
         ]:
             log_file_if_exists(str(METRICS_DIR / fname))
+        log_file_if_exists(str(EXTRA_DIR / "gbm_tuning_trials.csv"))
         log_file_if_exists("reports/figures/shap_dependence_top6.png")
 
         if not promote_requested():

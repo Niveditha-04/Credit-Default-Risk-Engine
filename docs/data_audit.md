@@ -15,11 +15,11 @@ LendingClub accepted loans, 2007-2018, public Kaggle copy (Nathan George, CC0). 
 | `term` values after cleaning | 36, 60 |
 | `dti` cleaned | 2 negative, 2,561 over 100, both set to null |
 
-SHA-256 hash recorded at `reports/metrics/raw_data_profile.json`; the cleaning counts above are from `reports/metrics/cleaning_summary.json`.
+SHA-256 hash recorded at `reports/metrics/data/raw_data_profile.json`; the cleaning counts above are from `reports/metrics/data/cleaning_summary.json`.
 
 ## Population filters
 
-Modeling population: 36-month, individual-application loans, 2012-2015, chosen on resolved-share by issue year and term (`reports/metrics/status_by_year.csv`, `reports/metrics/maturity_audit.csv`): 36-month loans reach 100% resolved by 2014, while 60-month and later 36-month vintages have not. Of 1,539,983 36-month individual loans across all years, 3.4% (52,413) have a last payment after month 36 (`reports/metrics/event_timing_audit_summary.json`), which is why `last_pymnt_d` only approximates when a charged-off loan stopped paying.
+Modeling population: 36-month, individual-application loans, 2012-2015, chosen on resolved-share by issue year and term (`reports/metrics/data/status_by_year.csv`, `reports/metrics/data/maturity_audit.csv`): 36-month loans reach 100% resolved by 2014, while 60-month and later 36-month vintages have not. Of 1,539,983 36-month individual loans across all years, 3.4% (52,413) have a last payment after month 36 (`reports/metrics/data/event_timing_audit_summary.json`), which is why `last_pymnt_d` only approximates when a charged-off loan stopped paying.
 
 ## Target
 
@@ -35,7 +35,7 @@ Test's 147 unresolved: 72 Current, 61 Late (31-120d), 9 In Grace Period, 5 Late 
 
 ## Feature allow-list
 
-Every one of 151 raw columns has an explicit decision in `reports/metrics/feature_audit.csv`.
+Every one of 151 raw columns has an explicit decision in `reports/metrics/data/feature_audit.csv`.
 
 | Decision | Count |
 |---|---|
@@ -53,7 +53,7 @@ Every one of 151 raw columns has an explicit decision in `reports/metrics/featur
 
 ## Missingness by issue year
 
-Columns mostly missing in train years are dropped (`reports/metrics/missing_by_year.csv`). Four `mths_since_*` fields roll out mid-dataset (`reports/metrics/field_rollout.csv`): `mths_since_recent_bc_dlq` and `mths_since_last_major_derog` gate on `tot_cur_bal` being null; `mths_since_recent_inq` and `mths_since_recent_revol_delinq` gate on `issue_d` before April 2012. Before its gate, missing means "not recorded yet," so the engineered "never happened" flag stays null there.
+Columns mostly missing in train years are dropped (`reports/metrics/data/missing_by_year.csv`). Four `mths_since_*` fields roll out mid-dataset (`reports/metrics/data/field_rollout.csv`): `mths_since_recent_bc_dlq` and `mths_since_last_major_derog` gate on `tot_cur_bal` being null; `mths_since_recent_inq` and `mths_since_recent_revol_delinq` gate on `issue_d` before April 2012. Before its gate, missing means "not recorded yet," so the engineered "never happened" flag stays null there.
 
 ## Engineered features
 

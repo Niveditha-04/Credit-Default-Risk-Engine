@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 VALIDATION_PARQUET = Path("data/processed/validation.parquet")
-FROZEN_CONFIG = Path("reports/metrics/frozen_model_config.json")
+FROZEN_CONFIG = Path("reports/metrics/models/frozen_model_config.json")
 
 pytestmark = pytest.mark.requires_data
 

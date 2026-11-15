@@ -27,9 +27,10 @@ import pandas as pd
 
 from src.evaluation.score_models import v1_lightgbm_cfg
 from src.explain.labels import PLAIN_ENGLISH
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
+EXTRA_DIR = Path("reports/extra")
 TEST_PARQUET = "data/processed/test.parquet"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
@@ -59,7 +60,7 @@ def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
 
 
 def load_test() -> tuple[pd.DataFrame, pd.DataFrame, list]:
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     cfg = v1_lightgbm_cfg(frozen)
     feats = cfg["features"]
@@ -105,7 +106,7 @@ def shap_followup_checks() -> None:
     """Follow-up checks on v1's own SHAP output (v1 explicitly,
     lightgbm_v1_history, not lightgbm_chosen - this is the model this
     project calls "the champion" everywhere else these findings are
-    cited, reports/metrics/shap_followup_checks_summary.json):
+    cited, reports/extra/shap_followup_checks_summary.json):
       - Income reversal: does it survive when grouping all
         income-scaled features together, and does it show up in the
         raw train default rate?
@@ -115,7 +116,7 @@ def shap_followup_checks() -> None:
     $500K+ income bucket has n=116, the dti 0-1 bucket has n=700), and
     a point-estimate "dip" or "rise" that looks clean on a chart can be
     well within sampling noise once the interval is checked."""
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     cfg = v1_lightgbm_cfg(frozen)
     booster = joblib.load(cfg["model_path"])
@@ -146,7 +147,8 @@ def shap_followup_checks() -> None:
         mean_annual_inc_only_shap=("annual_inc_only_shap", "mean"),
         n=("annual_inc", "size"),
     )
-    income_summary.to_csv(METRICS_DIR / "shap_income_group_reversal_check.csv")
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    income_summary.to_csv(EXTRA_DIR / "shap_income_group_reversal_check.csv")
     print("=== Income reversal: grouped SHAP (annual_inc + loan_to_income + revol_bal_to_income) ===")
     print(income_summary.to_string())
 
@@ -157,7 +159,8 @@ def shap_followup_checks() -> None:
     # --- Income: raw train default rate, with n and 95% CI ---
     train = pd.read_parquet(TRAIN_PARQUET)
     income_rate = default_rate_with_ci(train, "annual_inc", INCOME_BINS)
-    income_rate.to_csv(METRICS_DIR / "train_default_rate_by_income_bucket.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    income_rate.to_csv(EXTRA_DIR / "train_default_rate_by_income_bucket.csv", index=False)
     print("\n=== Raw train default rate by income bucket (n, 95% Wilson CI) ===")
     print(income_rate.to_string(index=False))
 
@@ -169,7 +172,8 @@ def shap_followup_checks() -> None:
 
     # --- dti: raw train default rate, with n and 95% CI ---
     dti_rate = default_rate_with_ci(train, "dti", DTI_BINS)
-    dti_rate.to_csv(METRICS_DIR / "train_default_rate_by_dti_bucket.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    dti_rate.to_csv(EXTRA_DIR / "train_default_rate_by_dti_bucket.csv", index=False)
     print("\n=== Raw train default rate by dti bucket (n, 95% Wilson CI) ===")
     print(dti_rate.to_string(index=False))
 
@@ -213,7 +217,8 @@ def shap_followup_checks() -> None:
             ),
         },
     }
-    with open(METRICS_DIR / "shap_followup_checks_summary.json", "w") as f:
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    with open(EXTRA_DIR / "shap_followup_checks_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     print("\n" + json.dumps(summary, indent=2))
 
@@ -252,7 +257,8 @@ def loan_to_income_cap_check() -> None:
             "engineering."
         ),
     }
-    with open(METRICS_DIR / "loan_to_income_cap_check.json", "w") as f:
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    with open(EXTRA_DIR / "loan_to_income_cap_check.json", "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 
@@ -260,7 +266,7 @@ def loan_to_income_cap_check() -> None:
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     booster = joblib.load(v1_lightgbm_cfg(frozen)["model_path"])
 
@@ -283,13 +289,13 @@ def main() -> None:
     # --- Global importance ---
     print("\n=== Global importance: mean |contribution|, top 15 ===")
     mean_abs_shap = pd.Series(np.abs(shap_values).mean(axis=0), index=feats).sort_values(ascending=False)
-    gain_importance = pd.read_csv(METRICS_DIR / "gbm_feature_importance.csv").set_index("feature")["gain"]
+    gain_importance = pd.read_csv(metrics_path("gbm_feature_importance.csv")).set_index("feature")["gain"]
 
     global_importance = pd.DataFrame({"mean_abs_shap": mean_abs_shap})
     global_importance["mean_abs_shap_rank"] = range(1, len(global_importance) + 1)
     global_importance["gain"] = gain_importance.reindex(global_importance.index)
     global_importance["gain_rank"] = global_importance["gain"].rank(ascending=False).astype(int)
-    global_importance.to_csv(METRICS_DIR / "shap_global_importance.csv")
+    global_importance.to_csv(metrics_path("shap_global_importance.csv"))
     print(global_importance.head(15).to_string())
 
     top6 = mean_abs_shap.head(6).index.tolist()
@@ -343,7 +349,8 @@ def main() -> None:
             if actual != expected_directions[feat]:
                 direction_flags.append(f"{feat}: expected {expected_directions[feat]}, found {actual}")
     print(f"\nCounterintuitive vs the stated expectations: {direction_flags or 'none'}")
-    direction_df.to_csv(METRICS_DIR / "shap_dependence_direction_top6.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    direction_df.to_csv(EXTRA_DIR / "shap_dependence_direction_top6.csv", index=False)
 
     # --- Local non-monotonicity check: a simple linear correlation can
     # miss a dip or reversal that still exists within an overall trend.
@@ -361,7 +368,8 @@ def main() -> None:
         bdf = pd.DataFrame({feat: X[feat].values, "shap": sv})
         bdf["bucket"] = pd.cut(bdf[feat], bins=bins)
         bucket_means = bdf.groupby("bucket", observed=True)["shap"].agg(["mean", "count"])
-        bucket_means.to_csv(METRICS_DIR / f"shap_bucket_means_{feat}.csv")
+        EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+        bucket_means.to_csv(EXTRA_DIR / f"shap_bucket_means_{feat}.csv")
         print(f"\n{feat}:")
         print(bucket_means.to_string())
         means = bucket_means["mean"].values
@@ -372,7 +380,7 @@ def main() -> None:
 
     # --- SHAP vs scorecard WOE direction, shared features ---
     print("\n=== Contribution direction vs scorecard WOE direction, shared features ===")
-    coef_df = pd.read_csv(METRICS_DIR / "logistic_regression_coefficients.csv")
+    coef_df = pd.read_csv(metrics_path("logistic_regression_coefficients.csv"))
     final_scorecard_feats = set(coef_df["feature"])
     shared_final = [f for f in feats if f in final_scorecard_feats]
     print(f"Shared with scorecard's final 17 features: {shared_final}")
@@ -423,7 +431,8 @@ def main() -> None:
         if w_corr is not None and not agrees:
             disagreements.append(feat)
     woe_df = pd.DataFrame(woe_comparison_rows)
-    woe_df.to_csv(METRICS_DIR / "shap_vs_woe_direction.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    woe_df.to_csv(EXTRA_DIR / "shap_vs_woe_direction.csv", index=False)
     print(woe_df.to_string(index=False))
     print(f"\nDisagreements: {disagreements or 'none'}")
 
@@ -467,7 +476,7 @@ def main() -> None:
         ),
         "examples": reason_codes,
     }
-    with open(METRICS_DIR / "shap_reason_codes_examples.json", "w") as f:
+    with open(metrics_path("shap_reason_codes_examples.json"), "w") as f:
         json.dump(reason_codes_output, f, indent=2)
     print(json.dumps(reason_codes_output, indent=2))
 
@@ -478,7 +487,7 @@ def main() -> None:
         if col in X.columns:
             missing_check[col] = int(X[col].isna().sum())
     print(json.dumps(missing_check, indent=2))
-    with open(METRICS_DIR / "shap_rollout_missing_check.json", "w") as f:
+    with open(metrics_path("shap_rollout_missing_check.json"), "w") as f:
         json.dump(missing_check, f, indent=2)
 
     summary = {
@@ -494,7 +503,7 @@ def main() -> None:
         "shap_vs_woe_disagreements": disagreements,
         "rollout_feature_missing_count_in_sample": missing_check,
     }
-    with open(METRICS_DIR / "shap_summary.json", "w") as f:
+    with open(metrics_path("shap_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
 
     print("\nDone.")

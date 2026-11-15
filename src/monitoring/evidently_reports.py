@@ -8,7 +8,7 @@ not a replacement for the numbers in reports/metrics/drift_*.
 
 Uses the same train reference restriction as run_drift.py: train rows
 with issue_d >= 2012-09-01, because 37 of the 69 features were still
-mid-rollout before that (see reports/metrics/field_rollout.csv) and
+mid-rollout before that (see reports/metrics/data/field_rollout.csv) and
 using unrestricted train would show the same rollout artifact here too.
 """
 
@@ -64,7 +64,8 @@ def main() -> None:
 
     import json
 
-    with open("reports/metrics/drift_evidently_file_sizes.json", "w") as f:
+    Path("reports/metrics/drift").mkdir(parents=True, exist_ok=True)
+    with open("reports/metrics/drift/drift_evidently_file_sizes.json", "w") as f:
         json.dump(file_sizes, f, indent=2)
     print(json.dumps(file_sizes, indent=2))
 

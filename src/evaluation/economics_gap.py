@@ -1,5 +1,5 @@
 """Evaluation-only economics analyses (no policy or model changes), all
-reading from the already-saved reports/metrics/test_scored.parquet
+reading from the already-saved reports/metrics/evaluation/test_scored.parquet
 rather than touching raw test rows again.
 
 fixed_approval_rate_and_gap_analysis():
@@ -28,13 +28,13 @@ gap_remainder_diagnostic():
 """
 
 import json
-from pathlib import Path
 
 import duckdb
 import pandas as pd
 
-METRICS_DIR = Path("reports/metrics")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+from src.report_paths import metrics_path
+
+TEST_SCORED = metrics_path("test_scored.parquet")
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 TRAIN_PARQUET = "data/processed/train.parquet"
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
@@ -43,7 +43,7 @@ FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
 
 
 def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
 
     validation = pd.read_parquet(VALIDATION_PARQUET)
@@ -85,7 +85,7 @@ def fixed_approval_rate_and_gap_analysis() -> None:
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
 
-    with open(METRICS_DIR / "decision_policy.json") as f:
+    with open(metrics_path("decision_policy.json")) as f:
         policy = json.load(f)
     lgd = policy["lgd_used_in_ev_model"]
     prepayment_ratio = policy["prepayment_adjusted_interest"]["ratio"]
@@ -136,11 +136,11 @@ def fixed_approval_rate_and_gap_analysis() -> None:
                 }
             )
     fixed_table = pd.DataFrame(rows)
-    fixed_table.to_csv(METRICS_DIR / "test_fixed_approval_rate_comparison.csv", index=False)
+    fixed_table.to_csv(metrics_path("test_fixed_approval_rate_comparison.csv"), index=False)
     print(fixed_table.to_string(index=False))
 
     n_sub_grade_levels = int(test["sub_grade"].nunique())
-    with open(METRICS_DIR / "test_sub_grade_level_count.json", "w") as f:
+    with open(metrics_path("test_sub_grade_level_count.json"), "w") as f:
         json.dump({"n_distinct_sub_grade_levels_test": n_sub_grade_levels}, f, indent=2)
     print(f"\nDistinct sub_grade levels in test: {n_sub_grade_levels}")
 
@@ -228,7 +228,7 @@ def fixed_approval_rate_and_gap_analysis() -> None:
     }
     print(json.dumps(recovery_timing, indent=2))
 
-    with open(METRICS_DIR / "test_gap_decomposition_lightgbm.json", "w") as f:
+    with open(metrics_path("test_gap_decomposition_lightgbm.json"), "w") as f:
         json.dump({"gap_decomposition": gap_decomposition, "recovery_timing_check": recovery_timing}, f, indent=2)
 
     # ================================================================
@@ -270,7 +270,7 @@ def fixed_approval_rate_and_gap_analysis() -> None:
         ),
     }
     print(json.dumps(scorecard_check, indent=2))
-    with open(METRICS_DIR / "test_scorecard_gap_explanation.json", "w") as f:
+    with open(metrics_path("test_scorecard_gap_explanation.json"), "w") as f:
         json.dump(scorecard_check, f, indent=2)
 
     print("\nDone.")
@@ -300,7 +300,7 @@ def gap_remainder_diagnostic() -> None:
     test["scheduled_interest"] = test["installment"] * 36 - test["loan_amnt"]
     test["realized_net_cash"] = test["total_pymnt"] - test["collection_recovery_fee"] - test["funded_amnt"]
 
-    with open(METRICS_DIR / "decision_policy.json") as f:
+    with open(metrics_path("decision_policy.json")) as f:
         policy = json.load(f)
     lgd_train = policy["lgd_used_in_ev_model"]
     ratio_train = policy["prepayment_adjusted_interest"]["ratio"]
@@ -357,7 +357,7 @@ def gap_remainder_diagnostic() -> None:
             "still_unexplained_after_both_pct": round(100 * (remainder - delta_both) / remainder, 1),
         },
     }
-    with open(METRICS_DIR / "test_gap_remainder_diagnostic.json", "w") as f:
+    with open(metrics_path("test_gap_remainder_diagnostic.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 

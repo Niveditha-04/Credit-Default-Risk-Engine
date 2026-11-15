@@ -1,7 +1,7 @@
 """THE ONE-TIME TOUCH OF TEST (2015).
 
 Rules this script follows:
-  - Load models ONLY from reports/metrics/frozen_model_config.json.
+  - Load models ONLY from reports/metrics/models/frozen_model_config.json.
   - After this script runs and results are seen, no model, feature, or
     calibration changes.
 
@@ -25,7 +25,7 @@ from src.models.gbm import lock_frozen_file
 
 TEST_PARQUET = "data/processed/test.parquet"
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
-OUT_PATH = Path("reports/metrics/test_scored.parquet")
+OUT_PATH = Path("reports/metrics/evaluation/test_scored.parquet")
 
 
 def main() -> None:

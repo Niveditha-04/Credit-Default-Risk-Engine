@@ -80,7 +80,7 @@ def test_apply_calibrator_isotonic_is_monotonic_in_the_raw_score():
 
 MLFLOW_DB = Path("mlflow.db")
 VALIDATION_PARQUET = Path("data/processed/validation.parquet")
-FROZEN_CONFIG = Path("reports/metrics/frozen_model_config.json")
+FROZEN_CONFIG = Path("reports/metrics/models/frozen_model_config.json")
 
 requires_real_mlflow = pytest.mark.skipif(
     not (MLFLOW_DB.exists() and VALIDATION_PARQUET.exists() and FROZEN_CONFIG.exists()),

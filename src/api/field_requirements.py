@@ -19,8 +19,8 @@ from src.evaluation.score_models import load_frozen_config
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
-OUT_CSV = Path("reports/metrics/api_field_missing_rates.csv")
-OUT_JSON = Path("reports/metrics/api_field_requirements.json")
+OUT_CSV = Path("reports/extra/api_field_missing_rates.csv")
+OUT_JSON = Path("reports/metrics/models/api_field_requirements.json")
 REQUIRED_THRESHOLD_PCT = 1.0
 
 # Fields in the schema that are not raw model features scored for
@@ -50,6 +50,7 @@ def main() -> None:
         })
 
     df = pd.DataFrame(rows).sort_values("pct_missing_in_train")
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_CSV, index=False)
     print(df.to_string(index=False))
 
@@ -65,6 +66,7 @@ def main() -> None:
         "schema_matches_threshold_rule": bool(mismatches.empty),
         "mismatches": mismatches.to_dict("records"),
     }
+    OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_JSON, "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))

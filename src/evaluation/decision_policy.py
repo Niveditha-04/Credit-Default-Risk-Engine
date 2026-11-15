@@ -43,8 +43,9 @@ import pandas as pd
 
 from src.evaluation.score_models import v1_lightgbm_cfg
 from src.models.math_utils import apply_calibrator
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
+EXTRA_DIR = Path("reports/extra")
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 MODELS_DIR = Path("data/processed/models")
@@ -120,7 +121,7 @@ def load_champion_predictions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): this
     policy was set once, on validation, before v2 existed, and must
     never move just because a later model was promoted."""
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     lgb_cfg = v1_lightgbm_cfg(frozen)
 
@@ -202,7 +203,8 @@ def main() -> None:
 
     print("\n=== Threshold sweep on validation ===")
     threshold_table = sweep_threshold_table(val_df)
-    threshold_table.to_csv(METRICS_DIR / "decision_policy_validation_threshold_sweep.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    threshold_table.to_csv(EXTRA_DIR / "decision_policy_validation_threshold_sweep.csv", index=False)
 
     best_row = threshold_table.loc[threshold_table["total_expected_net_value"].idxmax()]
     print(f"Chosen cut-off: PD <= {best_row['pd_cutoff']:.4f}")
@@ -254,9 +256,9 @@ def main() -> None:
             "applied identically to test with no further adjustment."
         ),
     }
-    with open(METRICS_DIR / "decision_policy.json", "w") as f:
+    with open(metrics_path("decision_policy.json"), "w") as f:
         json.dump(policy, f, indent=2, default=str)
-    print(f"\nWrote {METRICS_DIR / 'decision_policy.json'}")
+    print(f"\nWrote {metrics_path('decision_policy.json')}")
 
 
 if __name__ == "__main__":

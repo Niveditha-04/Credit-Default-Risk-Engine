@@ -6,7 +6,7 @@ booster and Platt calibrator at the exact paths the Dockerfile COPYs
 from (data/processed/models/lightgbm/), so `docker build` can be
 verified in CI without the real, gitignored, frozen champion artifacts.
 Built on the real committed frozen feature list
-(reports/metrics/frozen_model_config.json) so the Dockerfile's COPY
+(reports/metrics/models/frozen_model_config.json) so the Dockerfile's COPY
 step and the served app's startup both exercise the real feature
 contract.
 """
@@ -26,7 +26,7 @@ N_SYNTHETIC_ROWS = 200
 
 
 def build_dummy_lightgbm_artifacts(out_dir: Path) -> None:
-    with open("reports/metrics/frozen_model_config.json") as f:
+    with open("reports/metrics/models/frozen_model_config.json") as f:
         feats = json.load(f)["lightgbm_chosen"]["features"]
 
     rng = np.random.RandomState(0)

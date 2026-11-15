@@ -1,6 +1,6 @@
 """Apply the economics assumptions to test, once. Reads ONLY from the
-already-saved reports/metrics/test_scored.parquet (no new read of raw
-test data) and reports/metrics/decision_policy.json (the cutoff, LGD,
+already-saved reports/metrics/evaluation/test_scored.parquet (no new read of raw
+test data) and reports/metrics/evaluation/decision_policy.json (the cutoff, LGD,
 and interest formula, all set on validation and train before this
 script runs).
 """
@@ -11,8 +11,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-METRICS_DIR = Path("reports/metrics")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+from src.report_paths import metrics_path
+
+EXTRA_DIR = Path("reports/extra")
+TEST_SCORED = metrics_path("test_scored.parquet")
 MODEL_COLS = {"lightgbm": "pd_lightgbm", "xgboost": "pd_xgboost", "scorecard": "pd_scorecard"}
 FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
 
@@ -29,7 +31,7 @@ def main() -> None:
     df = pd.read_parquet(TEST_SCORED)
     print(f"Loaded {len(df)} rows from {TEST_SCORED} (already scored and saved, no new test read)")
 
-    with open(METRICS_DIR / "decision_policy.json") as f:
+    with open(metrics_path("decision_policy.json")) as f:
         policy = json.load(f)
     lgd = policy["lgd_used_in_ev_model"]
     prepayment_ratio = policy["prepayment_adjusted_interest"]["ratio"]
@@ -63,7 +65,7 @@ def main() -> None:
             }
         )
     econ_summary = pd.DataFrame(econ_rows)
-    econ_summary.to_csv(METRICS_DIR / "test_economics_at_fixed_cutoff.csv", index=False)
+    econ_summary.to_csv(metrics_path("test_economics_at_fixed_cutoff.csv"), index=False)
     print(econ_summary.to_string(index=False))
 
     print("\n=== LGD sensitivity (champion model, fixed PD cutoff) ===")
@@ -78,7 +80,7 @@ def main() -> None:
         lgd_sens_rows.append({"lgd": lgd_val, "ex_ante_expected_loss_total": round(expected_loss, 2),
                                "ex_ante_total_expected_net_value": round(ev, 2)})
     lgd_sens_df = pd.DataFrame(lgd_sens_rows)
-    lgd_sens_df.to_csv(METRICS_DIR / "test_lgd_sensitivity.csv", index=False)
+    lgd_sens_df.to_csv(metrics_path("test_lgd_sensitivity.csv"), index=False)
     print(lgd_sens_df.to_string(index=False))
 
     print("\n=== threshold table (champion model, test) ===")
@@ -98,7 +100,8 @@ def main() -> None:
             }
         )
     threshold_df = pd.DataFrame(threshold_rows)
-    threshold_df.to_csv(METRICS_DIR / "test_threshold_table.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    threshold_df.to_csv(EXTRA_DIR / "test_threshold_table.csv", index=False)
     print(threshold_df.to_string(index=False))
 
     print("\n=== Fixed approval-rate views (70/80/90%), all 3 models, test ===")
@@ -121,7 +124,7 @@ def main() -> None:
                 }
             )
     fixed_df = pd.DataFrame(fixed_rows)
-    fixed_df.to_csv(METRICS_DIR / "test_fixed_approval_rate_views.csv", index=False)
+    fixed_df.to_csv(EXTRA_DIR / "test_fixed_approval_rate_views.csv", index=False)
     print(fixed_df.to_string(index=False))
 
     print("\nDone.")

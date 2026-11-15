@@ -1,8 +1,8 @@
 """Post-hoc, descriptive decision-quality view of the existing approval
 cutoffs. Nothing here selects or changes a cutoff: the 70/80/90% and
 chosen-policy cutoffs are the ones already set on validation
-(reports/metrics/decision_policy.json) and already scored once on test
-(reports/metrics/test_scored.parquet). This only describes what each
+(reports/metrics/evaluation/decision_policy.json) and already scored once on test
+(reports/metrics/evaluation/test_scored.parquet). This only describes what each
 cutoff actually does to the champion's (LightGBM) book on test: how
 many defaults it catches by declining, how many good loans are declined
 for every default avoided, and the realized dollars on each side of
@@ -24,9 +24,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-METRICS_DIR = Path("reports/metrics")
+from src.report_paths import metrics_path
+
 FIG_DIR = Path("reports/figures")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+TEST_SCORED = metrics_path("test_scored.parquet")
 FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
 SWEEP_APPROVAL_RATES_PCT = np.arange(1, 100, 1)
 
@@ -107,7 +108,7 @@ def main() -> None:
     df = pd.read_parquet(TEST_SCORED)
     df = add_realized_net_cash(df)
 
-    with open(METRICS_DIR / "decision_policy.json") as f:
+    with open(metrics_path("decision_policy.json")) as f:
         policy = json.load(f)
     chosen_cutoff = policy["chosen_pd_cutoff"]
 
@@ -120,7 +121,7 @@ def main() -> None:
     rows.append(decision_quality_row(df, chosen_mask, "chosen policy (EV-maximizing, set on validation)", chosen_cutoff))
 
     out = pd.DataFrame(rows)
-    out.to_csv(METRICS_DIR / "test_decision_quality.csv", index=False)
+    out.to_csv(metrics_path("test_decision_quality.csv"), index=False)
     print(out.to_string(index=False))
 
     # Sweep for the figure's curve - same rank-based convention, many more

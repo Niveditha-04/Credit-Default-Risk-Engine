@@ -19,7 +19,7 @@ import pyarrow.parquet as pq
 
 RAW_CSV_GZ = Path("data/raw/accepted_2007_to_2018Q4.csv.gz")
 OUT_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_raw.parquet")
-OUT_PROFILE = Path("reports/metrics/raw_data_profile.json")
+OUT_PROFILE = Path("reports/metrics/data/raw_data_profile.json")
 
 
 def total_ram_gb() -> float:

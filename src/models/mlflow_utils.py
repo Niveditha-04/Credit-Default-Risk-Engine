@@ -30,7 +30,7 @@ def git_hash() -> str:
 
 
 def raw_data_sha256() -> str:
-    with open("reports/metrics/raw_data_profile.json") as f:
+    with open("reports/metrics/data/raw_data_profile.json") as f:
         profile = json.load(f)
     return profile["raw_file_sha256"]
 

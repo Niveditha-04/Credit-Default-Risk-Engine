@@ -30,8 +30,8 @@ from src.evaluation.score_models import (
     score_lightgbm,
 )
 from src.features.feature_engineering import engineer_features
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 API_DIR = Path("src/api")
 
 CATEGORICAL_INPUT_FIELDS = ["home_ownership", "purpose", "verification_status"]
@@ -74,7 +74,7 @@ class ScoringEngine:
         with open(API_DIR / "feature_ranges.json") as f:
             self.feature_ranges: dict = json.load(f)
 
-        shap_importance = pd.read_csv(METRICS_DIR / "shap_global_importance_served.csv", index_col=0)
+        shap_importance = pd.read_csv(metrics_path("shap_global_importance_served.csv"), index_col=0)
         self.top10_shap_features = set(shap_importance.sort_values("mean_abs_shap_rank").head(10).index)
 
     def build_raw_row(self, payload: dict) -> pd.DataFrame:

@@ -6,14 +6,14 @@ Every run refits v2 and writes it to data/processed/models/candidates/
 v2_promotion/lightgbm/ - the frozen, served data/processed/models/lightgbm/
 path, frozen_model_config.json, and MLflow are untouched unless --promote
 is passed on the command line, same convention as src.models.gbm's own
---promote flag. This never reads reports/metrics/test_scored.parquet,
+--promote flag. This never reads reports/metrics/evaluation/test_scored.parquet,
 the locked one-time test evaluation file, and never writes to it.
 
 v2 was defined and evaluated against a pre-registered rule in
 docs/v2_decision_rule.md, committed before any v2 code ran. That
-evaluation (reports/metrics/posthoc_v2_evaluation.json) said adopt v2 on
+evaluation (reports/metrics/evaluation/posthoc_v2_evaluation.json) said adopt v2 on
 2016 vintages, confirmed by a label robustness check
-(reports/metrics/posthoc_v2_label_robustness.json). v1's artifacts are
+(reports/metrics/evaluation/posthoc_v2_label_robustness.json). v1's artifacts are
 preserved as history, not deleted, the one time this script is run
 with --promote.
 
@@ -35,7 +35,7 @@ With --promote, in addition:
    data/processed/models/lightgbm_v1_history/, then promotes the v2
    candidate over the frozen path using src.models.gbm's own
    promote_candidate_artifacts (unlocks, copies, re-locks read-only).
-5. Updates reports/metrics/frozen_model_config.json: lightgbm_chosen now
+5. Updates reports/metrics/models/frozen_model_config.json: lightgbm_chosen now
    describes v2; the previous lightgbm_chosen content is preserved under
    a new key, lightgbm_v1_history, with its model_path/calibrator.path
    pointed at the backed-up files (not the live path, which this step
@@ -71,8 +71,8 @@ from src.models.posthoc_v2 import (
     FROZEN_N_TREES,
     MONOTONE_DIRECTIONS,
 )
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 MODELS_DIR = Path("data/processed/models")
 FROZEN_LGB_DIR = MODELS_DIR / "lightgbm"
 V1_HISTORY_DIR = MODELS_DIR / "lightgbm_v1_history"
@@ -203,7 +203,7 @@ def main() -> None:
     print(f"v2 model_chosen.joblib SHA-256: {v2_hash}")
 
     print("\n=== Step 5: update frozen_model_config.json ===")
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
 
     v1_chosen = frozen["lightgbm_chosen"]
@@ -223,7 +223,7 @@ def main() -> None:
             "if AUC(v2) >= AUC(v1) - 0.002 and ECE(v2) <= ECE(v1) + 0.005 on 2016 vintages "
             "(issue <= 2016-10-31, 24-month label). Result: AUC(v2)=0.6978 vs. "
             "AUC(v1)=0.6899, ECE(v2)=0.0079 vs. ECE(v1)=0.0080 - both conditions met. "
-            "Confirmed by a label robustness check (reports/metrics/posthoc_v2_label_robustness.json)."
+            "Confirmed by a label robustness check (reports/metrics/evaluation/posthoc_v2_label_robustness.json)."
         ),
         "n_features": len(champion_feats),
         "features": champion_feats,
@@ -240,7 +240,7 @@ def main() -> None:
         },
         "v1_history_key": "lightgbm_v1_history",
     }
-    with open(METRICS_DIR / "frozen_model_config.json", "w") as f:
+    with open(metrics_path("frozen_model_config.json"), "w") as f:
         json.dump(frozen, f, indent=2)
     print("frozen_model_config.json updated: lightgbm_chosen = v2, lightgbm_v1_history = v1")
 
@@ -265,7 +265,7 @@ def main() -> None:
         "v1_mlflow_alias": "v1_champion",
         "calibration_evidence": calib_evidence,
     }
-    with open(METRICS_DIR / "v2_promotion_summary.json", "w") as f:
+    with open(metrics_path("v2_promotion_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\n" + json.dumps(summary, indent=2))
 

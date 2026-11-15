@@ -23,8 +23,8 @@ from src.data.target import labelled_population_query
 from src.evaluation.score_models import load_frozen_config, score_lightgbm
 from src.features.allow_list import feature_columns
 from src.features.feature_engineering import REQUIRED_RAW_COLUMNS
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 FEATURE_RANGES_PATH = Path("src/api/feature_ranges.json")
 RISK_BANDS_PATH = Path("src/api/risk_bands.json")
 TEST_PARQUET = "data/processed/test.parquet"
@@ -123,7 +123,7 @@ def compute_risk_bands() -> None:
     }
     with open(RISK_BANDS_PATH, "w") as f:
         json.dump(output, f, indent=2)
-    with open(METRICS_DIR / "risk_bands.json", "w") as f:
+    with open(metrics_path("risk_bands.json"), "w") as f:
         json.dump(output, f, indent=2)
     print(json.dumps(output, indent=2))
 

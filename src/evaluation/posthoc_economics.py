@@ -26,10 +26,11 @@ import numpy as np
 import pandas as pd
 
 from src.models.gbm import feature_list
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+EXTRA_DIR = Path("reports/extra")
+TEST_SCORED = metrics_path("test_scored.parquet")
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 TEST_PARQUET = "data/processed/test.parquet"
@@ -181,7 +182,7 @@ def run_matched_volume_economics() -> None:
             rows.append(row)
 
     result = pd.DataFrame(rows)
-    result.to_csv(METRICS_DIR / "posthoc_matched_volume_economics.csv", index=False)
+    result.to_csv(metrics_path("posthoc_matched_volume_economics.csv"), index=False)
     print(result.to_string(index=False))
 
     fig, ax = plt.subplots(figsize=(7, 5))
@@ -193,13 +194,15 @@ def run_matched_volume_economics() -> None:
     ax.set_title("Post-hoc: realized return per dollar vs. selection rate, 2015 test")
     ax.legend()
     fig.tight_layout()
-    fig_path = FIG_DIR / "posthoc_return_per_dollar_vs_selection_rate.png"
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    fig_path = EXTRA_DIR / "posthoc_return_per_dollar_vs_selection_rate.png"
     fig.savefig(fig_path, dpi=150)
     print(f"\nSaved figure to {fig_path}")
 
     print("\n=== Paired bootstrap CI on LightGBM minus scorecard/sub_grade_map, 70/80/90%, 0/4/8% cost of funds ===")
     bootstrap_df = paired_bootstrap_matched_volume(df)
-    bootstrap_df.to_csv(METRICS_DIR / "posthoc_matched_volume_bootstrap.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    bootstrap_df.to_csv(EXTRA_DIR / "posthoc_matched_volume_bootstrap.csv", index=False)
     print(bootstrap_df.to_string(index=False))
 
     # Comparison table: return per dollar over the loan's life (not annualized) for
@@ -230,7 +233,7 @@ def run_matched_volume_economics() -> None:
                 row[f"lightgbm_minus_{other}_significant"] = bool(b["significant"])
             comparison_rows.append(row)
     comparison_df = pd.DataFrame(comparison_rows)
-    comparison_df.to_csv(METRICS_DIR / "posthoc_matched_volume_comparison_table.csv", index=False)
+    comparison_df.to_csv(metrics_path("posthoc_matched_volume_comparison_table.csv"), index=False)
     print("\n=== Comparison table (return per dollar over the loan's life, not annualized) ===")
     print(comparison_df.to_string(index=False))
 
@@ -251,9 +254,9 @@ def run_matched_volume_economics() -> None:
         "selection_rates_reported_pct": MATCHED_VOLUME_SELECTION_RATES_PCT,
         "cost_of_funds_rates_pct": COST_OF_FUNDS_RATES_PCT,
         "at_70_80_90_pct_selection": highlight.to_dict("records"),
-        "bootstrap_comparison_table": "reports/metrics/posthoc_matched_volume_comparison_table.csv",
+        "bootstrap_comparison_table": "reports/metrics/evaluation/posthoc_matched_volume_comparison_table.csv",
     }
-    with open(METRICS_DIR / "posthoc_matched_volume_economics_summary.json", "w") as f:
+    with open(metrics_path("posthoc_matched_volume_economics_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -317,7 +320,8 @@ def run_funding_optimization() -> None:
                 })
 
     curve = pd.DataFrame(curve_rows)
-    curve.to_csv(METRICS_DIR / "posthoc_funding_optimization_curve.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    curve.to_csv(EXTRA_DIR / "posthoc_funding_optimization_curve.csv", index=False)
 
     optimal_rows = []
     for (name, cof), g in curve.groupby(["model", "cost_of_funds_pct"]):
@@ -330,7 +334,7 @@ def run_funding_optimization() -> None:
             "annualized_return_on_avg_capital_pct_at_optimum": best["annualized_return_on_avg_capital_pct"],
         })
     optimal = pd.DataFrame(optimal_rows).sort_values(["cost_of_funds_pct", "model"])
-    optimal.to_csv(METRICS_DIR / "posthoc_funding_optimization_optimal.csv", index=False)
+    optimal.to_csv(metrics_path("posthoc_funding_optimization_optimal.csv"), index=False)
     print(optimal.to_string(index=False))
 
     fig, ax = plt.subplots(figsize=(7, 5))
@@ -351,7 +355,8 @@ def run_funding_optimization() -> None:
     ax.set_title("Post-hoc: net cash vs. funding volume, 0% cost of funds (circled = optimum)")
     ax.legend()
     fig.tight_layout()
-    fig_path = FIG_DIR / "posthoc_net_cash_vs_funding_volume.png"
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    fig_path = EXTRA_DIR / "posthoc_net_cash_vs_funding_volume.png"
     fig.savefig(fig_path, dpi=150)
     print(f"\nSaved {fig_path}")
 
@@ -368,7 +373,7 @@ def run_funding_optimization() -> None:
         ),
         "optimal": optimal.to_dict("records"),
     }
-    with open(METRICS_DIR / "posthoc_funding_optimization_summary.json", "w") as f:
+    with open(metrics_path("posthoc_funding_optimization_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -511,7 +516,7 @@ def run_subgrade_lightgbm_matched_volume() -> None:
     validation_table = matched_volume_table(validation_sg, model_cols, "2014 (validation, in-sample for this model's tree count)")
     test_table = matched_volume_table(test_sg, model_cols, "2015 (test, post-hoc)")
     result = pd.concat([validation_table, test_table], ignore_index=True)
-    result.to_csv(METRICS_DIR / "posthoc_subgrade_lightgbm_matched_volume.csv", index=False)
+    result.to_csv(metrics_path("posthoc_subgrade_lightgbm_matched_volume.csv"), index=False)
     print(result.to_string(index=False))
 
     summary = {
@@ -529,7 +534,7 @@ def run_subgrade_lightgbm_matched_volume() -> None:
         "test_auc_ablation_c_reference": 0.6967,
         "by_year_and_rate": result.to_dict("records"),
     }
-    with open(METRICS_DIR / "posthoc_subgrade_lightgbm_matched_volume_summary.json", "w") as f:
+    with open(metrics_path("posthoc_subgrade_lightgbm_matched_volume_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 

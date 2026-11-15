@@ -144,7 +144,7 @@ def population_and_target_report(con: duckdb.DuckDBPyConnection) -> dict:
     return report
 
 
-def main(out_path: str = "reports/metrics/population_and_target.json") -> dict:
+def main(out_path: str = "reports/metrics/data/population_and_target.json") -> dict:
     import json
 
     con = duckdb.connect()

@@ -27,8 +27,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-METRICS_DIR = Path("reports/metrics")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+from src.report_paths import metrics_path
+
+EXTRA_DIR = Path("reports/extra")
+TEST_SCORED = metrics_path("test_scored.parquet")
 TEST_PARQUET = "data/processed/test.parquet"
 FICO_BINS = [660, 680, 700, 720, 740, 760, 850]
 Z_95 = 1.959964
@@ -127,7 +129,7 @@ def main() -> None:
     df["fico_band"] = pd.cut(df["fico_mean"], bins=FICO_BINS).astype(str)
 
     monthly = monthly_rate_with_ci(df)
-    monthly.to_csv(METRICS_DIR / "kpi_movement_monthly.csv", index=False)
+    monthly.to_csv(metrics_path("kpi_movement_monthly.csv"), index=False)
     print("=== Monthly default rate, 95% CI, mean predicted PD ===")
     print(monthly.to_string(index=False))
 
@@ -174,8 +176,9 @@ def main() -> None:
             "transition", "dimension", "group", "n_from", "n_to", "weight_from_pct", "weight_to_pct",
             "rate_from_pct", "rate_to_pct", "mix_effect_pp", "rate_effect_pp",
         ])
-    full_decomp.to_csv(METRICS_DIR / "kpi_movement_decomposition.csv", index=False)
-    print(f"\nWrote {METRICS_DIR / 'kpi_movement_decomposition.csv'} ({len(full_decomp)} rows)")
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    full_decomp.to_csv(EXTRA_DIR / "kpi_movement_decomposition.csv", index=False)
+    print(f"\nWrote {EXTRA_DIR / 'kpi_movement_decomposition.csv'} ({len(full_decomp)} rows)")
 
     narrative = pd.DataFrame(narrative_rows)
     print("\n=== Decomposition summary, flagged transitions only ===")
@@ -213,9 +216,9 @@ def main() -> None:
         "decomposition_by_transition": narrative_rows,
         "conclusion": conclusion,
     }
-    with open(METRICS_DIR / "kpi_movement_summary.json", "w") as f:
+    with open(metrics_path("kpi_movement_summary.json"), "w") as f:
         json.dump(summary, f, indent=2, default=str)
-    print(f"\nWrote {METRICS_DIR / 'kpi_movement_summary.json'}")
+    print(f"\nWrote {metrics_path('kpi_movement_summary.json')}")
     print(json.dumps(summary["conclusion"]))
 
 

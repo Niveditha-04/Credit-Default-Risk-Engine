@@ -20,7 +20,7 @@ from src.features.allow_list import (
 )
 from src.models.gbm import feature_list
 
-with open("reports/metrics/frozen_model_config.json") as f:
+with open("reports/metrics/models/frozen_model_config.json") as f:
     FROZEN_FEATURES = json.load(f)["lightgbm_chosen"]["features"]
 
 
@@ -83,7 +83,7 @@ def test_main_runs_against_the_real_allow_list(tmp_path, monkeypatch, capsys):
     main()
     out = capsys.readouterr().out
     assert f"All {len(ALLOW_LIST)} columns have a decision." in out
-    assert (tmp_path / "reports" / "metrics" / "feature_audit.csv").exists()
+    assert (tmp_path / "reports" / "metrics" / "data" / "feature_audit.csv").exists()
 
 
 # ---------------------------------------------------------------------

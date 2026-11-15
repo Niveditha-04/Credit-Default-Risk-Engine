@@ -6,6 +6,7 @@ peeks at validation or test to make a modelling decision.
 """
 
 import json
+from pathlib import Path
 
 import duckdb
 import matplotlib.pyplot as plt
@@ -13,13 +14,13 @@ import pandas as pd
 
 from src.data.target import labelled_population_query
 
-FIG_DIR = "reports/figures"
+FIG_DIR = "reports/extra"
 TRAIN_PARQUET = "data/processed/train.parquet"
 TRAIN_SOURCE_QUERY = f"SELECT * FROM ({labelled_population_query()}) WHERE split = 'train' AND target IS NOT NULL"
 
 
 def default_rate_by_year() -> None:
-    with open("reports/metrics/population_and_target.json") as f:
+    with open("reports/metrics/data/population_and_target.json") as f:
         pop = json.load(f)
     splits = pop["splits"]
     years = {"train": "2012-2013", "validation": "2014", "test": "2015"}
@@ -49,7 +50,7 @@ def default_rate_by_feature(con: duckdb.DuckDBPyConnection, feature: str, fname:
         ORDER BY 1
         """
     ).fetchdf()
-    df.to_csv(f"reports/metrics/{fname}.csv", index=False)
+    df.to_csv(f"{FIG_DIR}/{fname}.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.bar(df["value"].astype(str), df["default_rate_pct"], color="#4C72B0")
@@ -93,7 +94,7 @@ def correlation_heatmap(con: duckdb.DuckDBPyConnection) -> None:
     ]
     df = con.execute(f"SELECT {', '.join(cols)} FROM read_parquet('{TRAIN_PARQUET}')").fetchdf()
     corr = df.corr(numeric_only=True)
-    corr.to_csv("reports/metrics/train_correlation_matrix.csv")
+    corr.to_csv(f"{FIG_DIR}/train_correlation_matrix.csv")
 
     fig, ax = plt.subplots(figsize=(9, 8))
     im = ax.imshow(corr, vmin=-1, vmax=1, cmap="coolwarm")
@@ -109,6 +110,7 @@ def correlation_heatmap(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def main() -> None:
+    Path(FIG_DIR).mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
 

@@ -20,7 +20,7 @@ from src.data.columns import (
 
 RAW_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_raw.parquet")
 OUT_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_cleaned.parquet")
-OUT_METRICS = Path("reports/metrics/cleaning_summary.json")
+OUT_METRICS = Path("reports/metrics/data/cleaning_summary.json")
 
 
 def check_column_coverage(con: duckdb.DuckDBPyConnection) -> list[str]:

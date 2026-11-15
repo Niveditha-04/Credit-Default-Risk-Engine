@@ -15,8 +15,8 @@ from sklearn.metrics import roc_auc_score
 
 from src.evaluation.score_models import v1_lightgbm_cfg
 from src.models.gbm import CATEGORICAL_COLUMNS, new_run_id
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 CANDIDATES_DIR = Path("data/processed/models/candidates")
 
 
@@ -40,9 +40,9 @@ def diagnose_lightgbm_row_order_bagging() -> None:
     # v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): v2's
     # hyperparameters carry monotone_constraints that v1's don't, so
     # using lightgbm_chosen here would silently train a different model
-    # than the one reports/metrics/training_order_sensitivity.json
+    # than the one reports/metrics/models/training_order_sensitivity.json
     # (cited in README) actually describes.
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     cfg = v1_lightgbm_cfg(frozen)
     feats = cfg["features"]
@@ -102,7 +102,7 @@ def retrain_xgboost_validation_only() -> None:
     of bagging_fraction) also affects XGBoost's validation AUC. Writes
     only to data/processed/models/candidates/ - never touches the frozen
     xgboost artifacts, and never scores test."""
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     xgb_cfg = frozen["xgboost"]
     feats = xgb_cfg["features"]
@@ -137,7 +137,7 @@ def retrain_xgboost_validation_only() -> None:
         "diff": round(validation_auc - frozen_validation_auc, 4),
         "candidate_dir": str(candidate_dir),
     }
-    with open(METRICS_DIR / "xgboost_order_sensitivity_check.json", "w") as f:
+    with open(metrics_path("xgboost_order_sensitivity_check.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 

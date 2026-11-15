@@ -18,7 +18,7 @@
 
 ### Eligibility caps by issue year
 
-FICO floor holds at 660 every year; the DTI ceiling does not (`reports/metrics/eligibility_caps_by_year.csv`):
+FICO floor holds at 660 every year; the DTI ceiling does not (`reports/metrics/data/eligibility_caps_by_year.csv`):
 
 | Issue year | n | Min FICO | Max DTI | Share DTI > 35 |
 |---|---|---|---|---|
@@ -37,7 +37,7 @@ FICO floor holds at 660 every year; the DTI ceiling does not (`reports/metrics/e
 | v1 (cap 34.99) | Test (2015) | +1.01 pp (n=273,086) | +5.07 pp (n=9,701) |
 | v2 (cap 39.99) | 2016 holdout, relative to in-range | - | +0.19 pp (35-40), +1.58 pp (>40, n=1,746), neither significant |
 
-(`reports/metrics/dti_cap_extrapolation_v1_test.csv`, `reports/metrics/dti_cap_extrapolation_v2_2016.csv`, `reports/metrics/dti_cap_extrapolation_v2_2016_relative.csv`)
+(`reports/metrics/evaluation/dti_cap_extrapolation_v1_test.csv`, `reports/metrics/evaluation/dti_cap_extrapolation_v2_2016.csv`, `reports/metrics/evaluation/dti_cap_extrapolation_v2_2016_relative.csv`)
 
 v1 under-predicts loans above its own cap by about 5x the in-range gap. v2's absolute gaps on the 2016 holdout are negative throughout (its calibrator targets lifetime default against a 24-month label); the relative comparison above removes that bias and shows the same direction as v1, smaller and not conclusive.
 
@@ -50,9 +50,9 @@ v1 under-predicts loans above its own cap by about 5x the in-range gap. v2's abs
 | Scorecard | 0.6711 | 0.6686-0.6735 | 0.3421 | 0.2480 | 0.12105 | 0.0445 |
 | sub_grade | 0.6786 | 0.6760-0.6812 | 0.3573 | 0.2619 | 0.12153 | 0.0407 |
 
-(`reports/metrics/test_core_metrics.json`, `reports/metrics/test_bootstrap_ci.json`)
+(`reports/metrics/evaluation/test_core_metrics.json`, `reports/metrics/evaluation/test_bootstrap_ci.json`)
 
-Paired AUC differences, 95% bootstrap CI, 1,000 resamples (`reports/metrics/test_bootstrap_ci.json`):
+Paired AUC differences, 95% bootstrap CI, 1,000 resamples (`reports/metrics/evaluation/test_bootstrap_ci.json`):
 
 | Comparison | Mean diff | 95% CI | Significant |
 |---|---|---|---|
@@ -75,7 +75,7 @@ Same ranking as the primary label. Default rate under this label: 11.93% vs. 14.
 
 ## Walk-forward (post-hoc)
 
-Fold 1 reuses the champion's own train-validation numbers (in-sample for tuning, not a holdout). Fold 2 trains fresh on 2012-2014 and evaluates on test, genuinely out-of-sample (`reports/metrics/posthoc_walkforward.csv`, `src/evaluation/posthoc_validation.py`).
+Fold 1 reuses the champion's own train-validation numbers (in-sample for tuning, not a holdout). Fold 2 trains fresh on 2012-2014 and evaluates on test, genuinely out-of-sample (`reports/metrics/evaluation/posthoc_walkforward.csv`, `src/evaluation/posthoc_validation.py`).
 
 | Fold | Train | Evaluate | LightGBM AUC | Scorecard AUC | sub_grade AUC | Lift vs. scorecard | Lift vs. sub_grade |
 |---|---|---|---|---|---|---|---|
@@ -86,7 +86,7 @@ Fold 2's LightGBM AUC (0.6962) beats the frozen champion's own test AUC (0.6872)
 
 ## Partial performance on replay (post-hoc, exploratory)
 
-One window, January-October 2016, has enough seasoning (29+ months by the March 2019 snapshot) for a fixed 24-month label (`reports/metrics/posthoc_replay_24m_performance.csv`). 5,929 of 265,967 loans (2.2%) excluded as unlabelable (`reports/metrics/posthoc_replay_24m_performance_summary.json`).
+One window, January-October 2016, has enough seasoning (29+ months by the March 2019 snapshot) for a fixed 24-month label (`reports/metrics/evaluation/posthoc_replay_24m_performance.csv`). 5,929 of 265,967 loans (2.2%) excluded as unlabelable (`reports/metrics/evaluation/posthoc_replay_24m_performance_summary.json`).
 
 | Population | AUC range (24-month label) |
 |---|---|
@@ -97,7 +97,7 @@ Replay's range fully contains test's: no large discrimination drop under this la
 
 ## v2 decision rule: results (post-hoc)
 
-Pre-registered and committed in `docs/v2_decision_rule.md` before any v2 code ran. Population: 2016 vintages, issue <= 2016-10-31, 260,038 loans, 12.70% label rate (`reports/metrics/posthoc_v2_evaluation.json`). `docs/v2_decision_rule.md` is kept exactly as pre-registered, including its reference to `src/evaluation/posthoc_calibration.py`. That ECE definition lives in `src/evaluation/posthoc_validation.py` in this repo's current layout.
+Pre-registered and committed in `docs/v2_decision_rule.md` before any v2 code ran. Population: 2016 vintages, issue <= 2016-10-31, 260,038 loans, 12.70% label rate (`reports/metrics/evaluation/posthoc_v2_evaluation.json`). `docs/v2_decision_rule.md` is kept exactly as pre-registered, including its reference to `src/evaluation/posthoc_calibration.py`. That ECE definition lives in `src/evaluation/posthoc_validation.py` in this repo's current layout.
 
 | Model | AUC | ECE |
 |---|---|---|
@@ -108,7 +108,7 @@ Rule: adopt v2 if AUC(v2) >= AUC(v1) - 0.002 AND ECE(v2) <= ECE(v1) + 0.005. Bot
 
 ### Label robustness check (post-hoc)
 
-Second, "corrected" label, chosen after the result above was recorded (`reports/metrics/posthoc_v2_label_robustness.json`):
+Second, "corrected" label, chosen after the result above was recorded (`reports/metrics/evaluation/posthoc_v2_label_robustness.json`):
 
 | Label | n | Label rate | v1 AUC | v1 ECE | v2 AUC | v2 ECE | Outcome |
 |---|---|---|---|---|---|---|---|
@@ -119,11 +119,11 @@ Decision unchanged.
 
 ### Promotion
 
-v2 promoted via `src.models.promote_v2 --promote` (`reports/metrics/v2_promotion_summary.json`). v1 kept at `data/processed/models/lightgbm_v1_history/`, MLflow alias `v1_champion`. Parity check 1,000/1,000 exact; `verify_champion_alias` max abs diff 0.0; Docker build and smoke test passing. Model hashes: v1 `b8437eb84d6a...`, v2 `d7dda06ef209...` (served). Full detail: `docs/model_card.md`.
+v2 promoted via `src.models.promote_v2 --promote` (`reports/metrics/models/v2_promotion_summary.json`). v1 kept at `data/processed/models/lightgbm_v1_history/`, MLflow alias `v1_champion`. Parity check 1,000/1,000 exact; `verify_champion_alias` max abs diff 0.0; Docker build and smoke test passing. Model hashes: v1 `b8437eb84d6a...`, v2 `d7dda06ef209...` (served). Full detail: `docs/model_card.md`.
 
 ### v2 on test (2015), post-hoc
 
-v2's AUC on the full 2015 population, never computed before this check. 2015 is not a clean holdout for v2 (its calibrator was fit on it, though calibration does not change AUC/Gini/KS) (`reports/metrics/posthoc_v2_test_2015.json`).
+v2's AUC on the full 2015 population, never computed before this check. 2015 is not a clean holdout for v2 (its calibrator was fit on it, though calibration does not change AUC/Gini/KS) (`reports/metrics/evaluation/posthoc_v2_test_2015.json`).
 
 | Metric | v2 on test (2015) |
 |---|---|
@@ -135,7 +135,7 @@ v2's AUC on the full 2015 population, never computed before this check. 2015 is 
 
 ## Ablations (post-hoc)
 
-Four ablations, champion's frozen hyperparameters, no tuning search. Validation is primary; test AUC is post-hoc context (`reports/metrics/posthoc_ablations_summary.json`).
+Four ablations, champion's frozen hyperparameters, no tuning search. Validation is primary; test AUC is post-hoc context (`reports/metrics/evaluation/posthoc_ablations_summary.json`).
 
 | Model | Validation AUC | Test AUC (post-hoc) |
 |---|---|---|
@@ -146,13 +146,13 @@ Four ablations, champion's frozen hyperparameters, no tuning search. Validation 
 | c. Champion features + sub_grade | 0.6891 | 0.6967 |
 | d. Champion features, 8 monotone constraints | 0.6833 | 0.6871 |
 
-The 63 candidates' Information Value tops out at 0.13 (`reports/metrics/iv_table.csv`), well under the 0.5 threshold this project treats as a possible-leakage flag; none trips it. Ablation (b) scores above the deployed scorecard but has 15 sign-mismatched WOE coefficients out of 63: the correlation/VIF/sign-correction steps buy stability, not AUC. Ablation (d) costs no detectable AUC (-0.0001, within the 0.0007 retraining-noise spread, `reports/metrics/training_order_sensitivity.json`) and led to v2.
+The 63 candidates' Information Value tops out at 0.13 (`reports/metrics/models/iv_table.csv`), well under the 0.5 threshold this project treats as a possible-leakage flag; none trips it. Ablation (b) scores above the deployed scorecard but has 15 sign-mismatched WOE coefficients out of 63: the correlation/VIF/sign-correction steps buy stability, not AUC. Ablation (d) costs no detectable AUC (-0.0001, within the 0.0007 retraining-noise spread, `reports/metrics/models/training_order_sensitivity.json`) and led to v2.
 
 Income monotonicity (mean SHAP for `annual_inc`, binned): the champion's curve reverses by 0.0926 log-odds after its peak; ablation (d)'s constrained curve reverses by only 0.0041 (95.6% smaller).
 
 ## Paired monthly lift (post-hoc)
 
-Per-month AUC on test, all 12 months (`reports/metrics/posthoc_monthly_lift.csv`):
+Per-month AUC on test, all 12 months (`reports/metrics/evaluation/posthoc_monthly_lift.csv`):
 
 | Comparison | Mean lift | Min | Max | Months positive |
 |---|---|---|---|---|
@@ -163,7 +163,7 @@ Months in one year share macro conditions: 12 of 12 positive is a consistency ch
 
 ## Economics at matched funding volume (post-hoc)
 
-Funds the top 70/80/90% of test loans by each model's own score. Return per dollar funded = realized net cash / funded amount (`reports/metrics/posthoc_matched_volume_economics.csv`).
+Funds the top 70/80/90% of test loans by each model's own score. Return per dollar funded = realized net cash / funded amount (`reports/metrics/evaluation/posthoc_matched_volume_economics.csv`).
 
 | Model | 70% | 80% | 90% |
 |---|---|---|---|
@@ -174,7 +174,7 @@ Funds the top 70/80/90% of test loans by each model's own score. Return per doll
 
 At 4% annual cost of funds: 3.40% / 3.16% / 2.88% (LightGBM). At 8%: -0.76% / -0.97% / -1.23%. Not annualized: measured over each loan's observed life.
 
-Paired bootstrap 95% CI on LightGBM's edge, 1,000 resamples (`reports/metrics/posthoc_matched_volume_comparison_table.csv`):
+Paired bootstrap 95% CI on LightGBM's edge, 1,000 resamples (`reports/metrics/evaluation/posthoc_matched_volume_comparison_table.csv`):
 
 | Selection rate | Cost of funds | LightGBM minus scorecard | LightGBM minus sub_grade |
 |---|---|---|---|
@@ -186,7 +186,7 @@ All 18 differences checked (3 rates x 3 cost levels) are positive and significan
 
 ## Funding-fraction optimization (post-hoc)
 
-LightGBM's fraction maximizing total net cash after cost, per cost of funds (`reports/metrics/posthoc_funding_optimization_optimal.csv`):
+LightGBM's fraction maximizing total net cash after cost, per cost of funds (`reports/metrics/evaluation/posthoc_funding_optimization_optimal.csv`):
 
 | Cost of funds | Optimal rate | Net cash after cost |
 |---|---|---|
@@ -198,7 +198,7 @@ At 8% cost of funds every model's best fraction still loses money: not a volume 
 
 ## sub_grade alone vs. sub_grade + LightGBM (post-hoc)
 
-Champion features plus `sub_grade` (ablation c) vs. sub_grade's own PD map (`reports/metrics/posthoc_subgrade_lightgbm_matched_volume.csv`):
+Champion features plus `sub_grade` (ablation c) vs. sub_grade's own PD map (`reports/metrics/evaluation/posthoc_subgrade_lightgbm_matched_volume.csv`):
 
 | Year | Model | 70% | 90% |
 |---|---|---|---|
@@ -221,7 +221,7 @@ Out-of-sample on validation (fit 2014-01 to 2014-09, holdout 2014-10 to 2014-12)
 | Largest monthly gap | 1.89 pp |
 | Largest FICO-band gap | 1.90 pp |
 
-(`reports/metrics/test_core_metrics.json`, `reports/metrics/posthoc_calibration_summary.json`)
+(`reports/metrics/evaluation/test_core_metrics.json`, `reports/metrics/evaluation/posthoc_calibration_summary.json`)
 
 Reliability plot: `reports/figures/posthoc_reliability_plot.png`.
 
@@ -236,7 +236,7 @@ Reliability plot: `reports/figures/posthoc_reliability_plot.png`.
 
 ## Segments and stability (post-hoc)
 
-LightGBM AUC and default rate by segment, test (`reports/metrics/posthoc_segment_table.csv`); also checked by issue quarter and `addr_state` (`test_stability_by_quarter.csv`, `test_stability_by_region.csv`), labeled stability not fairness since this data has no protected attributes:
+LightGBM AUC and default rate by segment, test (`reports/metrics/evaluation/posthoc_segment_table.csv`); also checked by issue quarter and `addr_state` (`reports/metrics/evaluation/test_stability_by_quarter.csv`, `reports/metrics/evaluation/test_stability_by_region.csv`), labeled stability not fairness since this data has no protected attributes:
 
 | Dimension | AUC range | Default-rate range |
 |---|---|---|
@@ -257,9 +257,9 @@ Threshold set on validation and train, maximizing total expected net value. Cuto
 | XGBoost | 99.12% | 14.63% | $274.9M | $232.2M | $42.7M (15.6%) |
 | Scorecard | 99.82% | 14.83% | $292.6M | $230.2M | $62.4M (21.3%) |
 
-(`reports/metrics/test_economics_at_fixed_cutoff.csv`)
+(`reports/metrics/evaluation/test_economics_at_fixed_cutoff.csv`)
 
-Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean on train charged-off loans. Sensitivity table: `reports/metrics/test_lgd_sensitivity.csv`. No cost of capital, operating cost, or time value of money in this EV model.
+Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean on train charged-off loans. Sensitivity table: `reports/metrics/evaluation/test_lgd_sensitivity.csv`. No cost of capital, operating cost, or time value of money in this EV model.
 
 ### Gap decomposition, LightGBM
 
@@ -278,7 +278,7 @@ Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean
 | LightGBM | 80% | 79.59% | $213.7M |
 | LightGBM | 90% | 89.47% | $228.3M |
 
-(`reports/metrics/test_fixed_approval_rate_comparison.csv`)
+(`reports/metrics/evaluation/test_fixed_approval_rate_comparison.csv`)
 
 A different "70%" from decision quality below (fixed PD cutoff vs. exact top-N% rank): both correct under their own definition.
 
@@ -294,7 +294,7 @@ See `docs/decision_memo.md` for this table read as a lending decision.
 
 ### KPI movement (post-hoc)
 
-95% CI on each 2015 month's default rate and month-over-month change: 7 of 11 changes exceed sampling noise (`reports/metrics/kpi_movement_monthly.csv`). Symmetric mix/rate decomposition by FICO band and purpose, for each flagged change:
+95% CI on each 2015 month's default rate and month-over-month change: 7 of 11 changes exceed sampling noise (`reports/metrics/evaluation/kpi_movement_monthly.csv`). Symmetric mix/rate decomposition by FICO band and purpose, for each flagged change:
 
 | Measure | Value |
 |---|---|
@@ -306,7 +306,7 @@ The model's own predicted PD moves the right direction every time but explains o
 
 ## Drift (historical replay, 2015-2018)
 
-PSI monthly, bins fixed on train, conventional thresholds (<0.10 stable, 0.10-0.25 watch, >0.25 alert). 23 of 69 features crossed watch, 6 crossed alert (`reports/metrics/drift_combined_psi_table.csv`).
+PSI monthly, bins fixed on train, conventional thresholds (<0.10 stable, 0.10-0.25 watch, >0.25 alert). 23 of 69 features crossed watch, 6 crossed alert (`reports/metrics/drift/drift_combined_psi_table.csv`).
 
 | Feature | Peak PSI | First crossed alert | SHAP rank (of 69) |
 |---|---|---|---|
@@ -328,7 +328,7 @@ PSI monthly, bins fixed on train, conventional thresholds (<0.10 stable, 0.10-0.
 | Required | 19 | < 1% missing, 2012-2014 |
 | Optional | 43 | >= 1% missing, several missing-not-at-random |
 
-Example request (62 fields): `docs/api_example.json`. The response lists what it did not get (`missing_fields`) and warns when a missing field is one of the top-10 SHAP drivers (`reports/metrics/shap_global_importance_served.csv`).
+Example request (62 fields): `docs/api_example.json`. The response lists what it did not get (`missing_fields`) and warns when a missing field is one of the top-10 SHAP drivers (`reports/metrics/explain/shap_global_importance_served.csv`).
 
 ## API latency (local laptop, not a production benchmark)
 

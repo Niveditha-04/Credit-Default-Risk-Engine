@@ -21,7 +21,7 @@ PSI bins are fit on TRAIN ONLY (see src/monitoring/psi.py) and reused
 unchanged for every month and every reference comparison below.
 
 TRAIN_PSI_REFERENCE_CUTOFF: 37 of the 69 model features were part of a
-2012 bureau-data rollout (see reports/metrics/field_rollout.csv) - they
+2012 bureau-data rollout (see reports/metrics/data/field_rollout.csv) - they
 are ~84-100% missing for loans issued before August/September 2012 and
 settle to their real missing rate from September 2012 on. Train (2012-13)
 includes those early, pre-rollout months, so using unrestricted train as
@@ -59,14 +59,14 @@ from src.monitoring.psi import (
     psi_band,
     psi_from_counts,
 )
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 DRIFT_DIR = Path("reports/drift")
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 TEST_PARQUET = "data/processed/test.parquet"
 REPLAY_PARQUET = "data/processed/replay.parquet"
-TEST_SCORED_PARQUET = "reports/metrics/test_scored.parquet"
+TEST_SCORED_PARQUET = "reports/metrics/evaluation/test_scored.parquet"
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
@@ -277,7 +277,7 @@ def main() -> None:
 
     print("Baseline: validation (2014) vs train reference...")
     baseline = compute_baseline_psi(train_ref, validation, features, bins)
-    baseline.to_csv(METRICS_DIR / "drift_baseline_psi_validation_vs_train.csv", index=False)
+    baseline.to_csv(metrics_path("drift_baseline_psi_validation_vs_train.csv"), index=False)
     print(baseline.head(10).to_string())
 
     print("\nScoring train reference + 2015-2018 population with the frozen champion (batch, once)...")
@@ -286,25 +286,25 @@ def main() -> None:
 
     print("\nComputing monthly data drift (69 features x 48 months)...")
     monthly_data_drift = compute_monthly_data_drift(train_ref, population, features, bins)
-    monthly_data_drift.to_csv(METRICS_DIR / "drift_data_monthly_psi.csv", index=False)
+    monthly_data_drift.to_csv(metrics_path("drift_data_monthly_psi.csv"), index=False)
 
     crossings = first_crossing_table(monthly_data_drift)
-    crossings.to_csv(METRICS_DIR / "drift_data_first_crossing.csv", index=False)
+    crossings.to_csv(metrics_path("drift_data_first_crossing.csv"), index=False)
     print(crossings.head(15).to_string())
 
     print("\nComputing prediction drift...")
     prediction_drift = compute_prediction_drift(train_pd, population)
-    prediction_drift.to_csv(METRICS_DIR / "drift_prediction_monthly.csv", index=False)
+    prediction_drift.to_csv(metrics_path("drift_prediction_monthly.csv"), index=False)
     print(prediction_drift.to_string())
 
     print("\nComputing performance drift (2015 only)...")
     performance_drift = compute_performance_drift_2015_only(population)
-    performance_drift.to_csv(METRICS_DIR / "drift_performance_2015_monthly.csv", index=False)
+    performance_drift.to_csv(metrics_path("drift_performance_2015_monthly.csv"), index=False)
     print(performance_drift.to_string())
 
     print("\nConfirming expected known signal: loan_to_income cap at 0.5...")
     lti_signal = confirm_loan_to_income_cap_signal(train_full, population)
-    with open(METRICS_DIR / "drift_loan_to_income_cap_signal.json", "w") as f:
+    with open(metrics_path("drift_loan_to_income_cap_signal.json"), "w") as f:
         json.dump(lti_signal, f, indent=2)
     print(json.dumps({k: v for k, v in lti_signal.items() if k != "monthly_detail"}, indent=2))
 
@@ -318,7 +318,7 @@ def main() -> None:
         "n_features_crossing_0.25_by_2018": int((crossings["first_month_crossed_0.25"].notna()).sum()),
         "no_labels_used_for_2016_2018": True,
     }
-    with open(METRICS_DIR / "drift_summary.json", "w") as f:
+    with open(metrics_path("drift_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\n" + json.dumps(summary, indent=2))
 

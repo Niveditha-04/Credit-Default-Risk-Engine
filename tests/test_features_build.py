@@ -172,7 +172,7 @@ def test_main_writes_summary_json(synthetic_cleaned_full, tmp_path, monkeypatch)
 
     import json
 
-    with open(tmp_path / "reports" / "metrics" / "build_features_summary.json") as f:
+    with open(tmp_path / "reports" / "metrics" / "data" / "build_features_summary.json") as f:
         summary = json.load(f)
     assert summary["train"]["rows"] == 2
     assert summary["validation"]["rows"] == 1

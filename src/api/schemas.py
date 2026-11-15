@@ -33,7 +33,7 @@ class ScoreRequest(BaseModel):
     verification_status: str
 
     # --- Required bureau/trade-line fields: < 1% missing in train
-    # (reports/metrics/api_field_missing_rates.csv), so a live caller
+    # (reports/extra/api_field_missing_rates.csv), so a live caller
     # omitting one is treated as a bad request, not a natively-missing value. ---
     acc_now_delinq: float = Field(..., ge=0)
     chargeoff_within_12_mths: float = Field(..., ge=0)
@@ -50,7 +50,7 @@ class ScoreRequest(BaseModel):
     total_acc: float = Field(..., ge=0)
 
     # --- Optional bureau/trade-line fields: >= 4% missing in train
-    # (reports/metrics/api_field_missing_rates.csv) - optbinning/LightGBM
+    # (reports/extra/api_field_missing_rates.csv) - optbinning/LightGBM
     # both handle missing natively, and several of these are legitimately
     # missing-not-at-random in training (an event that never happened). ---
     emp_length: float | None = Field(None, ge=0, le=10)

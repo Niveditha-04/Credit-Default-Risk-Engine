@@ -24,7 +24,6 @@ Sections, run in order by main():
 """
 
 import json
-from pathlib import Path
 
 import duckdb
 import joblib
@@ -48,19 +47,19 @@ from src.evaluation.test_evaluation import (
 )
 from src.models.gbm import feature_list
 from src.models.scorecard import candidate_features
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 TEST_PARQUET = "data/processed/test.parquet"
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+TEST_SCORED = metrics_path("test_scored.parquet")
 REPLAY_PARQUET = "data/processed/replay.parquet"
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 SEED = 42
 
-# The frozen champion's own hyperparameters (reports/metrics/frozen_model_config.json).
+# The frozen champion's own hyperparameters (reports/metrics/models/frozen_model_config.json).
 # No tuning search is run anywhere in this module. Shared by the
 # ablations (section 1) and v2 (sections 2-3), which reuse them exactly.
 FROZEN_LGB_PARAMS = {
@@ -184,7 +183,7 @@ def auc_on(booster_or_pred_fn, df, feats):
 
 
 def candidate_features_17() -> list[str]:
-    with open(METRICS_DIR / "feature_selection_log.json") as f:
+    with open(metrics_path("feature_selection_log.json")) as f:
         return json.load(f)["final_features"]
 
 
@@ -264,7 +263,7 @@ def ablation_d_monotone_constraints(train, validation, test, champion_feats):
 def income_monotonicity_check(booster, feats, test, label: str) -> dict:
     """Mean SHAP (pred_contrib) for annual_inc by income bucket, on test,
     post-hoc. Compared against the champion's existing finding
-    (reports/metrics/shap_followup_checks_summary.json): annual_inc alone
+    (reports/extra/shap_followup_checks_summary.json): annual_inc alone
     is most protective around $90K-110K, then weakens above that -
     checks whether that non-monotonicity survives a hard monotone
     constraint on annual_inc."""
@@ -325,7 +324,7 @@ def run_ablations() -> None:
     # ablation here reuses hyperparameters from, and the model ablation
     # d's monotone constraints led to v2 from) - v1_lightgbm_cfg, never
     # lightgbm_chosen, which now describes v2 after v2's promotion.
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     v1_cfg = v1_lightgbm_cfg(frozen)
     champion_booster = joblib.load(v1_cfg["model_path"])
@@ -336,7 +335,7 @@ def run_ablations() -> None:
     print(json.dumps(ablation_d_check, indent=2))
 
     champion_val_auc = v1_cfg["train_validation_metrics"]["validation_auc"]
-    with open(METRICS_DIR / "test_core_metrics.json") as f:
+    with open(metrics_path("test_core_metrics.json")) as f:
         champion_test_auc = json.load(f)["lightgbm"]["auc"]
 
     summary = {
@@ -369,7 +368,7 @@ def run_ablations() -> None:
         res["validation_auc_minus_champion"] = round(res["validation_auc"] - champion_val_auc, 4)
         res["test_auc_minus_champion_post_hoc"] = round(res["test_auc_post_hoc"] - champion_test_auc, 4)
 
-    with open(METRICS_DIR / "posthoc_ablations_summary.json", "w") as f:
+    with open(metrics_path("posthoc_ablations_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\n" + json.dumps(summary, indent=2))
 
@@ -471,7 +470,7 @@ def run_v2_evaluation() -> None:
             "served model - promoting an actual v2 champion is a separate, later action."
         ),
     }
-    with open(METRICS_DIR / "posthoc_v2_evaluation.json", "w") as f:
+    with open(metrics_path("posthoc_v2_evaluation.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 
@@ -483,7 +482,7 @@ def run_v2_evaluation() -> None:
 
 def label_24_month_corrected(loan_status: pd.Series, issue_d: pd.Series, last_pymnt_d: pd.Series) -> pd.Series:
     """Corrected label (new, chosen only after section 2 already ran
-    and reported its result; reports/metrics/posthoc_v2_evaluation.json
+    and reported its result; reports/metrics/evaluation/posthoc_v2_evaluation.json
     is left exactly as it was written):
         1 = charged off within 24 months of issue, OR charged off with
             no recorded last_pymnt_d at all (no payment ever made reads
@@ -565,7 +564,7 @@ def run_v2_label_robustness() -> None:
 
     summary = {
         "label": "post-hoc, exploratory robustness check - does not change the pre-registered decision",
-        "pre_registered_result_untouched": "reports/metrics/posthoc_v2_evaluation.json",
+        "pre_registered_result_untouched": "reports/metrics/evaluation/posthoc_v2_evaluation.json",
         "note": (
             "The corrected label was chosen after the pre-registered run already reported "
             "its result. It reclassifies two cases the original label excluded: a "
@@ -576,7 +575,7 @@ def run_v2_label_robustness() -> None:
         "results_by_label": results,
         "decision_changes": results["original"]["adopt_v2_under_this_label"] != results["corrected"]["adopt_v2_under_this_label"],
     }
-    with open(METRICS_DIR / "posthoc_v2_label_robustness.json", "w") as f:
+    with open(metrics_path("posthoc_v2_label_robustness.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -646,10 +645,10 @@ def run_v2_on_test_2015() -> None:
             "identical whether scored with or without the calibrator applied. v1's score "
             "(pd_lightgbm) and target come from the already-saved, one-time "
             "test_scored.parquet; v2 is scored fresh here with its own saved artifacts "
-            "(reports/metrics/frozen_model_config.json's lightgbm_chosen)."
+            "(reports/metrics/models/frozen_model_config.json's lightgbm_chosen)."
         ),
     }
-    with open(METRICS_DIR / "posthoc_v2_test_2015.json", "w") as f:
+    with open(metrics_path("posthoc_v2_test_2015.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 

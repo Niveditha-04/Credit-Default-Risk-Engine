@@ -15,10 +15,12 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 from src.features.allow_list import feature_columns
 from src.models.mlflow_utils import log_common_context, log_file_if_exists, setup_mlflow
+from src.report_paths import metrics_path
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
 METRICS_DIR = Path("reports/metrics")
+EXTRA_DIR = Path("reports/extra")
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
@@ -31,12 +33,12 @@ ENGINEERED_NUMERIC = [
 
 # The 4 never_flag__* columns kept as candidates: their source mths_since_*
 # column is 100% missing in Jan 2012 (rollout era, verified against
-# reports/metrics/field_rollout.csv), so
+# reports/metrics/data/field_rollout.csv), so
 # the source's own "missing" bin mixes two different populations -
 # borrowers who genuinely never had the event, and borrowers whose status
 # is simply unknown because the field didn't exist yet. The flag separates
 # these (0 / 1 / NULL-for-unknown); the raw source cannot. See
-# reports/metrics/missing_bin_diagnostic.csv for the evidence.
+# reports/extra/missing_bin_diagnostic.csv for the evidence.
 ROLLOUT_AFFECTED_SOURCES = [
     "mths_since_recent_bc_dlq",
     "mths_since_last_major_derog",
@@ -96,7 +98,8 @@ def missing_bin_diagnostic(train: pd.DataFrame) -> pd.DataFrame:
             }
         )
     df = pd.DataFrame(rows).drop_duplicates(subset="source_column")
-    df.to_csv(METRICS_DIR / "missing_bin_diagnostic.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(EXTRA_DIR / "missing_bin_diagnostic.csv", index=False)
     return df
 
 
@@ -183,7 +186,7 @@ def main() -> None:
     bp.fit(train[candidates], train["target"].values)
 
     iv_table = bp.summary().sort_values("iv", ascending=False)
-    iv_table.to_csv(METRICS_DIR / "iv_table.csv", index=False)
+    iv_table.to_csv(metrics_path("iv_table.csv"), index=False)
     print(iv_table[["name", "dtype", "n_bins", "iv"]].to_string(index=False))
 
     print("\n=== Step 3: investigate IV > 0.5 ===")
@@ -195,7 +198,7 @@ def main() -> None:
         suspicious_report.append({"feature": name, "iv": row["iv"], "bins": table.to_dict("records")})
         print(f"  {name}: IV={row['iv']:.4f}")
         print(table.to_string(index=False))
-    with open(METRICS_DIR / "iv_suspicious_investigation.json", "w") as f:
+    with open(metrics_path("iv_suspicious_investigation.json"), "w") as f:
         json.dump(suspicious_report, f, indent=2, default=str)
 
     iv_map = dict(zip(iv_table["name"], iv_table["iv"]))
@@ -271,7 +274,7 @@ def main() -> None:
         "dropped_by_sign_correction": sign_drop_log,
         "final_features": final_features,
     }
-    with open(METRICS_DIR / "feature_selection_log.json", "w") as f:
+    with open(metrics_path("feature_selection_log.json"), "w") as f:
         json.dump(selection_log, f, indent=2, default=str)
 
     print("\n=== Step 8: points scaling (600 points at odds 50:1, PDO=20) ===")
@@ -292,7 +295,7 @@ def main() -> None:
             bin_label = row["Bin"] if isinstance(row["Bin"], str) else list(row["Bin"])
             bin_points.append({"bin": bin_label, "woe": woe, "points": round(pts, 1)})
         scorecard_points[feat] = bin_points
-    with open(METRICS_DIR / "scorecard_points.json", "w") as f:
+    with open(metrics_path("scorecard_points.json"), "w") as f:
         json.dump(
             {"factor": factor, "offset": offset, "pdo": PDO, "base_points": BASE_POINTS,
              "base_odds": BASE_ODDS, "points_by_feature": scorecard_points},
@@ -327,7 +330,7 @@ def main() -> None:
     train_metrics["auc_minus_validation_auc"] = round(train_metrics["auc"] - val_metrics["auc"], 4)
 
     eval_metrics = {"train": train_metrics, "validation": val_metrics}
-    with open(METRICS_DIR / "scorecard_validation_metrics.json", "w") as f:
+    with open(metrics_path("scorecard_validation_metrics.json"), "w") as f:
         json.dump(eval_metrics, f, indent=2)
     print(json.dumps(eval_metrics, indent=2))
 
@@ -342,7 +345,8 @@ def main() -> None:
     calib_table["mean_predicted_pd_pct"] = (calib_table["mean_predicted_pd"] * 100).round(2)
     calib_table["actual_default_rate_pct"] = (calib_table["actual_default_rate"] * 100).round(2)
     calib_table = calib_table.drop(columns=["mean_predicted_pd", "actual_default_rate"])
-    calib_table.to_csv(METRICS_DIR / "scorecard_calibration_validation.csv")
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    calib_table.to_csv(EXTRA_DIR / "scorecard_calibration_validation.csv")
     print(calib_table.to_string())
 
     print("\n=== Step 9c: score distribution and default rate by score band (validation) ===")
@@ -362,7 +366,8 @@ def main() -> None:
     )
     score_band_table["default_rate_pct"] = (score_band_table["default_rate"] * 100).round(2)
     score_band_table = score_band_table.drop(columns=["default_rate"]).round(1)
-    score_band_table.to_csv(METRICS_DIR / "scorecard_score_bands_validation.csv")
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    score_band_table.to_csv(EXTRA_DIR / "scorecard_score_bands_validation.csv")
     print(score_band_table.to_string())
 
     score_summary = {
@@ -375,14 +380,14 @@ def main() -> None:
         "factor": round(factor, 3),
         "offset": round(offset, 3),
     }
-    with open(METRICS_DIR / "scorecard_score_summary.json", "w") as f:
+    with open(metrics_path("scorecard_score_summary.json"), "w") as f:
         json.dump(score_summary, f, indent=2)
     print(json.dumps(score_summary, indent=2))
 
     coef_table = coefs.reset_index()
     coef_table.columns = ["feature", "coefficient"]
     coef_table["iv"] = coef_table["feature"].map(iv_map)
-    coef_table.to_csv(METRICS_DIR / "logistic_regression_coefficients.csv", index=False)
+    coef_table.to_csv(metrics_path("logistic_regression_coefficients.csv"), index=False)
 
     import joblib
 
@@ -415,14 +420,14 @@ def run_with_mlflow() -> None:
 
         main()
 
-        with open(METRICS_DIR / "feature_selection_log.json") as f:
+        with open(metrics_path("feature_selection_log.json")) as f:
             selection_log = json.load(f)
         mlflow.log_params({
             "n_candidates": selection_log["n_candidates"],
             "n_final_features": len(selection_log["final_features"]),
         })
 
-        with open(METRICS_DIR / "scorecard_validation_metrics.json") as f:
+        with open(metrics_path("scorecard_validation_metrics.json")) as f:
             val_metrics = json.load(f)
         mlflow.log_metrics({
             "train_auc": val_metrics["train"]["auc"],
@@ -436,7 +441,7 @@ def run_with_mlflow() -> None:
         # Test (2015) is NOT rescored here - these metrics are read from
         # the file score_test.py / test_evaluation.py already committed,
         # attached for reference only.
-        test_metrics_path = METRICS_DIR / "test_core_metrics.json"
+        test_metrics_path = metrics_path("test_core_metrics.json")
         if test_metrics_path.exists():
             with open(test_metrics_path) as f:
                 test_metrics = json.load(f).get("scorecard", {})
@@ -447,11 +452,15 @@ def run_with_mlflow() -> None:
         for fname in [
             "scorecard_validation_metrics.json", "feature_selection_log.json",
             "logistic_regression_coefficients.csv", "iv_table.csv", "scorecard_points.json",
-            "scorecard_calibration_validation.csv", "scorecard_score_bands_validation.csv",
-            "scorecard_score_summary.json", "missing_bin_diagnostic.csv",
+            "scorecard_score_summary.json",
             "scorecard_calibration.json", "frozen_model_config.json",
         ]:
             log_file_if_exists(str(METRICS_DIR / fname))
+        for fname in [
+            "scorecard_calibration_validation.csv", "scorecard_score_bands_validation.csv",
+            "missing_bin_diagnostic.csv",
+        ]:
+            log_file_if_exists(str(EXTRA_DIR / fname))
 
         print(f"\nMLflow run logged: {mlflow.active_run().info.run_id}")
 

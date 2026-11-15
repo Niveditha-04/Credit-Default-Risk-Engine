@@ -77,8 +77,9 @@ def feature_columns() -> list[str]:
     return sorted(c for c, d in ALLOW_LIST.items() if d.decision == "keep_feature")
 
 
-def write_feature_audit_csv(path: str = "reports/metrics/feature_audit.csv") -> None:
+def write_feature_audit_csv(path: str = "reports/metrics/data/feature_audit.csv") -> None:
     check_completeness()
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["column", "decision", "known_at_origination", "reason"])

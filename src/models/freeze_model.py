@@ -3,7 +3,7 @@ to touch.
 
 Reads only already-saved metrics files from the scorecard and gradient
 boosting training scripts (never retrains anything) and writes
-reports/metrics/frozen_model_config.json. The test evaluation must load
+reports/metrics/models/frozen_model_config.json. The test evaluation must load
 its models, features, and calibrator from this file alone - no
 retraining, no re-tuning, no feature changes once test (2015) is in
 scope.
@@ -16,9 +16,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-METRICS_DIR = Path("reports/metrics")
+from src.report_paths import metrics_path
+
 MODELS_DIR = Path("data/processed/models")
-OUT_PATH = METRICS_DIR / "frozen_model_config.json"
+OUT_PATH = metrics_path("frozen_model_config.json")
 
 CHAMPION_AUC_TOLERANCE_NOTE = (
     "lightgbm_chosen is the champion: within 0.0021 validation AUC of "
@@ -35,16 +36,16 @@ def load_json(path: Path) -> dict:
 
 
 def main() -> None:
-    scorecard_metrics = load_json(METRICS_DIR / "scorecard_validation_metrics.json")
-    selection_log = load_json(METRICS_DIR / "feature_selection_log.json")
-    score_summary = load_json(METRICS_DIR / "scorecard_score_summary.json")
-    scorecard_calib = load_json(METRICS_DIR / "scorecard_calibration.json")
+    scorecard_metrics = load_json(metrics_path("scorecard_validation_metrics.json"))
+    selection_log = load_json(metrics_path("feature_selection_log.json"))
+    score_summary = load_json(metrics_path("scorecard_score_summary.json"))
+    scorecard_calib = load_json(metrics_path("scorecard_calibration.json"))
 
-    gbm_metrics = load_json(METRICS_DIR / "gbm_validation_metrics.json")
-    gbm_feats = load_json(METRICS_DIR / "gbm_feature_list.json")
-    gbm_calib = load_json(METRICS_DIR / "gbm_calibration.json")
-    tuning_trials = load_json(METRICS_DIR / "gbm_tuning_trials.json")
-    xgb_calib = load_json(METRICS_DIR / "xgboost_calibration.json")
+    gbm_metrics = load_json(metrics_path("gbm_validation_metrics.json"))
+    gbm_feats = load_json(metrics_path("gbm_feature_list.json"))
+    gbm_calib = load_json(metrics_path("gbm_calibration.json"))
+    tuning_trials = load_json(metrics_path("gbm_tuning_trials.json"))
+    xgb_calib = load_json(metrics_path("xgboost_calibration.json"))
 
     chosen_trial = next(t for t in tuning_trials if t["trial"] == gbm_metrics["chosen"]["trial"])
     best_trial = next(t for t in tuning_trials if t["trial"] == gbm_metrics["best"]["trial"])

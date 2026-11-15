@@ -26,7 +26,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sklearn.linear_model import LogisticRegression
 
-with open("reports/metrics/frozen_model_config.json") as f:
+with open("reports/metrics/models/frozen_model_config.json") as f:
     REAL_FEATURES = json.load(f)["lightgbm_chosen"]["features"]
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
@@ -91,7 +91,7 @@ def client(tmp_path, monkeypatch):
     # origin module would miss these copies).
     import src.evaluation.score_models as score_models_mod
 
-    def fake_load_frozen_config(path: str = "reports/metrics/frozen_model_config.json"):
+    def fake_load_frozen_config(path: str = "reports/metrics/models/frozen_model_config.json"):
         return dummy_frozen
 
     monkeypatch.setattr(score_models_mod, "load_frozen_config", fake_load_frozen_config)
@@ -183,7 +183,7 @@ def test_unseen_category_warns_but_does_not_crash(client):
 
 def test_dti_above_training_cap_warns_but_does_not_crash(client):
     """DTI has no upper bound in the schema (real values go as high as
-    49.96 in 2016, reports/metrics/eligibility_caps_by_year.csv), so a
+    49.96 in 2016, reports/metrics/data/eligibility_caps_by_year.csv), so a
     high DTI is accepted (200) but flagged as outside the training range
     (src/api/feature_ranges.json's max, currently 39.99)."""
     high_dti = dict(VALID_PAYLOAD, dti=45.0)
@@ -230,7 +230,7 @@ def engine(tmp_path, monkeypatch):
     import src.api.scoring as scoring_mod
     import src.evaluation.score_models as score_models_mod
 
-    def fake_load_frozen_config(path: str = "reports/metrics/frozen_model_config.json"):
+    def fake_load_frozen_config(path: str = "reports/metrics/models/frozen_model_config.json"):
         return dummy_frozen
 
     monkeypatch.setattr(score_models_mod, "load_frozen_config", fake_load_frozen_config)
@@ -295,7 +295,7 @@ def test_fico_range_high_below_low_is_rejected():
 # bands, the SHAP ranking behind missing-field warnings, the
 # required-field list) stores the SHA-256 of the model it was built
 # from. These read the served model's hash from
-# reports/metrics/frozen_model_config.json and fail if any serving
+# reports/metrics/models/frozen_model_config.json and fail if any serving
 # asset was built from a different model - the one way a promotion (a
 # new champion, a new calibrator) could silently leave a stale asset
 # behind. All of these files are small and committed, so this runs in
@@ -304,12 +304,12 @@ def test_fico_range_high_below_low_is_rejected():
 
 FEATURE_RANGES = Path("src/api/feature_ranges.json")
 RISK_BANDS = Path("src/api/risk_bands.json")
-FIELD_REQUIREMENTS = Path("reports/metrics/api_field_requirements.json")
-SHAP_SERVED_SUMMARY = Path("reports/metrics/shap_global_importance_served_summary.json")
+FIELD_REQUIREMENTS = Path("reports/metrics/models/api_field_requirements.json")
+SHAP_SERVED_SUMMARY = Path("reports/metrics/explain/shap_global_importance_served_summary.json")
 
 
 def _served_model_hash() -> str:
-    with open("reports/metrics/frozen_model_config.json") as f:
+    with open("reports/metrics/models/frozen_model_config.json") as f:
         frozen = json.load(f)
     return frozen["lightgbm_chosen"]["model_sha256"]
 

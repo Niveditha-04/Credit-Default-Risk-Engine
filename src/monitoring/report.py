@@ -11,9 +11,10 @@ import pandas as pd
 
 from src.monitoring.psi import bin_counts_numeric, fit_numeric_bins, psi_from_counts
 from src.monitoring.run_drift import TRAIN_PSI_REFERENCE_CUTOFF
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
+EXTRA_DIR = Path("reports/extra")
 WATCH_THRESHOLD = 0.10
 ALERT_THRESHOLD = 0.25
 
@@ -22,8 +23,8 @@ def drift_alerts() -> None:
     """Reads the already-computed monthly PSI and prints every
     feature/month crossing the watch or alert threshold. Describes what
     already happened in 2015-01 through 2018-12, not a live alert feed."""
-    data_drift = pd.read_csv(METRICS_DIR / "drift_data_monthly_psi.csv")
-    prediction_drift = pd.read_csv(METRICS_DIR / "drift_prediction_monthly.csv")
+    data_drift = pd.read_csv(metrics_path("drift_data_monthly_psi.csv"))
+    prediction_drift = pd.read_csv(metrics_path("drift_prediction_monthly.csv"))
 
     print("=== HISTORICAL REPLAY alert scan: 2015-01 to 2018-12 (not live monitoring) ===\n")
 
@@ -57,8 +58,8 @@ def drift_alerts() -> None:
 
 
 def plot_top_feature_psi() -> None:
-    monthly = pd.read_csv(METRICS_DIR / "drift_data_monthly_psi.csv")
-    crossings = pd.read_csv(METRICS_DIR / "drift_data_first_crossing.csv")
+    monthly = pd.read_csv(metrics_path("drift_data_monthly_psi.csv"))
+    crossings = pd.read_csv(metrics_path("drift_data_first_crossing.csv"))
     top_features = crossings.sort_values("max_psi_2015_2018", ascending=False).head(6)["feature"].tolist()
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -81,7 +82,7 @@ def plot_top_feature_psi() -> None:
 
 
 def plot_2015_predicted_vs_actual() -> None:
-    perf = pd.read_csv(METRICS_DIR / "drift_performance_2015_monthly.csv")
+    perf = pd.read_csv(metrics_path("drift_performance_2015_monthly.csv"))
     fig, ax = plt.subplots(figsize=(8, 4.5))
     ax.plot(perf["month"], perf["mean_predicted_pd_pct"], marker="o", label="mean predicted PD (%)")
     ax.plot(perf["month"], perf["actual_default_rate_pct"], marker="s", label="actual default rate (%)")
@@ -91,7 +92,8 @@ def plot_2015_predicted_vs_actual() -> None:
     ax.legend()
     ax.tick_params(axis="x", rotation=45)
     fig.tight_layout()
-    out = FIG_DIR / "drift_2015_predicted_vs_actual.png"
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    out = EXTRA_DIR / "drift_2015_predicted_vs_actual.png"
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(f"Saved {out} ({out.stat().st_size / 1024:.1f} KB)")
@@ -144,7 +146,7 @@ def explain_loan_to_income_psi() -> None:
         "note": "PSI rises later in 2017, once the cap starts lifting and the top bin genuinely "
         "gains mass above 0.5-1.3 - not from the capped spike itself.",
     }
-    with open(METRICS_DIR / "drift_loan_to_income_psi_explanation.json", "w") as f:
+    with open(metrics_path("drift_loan_to_income_psi_explanation.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(json.dumps(result, indent=2))
 
@@ -156,9 +158,9 @@ def combined_psi_table() -> pd.DataFrame:
     train across the full 2015-2018 historical replay - next to that
     feature's SHAP rank, so a reader can see at a glance whether the
     features that drift most are the ones the model leans on most."""
-    baseline = pd.read_csv(METRICS_DIR / "drift_baseline_psi_validation_vs_train.csv")
-    crossings = pd.read_csv(METRICS_DIR / "drift_data_first_crossing.csv")
-    shap_rank = pd.read_csv(METRICS_DIR / "shap_global_importance.csv", index_col=0)["mean_abs_shap_rank"]
+    baseline = pd.read_csv(metrics_path("drift_baseline_psi_validation_vs_train.csv"))
+    crossings = pd.read_csv(metrics_path("drift_data_first_crossing.csv"))
+    shap_rank = pd.read_csv(metrics_path("shap_global_importance.csv"), index_col=0)["mean_abs_shap_rank"]
 
     table = baseline.merge(crossings, on="feature", how="outer")
     table["shap_rank"] = table["feature"].map(shap_rank)
@@ -167,7 +169,7 @@ def combined_psi_table() -> pd.DataFrame:
         table["max_psi_2015_2018"], bins=[-0.01, 0.10, 0.25, 10], labels=["stable", "watch", "alert"]
     )
     table = table.sort_values("shap_rank")
-    table.to_csv(METRICS_DIR / "drift_combined_psi_table.csv", index=False)
+    table.to_csv(metrics_path("drift_combined_psi_table.csv"), index=False)
     return table
 
 

@@ -14,17 +14,17 @@ is meant to be rerun after every promotion.
 """
 
 import json
-from pathlib import Path
 
 import joblib
 import numpy as np
 import pandas as pd
 
-METRICS_DIR = Path("reports/metrics")
+from src.report_paths import metrics_path
+
 TEST_PARQUET = "data/processed/test.parquet"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
-OUT_CSV = METRICS_DIR / "shap_global_importance_served.csv"
-OUT_JSON = METRICS_DIR / "shap_global_importance_served_summary.json"
+OUT_CSV = metrics_path("shap_global_importance_served.csv")
+OUT_JSON = metrics_path("shap_global_importance_served_summary.json")
 
 
 def sha256_of(path) -> str:
@@ -38,7 +38,7 @@ def sha256_of(path) -> str:
 
 
 def main() -> None:
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     cfg = frozen["lightgbm_chosen"]
     feats = cfg["features"]

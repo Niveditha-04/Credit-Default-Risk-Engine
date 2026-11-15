@@ -1,5 +1,5 @@
 """Full test (2015) evaluation. Reads ONLY from
-reports/metrics/test_scored.parquet (the one-time scoring pass saved by
+reports/metrics/evaluation/test_scored.parquet (the one-time scoring pass saved by
 score_test.py) plus train.parquet (for the sub_grade-to-PD map). This
 script does not open test.parquet again. The approval economics
 (expected loss, expected net value, threshold table) are a separate
@@ -14,8 +14,10 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
 
-METRICS_DIR = Path("reports/metrics")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+from src.report_paths import metrics_path
+
+EXTRA_DIR = Path("reports/extra")
+TEST_SCORED = metrics_path("test_scored.parquet")
 TRAIN_PARQUET = "data/processed/train.parquet"
 SEED = 42
 N_BOOTSTRAP = 1000
@@ -170,11 +172,13 @@ def main() -> None:
         "note": "AUC/Gini/KS use sub_grade's ordinal rank directly (5a); Brier/calibration use the train-fit sub_grade-to-PD map (5b).",
     }
 
-    with open(METRICS_DIR / "test_core_metrics.json", "w") as f:
+    with open(metrics_path("test_core_metrics.json"), "w") as f:
         json.dump(results, f, indent=2)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
     for name, table in calib_tables.items():
-        table.to_csv(METRICS_DIR / f"test_calibration_{name}.csv")
-    sub_grade_calib.to_csv(METRICS_DIR / "test_calibration_sub_grade.csv")
+        out_path = metrics_path(f"test_calibration_{name}.csv") if name == "lightgbm" else EXTRA_DIR / f"test_calibration_{name}.csv"
+        table.to_csv(out_path)
+    sub_grade_calib.to_csv(EXTRA_DIR / "test_calibration_sub_grade.csv")
 
     # ---------------------------------------------------------------
     # 4. Bootstrap CIs
@@ -194,7 +198,7 @@ def main() -> None:
     }
     print(json.dumps({"single_model_auc_ci": ci_results, "paired_auc_diff": paired}, indent=2))
 
-    with open(METRICS_DIR / "test_bootstrap_ci.json", "w") as f:
+    with open(metrics_path("test_bootstrap_ci.json"), "w") as f:
         json.dump({"single_model_auc_ci": ci_results, "paired_auc_diff_ci": paired}, f, indent=2)
 
     # ---------------------------------------------------------------
@@ -210,7 +214,7 @@ def main() -> None:
             row[f"{name}_auc"] = round(roc_auc_score(sub["target"], sub[col]), 4)
         quarter_rows.append(row)
     quarter_df = pd.DataFrame(quarter_rows)
-    quarter_df.to_csv(METRICS_DIR / "test_stability_by_quarter.csv", index=False)
+    quarter_df.to_csv(metrics_path("test_stability_by_quarter.csv"), index=False)
     print(quarter_df.to_string(index=False))
 
     print("\n=== Stability (not fairness): AUC by Census region ===")
@@ -223,7 +227,7 @@ def main() -> None:
             row[f"{name}_auc"] = round(roc_auc_score(sub["target"], sub[col]), 4)
         region_rows.append(row)
     region_df = pd.DataFrame(region_rows)
-    region_df.to_csv(METRICS_DIR / "test_stability_by_region.csv", index=False)
+    region_df.to_csv(metrics_path("test_stability_by_region.csv"), index=False)
     print(region_df.to_string(index=False))
 
     # ---------------------------------------------------------------
@@ -261,7 +265,7 @@ def main() -> None:
     robustness_results["alt_label_ranking_by_auc"] = alt_ranking
     robustness_results["ranking_holds"] = original_ranking == alt_ranking
 
-    with open(METRICS_DIR / "test_robustness.json", "w") as f:
+    with open(metrics_path("test_robustness.json"), "w") as f:
         json.dump(robustness_results, f, indent=2)
     print(json.dumps(robustness_results, indent=2))
 

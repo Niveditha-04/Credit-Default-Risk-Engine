@@ -47,10 +47,11 @@ from src.models.scorecard import (
     reduce_by_correlation,
     reduce_by_vif,
 )
+from src.report_paths import metrics_path
 
-METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
-TEST_SCORED = METRICS_DIR / "test_scored.parquet"
+EXTRA_DIR = Path("reports/extra")
+TEST_SCORED = metrics_path("test_scored.parquet")
 TEST_PARQUET = "data/processed/test.parquet"
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -102,7 +103,7 @@ def expected_calibration_error(calib: pd.DataFrame) -> float:
 def run_calibration() -> None:
     import matplotlib.pyplot as plt
 
-    calib = pd.read_csv(METRICS_DIR / "test_calibration_lightgbm.csv")
+    calib = pd.read_csv(metrics_path("test_calibration_lightgbm.csv"))
     ece = expected_calibration_error(calib)
     print(f"Expected Calibration Error (LightGBM, test, 10 bins): {ece:.4f}")
 
@@ -131,7 +132,8 @@ def run_calibration() -> None:
             "actual_default_rate_pct": round(100 * g["target"].mean(), 2),
         })
     monthly_calib = pd.DataFrame(monthly_rows).sort_values("month")
-    monthly_calib.to_csv(METRICS_DIR / "posthoc_calibration_by_month.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    monthly_calib.to_csv(EXTRA_DIR / "posthoc_calibration_by_month.csv", index=False)
     print("\n=== Calibration by issue month ===")
     print(monthly_calib.to_string(index=False))
 
@@ -144,7 +146,8 @@ def run_calibration() -> None:
             "actual_default_rate_pct": round(100 * g["target"].mean(), 2),
         })
     fico_calib = pd.DataFrame(fico_rows)
-    fico_calib.to_csv(METRICS_DIR / "posthoc_calibration_by_fico_band.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    fico_calib.to_csv(EXTRA_DIR / "posthoc_calibration_by_fico_band.csv", index=False)
     print("\n=== Calibration by FICO band ===")
     print(fico_calib.to_string(index=False))
 
@@ -160,7 +163,7 @@ def run_calibration() -> None:
             float((fico_calib["mean_predicted_pd_pct"] - fico_calib["actual_default_rate_pct"]).abs().max()), 2
         ),
     }
-    with open(METRICS_DIR / "posthoc_calibration_summary.json", "w") as f:
+    with open(metrics_path("posthoc_calibration_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -191,7 +194,7 @@ def run_monthly_lift() -> None:
             "lift_vs_scorecard": round(auc_lgb - auc_sc, 4),
         })
     monthly = pd.DataFrame(rows).sort_values("month")
-    monthly.to_csv(METRICS_DIR / "posthoc_monthly_lift.csv", index=False)
+    monthly.to_csv(metrics_path("posthoc_monthly_lift.csv"), index=False)
     print(monthly.to_string(index=False))
 
     def summarize(col):
@@ -209,7 +212,7 @@ def run_monthly_lift() -> None:
         "lift_vs_sub_grade": summarize("lift_vs_sub_grade"),
         "lift_vs_scorecard": summarize("lift_vs_scorecard"),
     }
-    with open(METRICS_DIR / "posthoc_monthly_lift_summary.json", "w") as f:
+    with open(metrics_path("posthoc_monthly_lift_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -261,7 +264,7 @@ def run_segments() -> None:
         print(table.to_string(index=False))
 
     combined = pd.concat(all_rows, ignore_index=True)
-    combined.to_csv(METRICS_DIR / "posthoc_segment_table.csv", index=False)
+    combined.to_csv(metrics_path("posthoc_segment_table.csv"), index=False)
 
     summary = {
         "label": "post-hoc",
@@ -279,7 +282,7 @@ def run_segments() -> None:
             float(tables["issue_quarter"]["auc"].min()), float(tables["issue_quarter"]["auc"].max())
         ],
     }
-    with open(METRICS_DIR / "posthoc_segment_summary.json", "w") as f:
+    with open(metrics_path("posthoc_segment_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\n" + json.dumps(summary, indent=2))
 
@@ -325,7 +328,8 @@ def run_replay_performance() -> None:
             row[status] = int((g["loan_status"] == status).sum())
         still_open_rows.append(row)
     still_open_df = pd.DataFrame(still_open_rows)
-    still_open_df.to_csv(METRICS_DIR / "posthoc_replay_still_open_by_vintage.csv", index=False)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    still_open_df.to_csv(EXTRA_DIR / "posthoc_replay_still_open_by_vintage.csv", index=False)
     print("=== Loans by status at the March 2019 snapshot, by issue quarter (censoring check) ===")
     print(still_open_df.to_string(index=False))
 
@@ -359,7 +363,7 @@ def run_replay_performance() -> None:
 
     # Same 24-month label, applied to test (2015), by quarter, using the
     # existing one-time test scoring pass's saved predictions.
-    test_scored = pd.read_parquet(METRICS_DIR / "test_scored.parquet")
+    test_scored = pd.read_parquet(metrics_path("test_scored.parquet"))
     con2 = duckdb.connect()
     test_status = con2.execute(
         f"SELECT id, loan_status FROM read_parquet('{CLEANED_PARQUET}') "
@@ -381,7 +385,7 @@ def run_replay_performance() -> None:
         })
 
     result = pd.DataFrame(test_rows + replay_rows)
-    result.to_csv(METRICS_DIR / "posthoc_replay_24m_performance.csv", index=False)
+    result.to_csv(metrics_path("posthoc_replay_24m_performance.csv"), index=False)
     print(result.to_string(index=False))
 
     summary = {
@@ -406,7 +410,7 @@ def run_replay_performance() -> None:
             round(float(result[result["source"].str.startswith("test")]["auc"].max()), 4),
         ],
     }
-    with open(METRICS_DIR / "posthoc_replay_24m_performance_summary.json", "w") as f:
+    with open(metrics_path("posthoc_replay_24m_performance_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
@@ -471,14 +475,14 @@ def run_walkforward() -> None:
     results = []
 
     # ---- Fold 1: train 2012-2013 -> evaluate 2014 (already fit, reuse) ----
-    with open(METRICS_DIR / "frozen_model_config.json") as f:
+    with open(metrics_path("frozen_model_config.json")) as f:
         frozen = json.load(f)
     # v1's own train/validation metrics moved to lightgbm_v1_history when
     # v2 was promoted (frozen_model_config.json's lightgbm_chosen now
     # describes v2); fold 1 is specifically v1's already-fit split, so it
     # reads from history, same number (0.6834) as before the promotion.
     lgb_fold1_auc = frozen["lightgbm_v1_history"]["train_validation_metrics"]["validation_auc"]
-    with open(METRICS_DIR / "scorecard_validation_metrics.json") as f:
+    with open(metrics_path("scorecard_validation_metrics.json")) as f:
         sc_metrics = json.load(f)
     scorecard_fold1_auc = sc_metrics["validation"]["auc"]
 
@@ -548,8 +552,8 @@ def run_walkforward() -> None:
             round(max(r["lift_vs_sub_grade"] for r in results), 4),
         ],
     }
-    results_df.to_csv(METRICS_DIR / "posthoc_walkforward.csv", index=False)
-    with open(METRICS_DIR / "posthoc_walkforward_summary.json", "w") as f:
+    results_df.to_csv(metrics_path("posthoc_walkforward.csv"), index=False)
+    with open(metrics_path("posthoc_walkforward_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 

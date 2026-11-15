@@ -23,9 +23,9 @@ from sklearn.metrics import brier_score_loss
 
 from src.models.gbm import fit_platt
 from src.models.math_utils import apply_calibrator
+from src.report_paths import metrics_path
 
 VALIDATION_PARQUET = "data/processed/validation.parquet"
-METRICS_DIR = Path("reports/metrics")
 MODELS_DIR = Path("data/processed/models")
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
@@ -85,7 +85,7 @@ def main() -> None:
 
     xgb_result, xgb_calibrator = calibrate_model(xgb_pred, y_validation, fit_mask, holdout_mask)
     joblib.dump(xgb_calibrator, xgb_dir / "calibrator.joblib")
-    with open(METRICS_DIR / "xgboost_calibration.json", "w") as f:
+    with open(metrics_path("xgboost_calibration.json"), "w") as f:
         json.dump(xgb_result, f, indent=2)
     print("=== XGBoost calibration ===")
     print(json.dumps(xgb_result, indent=2))
@@ -106,7 +106,7 @@ def main() -> None:
 
     sc_result, sc_calibrator = calibrate_model(sc_pred, y_validation, fit_mask, holdout_mask)
     joblib.dump(sc_calibrator, sc_dir / "calibrator.joblib")
-    with open(METRICS_DIR / "scorecard_calibration.json", "w") as f:
+    with open(metrics_path("scorecard_calibration.json"), "w") as f:
         json.dump(sc_result, f, indent=2)
     print("\n=== Scorecard calibration ===")
     print(json.dumps(sc_result, indent=2))

@@ -20,7 +20,7 @@ Four of those six source columns (mths_since_recent_bc_dlq,
 mths_since_recent_inq, mths_since_recent_revol_delinq,
 mths_since_last_major_derog) are 100% missing in January 2012: the field
 did not exist yet in LendingClub's schema, confirmed at month granularity
-in reports/metrics/field_rollout.csv. For loans issued before the field
+in reports/metrics/data/field_rollout.csv. For loans issued before the field
 existed, a missing value does not mean "this never happened" - it means
 "not recorded yet". The flag is NULL for those loans rather than 1.
 Two different gates are used, because August 2012 (the first calendar
@@ -181,7 +181,8 @@ def main() -> None:
     summary["n_engineered_features"] = len(engineered_feature_names())
     summary["n_hard_excluded_columns_defined"] = len(hard_excluded_columns())
 
-    with open("reports/metrics/build_features_summary.json", "w") as f:
+    Path("reports/metrics/data").mkdir(parents=True, exist_ok=True)
+    with open("reports/metrics/data/build_features_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
     print(json.dumps(summary, indent=2))
 
