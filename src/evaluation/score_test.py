@@ -2,7 +2,6 @@
 
 Rules this script follows:
   - Load models ONLY from reports/metrics/frozen_model_config.json.
-  - Log this access (timestamp, script, row count).
   - After this script runs and results are seen, no model, feature, or
     calibration changes.
 
@@ -69,10 +68,6 @@ def main() -> None:
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     out.to_parquet(OUT_PATH, index=False)
     lock_frozen_file(OUT_PATH)
-
-        "score_test.py", len(out),
-        f"Saved scored test to {OUT_PATH} (3 model PDs + economics/benchmark/stability/robustness fields)",
-    )
 
     print(f"Scored and saved {len(out)} test rows to {OUT_PATH}")
     print(out[["pd_lightgbm", "pd_xgboost", "pd_scorecard", "target"]].describe())

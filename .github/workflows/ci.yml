@@ -31,7 +31,12 @@ jobs:
           path: coverage.xml
 
       - name: Build dummy model for Docker build (CI has no real, gitignored model)
-        run: python .github/scripts/build_dummy_model_for_ci.py
+        run: |
+          python -c "
+          from pathlib import Path
+          from tests.conftest import build_dummy_lightgbm_artifacts
+          build_dummy_lightgbm_artifacts(Path('data/processed/models/lightgbm'))
+          "
 
       - name: Docker build
         run: docker build -t credit-default-risk-engine:ci .

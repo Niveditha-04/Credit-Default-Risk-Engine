@@ -110,12 +110,6 @@ def bootstrap_gap_difference(
 
 def v1_on_test() -> pd.DataFrame:
     scored = pd.read_parquet(TEST_SCORED)
-        "dti_cap_extrapolation.py",
-        len(scored),
-        "Post-hoc, descriptive only: re-read saved test_scored.parquet (plus test.parquet for "
-        "dti, not stored in test_scored.parquet) to check whether v1's calibration gap differs "
-        "for loans above its own train-time DTI cap (34.99). No model, feature, or policy change.",
-    )
     dti = pd.read_parquet(TEST_PARQUET, columns=["id", "dti"])
     df = scored.merge(dti, on="id", how="left")
     assert df["dti"].isna().sum() == 0
@@ -128,13 +122,6 @@ def v1_on_test() -> pd.DataFrame:
 
 def v2_on_2016_holdout() -> pd.DataFrame:
     population = build_eval_population()
-        "dti_cap_extrapolation.py",
-        len(population),
-        "Post-hoc, descriptive only: re-scores the served v2 model on the 2016 holdout "
-        "(already used for the pre-registered decision rule) to check whether its calibration "
-        "gap differs for loans above its own train-time DTI cap (39.99). No model, feature, "
-        "or policy change.",
-    )
     frozen = load_frozen_config()
     cfg = frozen["lightgbm_chosen"]
     train = pd.read_parquet(TRAIN_PARQUET)

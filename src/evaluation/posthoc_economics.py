@@ -2,9 +2,7 @@
 grouped by topic in one module instead of three separate scripts. Every
 check here is a second, separate read of already-saved predictions
 after the one-time evaluation that chose and froze the champion; none
-of them changes a model, feature, or policy decision. Each section
-shared loader for every check that re-reads
-reports/metrics/test_scored.parquet).
+of them changes a model, feature, or policy decision.
 
 Sections, run in order by main():
   1. Matched-volume economics: realized return per dollar funded, at
@@ -144,12 +142,7 @@ def paired_bootstrap_matched_volume(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_matched_volume_economics() -> None:
-    df = load_test_scored(
-        "posthoc_matched_volume_economics.py",
-        "Post-hoc: re-read saved test_scored.parquet to fund each model's own top N% of "
-        "test loans by its own score, an evaluation device, not a policy. No model, "
-        "feature, or policy change.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
 
     pd_map = sub_grade_train_pd_map()
     df["pd_sub_grade_mapped"] = df["sub_grade"].map(pd_map)
@@ -288,13 +281,7 @@ def run_funding_optimization() -> None:
     in section 1, applied in reverse to annualize the return itself
     rather than just the cost - it is an approximation, not a true
     duration-weighted yield."""
-    df = load_test_scored(
-        "posthoc_funding_optimization.py",
-        "Post-hoc: re-read saved test_scored.parquet to find, per model and cost of "
-        "funds, the funding fraction that maximizes total realized net cash after cost, "
-        "and the annualized return on average capital at that optimum. No model, "
-        "feature, or policy change.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
 
     df["pd_sub_grade_mapped"] = df["sub_grade"].map(sub_grade_train_pd_map())
     last_pymnt = pd.to_datetime(df["last_pymnt_d"])
@@ -491,13 +478,6 @@ def run_subgrade_lightgbm_matched_volume() -> None:
         train_sg[col] = train_sg[col].astype("category")
         validation_sg[col] = validation_sg[col].astype("category").cat.set_categories(train_sg[col].cat.categories)
         test_sg[col] = test_sg[col].astype("category").cat.set_categories(train_sg[col].cat.categories)
-
-        "posthoc_subgrade_lightgbm_matched_volume.py",
-        len(test_sg),
-        "Post-hoc: refits LightGBM with champion features + sub_grade (ablation c), "
-        "scores it on validation (2014) and test (2015, post-hoc), and compares matched "
-        "-volume economics against sub_grade alone. No model, feature, or policy change.",
-    )
 
     # Refit ablation c (same methodology as src.models.posthoc_v2's
     # ablations section: train 2012-2013, early-stopped against validation 2014).

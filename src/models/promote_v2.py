@@ -115,15 +115,6 @@ def calibrate_v2_on_test(booster: lgb.Booster, champion_feats: list[str]) -> tup
     for col in CATEGORICAL_COLUMNS:
         test[col] = test[col].astype("category")
 
-        "promote_v2.py",
-        len(test),
-        "Explicit, authorized read of test (2015) for CALIBRATION ONLY, not evaluation: "
-        "v2 was already selected against v1 on 2016 vintages, before this read, under the "
-        "pre-registered rule in docs/v2_decision_rule.md. This fits v2's own Platt "
-        "calibrator, out-of-sample within 2015 itself, the same discipline already used "
-        "for v1's calibration on 2014. No model selection happens here.",
-    )
-
     raw_pred = booster.predict(test[champion_feats], num_iteration=booster.best_iteration)
     y = test["target"].values
     issue_month = test["issue_d"].values

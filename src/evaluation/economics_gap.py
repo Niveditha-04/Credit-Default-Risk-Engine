@@ -5,10 +5,10 @@ rather than touching raw test rows again.
 fixed_approval_rate_and_gap_analysis():
   1. Fixed approval-rate (70/80/90%) comparison on test, for 3 scores
      (LightGBM, scorecard, sub_grade map). XGBoost is not part of this
-     table: it has no saved validation-set predictions, and the frozen
-     way to re-score validation with it to set a cut-off. Cut-offs for
-     the 3 scores shown are set on VALIDATION per score, then applied as
-     a fixed value to test - test's own distribution is never used to
+     table: it has no saved validation-set predictions, so there is no
+     way to set a cut-off for it on validation. Cut-offs for the 3
+     scores shown are set on VALIDATION per score, then applied as a
+     fixed value to test - test's own distribution is never used to
      pick a cut-off.
   2. Ex-ante/ex-post gap decomposition for LightGBM: how much of the gap is
      just the model's mean predicted PD (13.74%) being below the actual
@@ -23,8 +23,8 @@ gap_remainder_diagnostic():
   the PD-level-drift portion) is explained by the train-derived
   interest-ratio and LGD assumptions not matching what actually happened
   on test's own Fully Paid / Charged Off loans. Reads one additional
-  field (total_rec_int) from the cleaned table for the same already-
-  scored test population, logged as an evaluation-only test access.
+  field (total_rec_int) from the cleaned table for the same already
+  -scored test population.
 """
 
 import json
@@ -32,7 +32,6 @@ from pathlib import Path
 
 import duckdb
 import pandas as pd
-
 
 METRICS_DIR = Path("reports/metrics")
 TEST_SCORED = METRICS_DIR / "test_scored.parquet"
@@ -297,10 +296,6 @@ def gap_remainder_diagnostic() -> None:
     ).fetchdf()
     test = test.merge(extra, on="id", how="left")
     assert test["total_rec_int"].isna().sum() == 0
-        "economics_gap.py (gap_remainder_diagnostic)", len(test),
-        "Re-read saved test_scored.parquet + joined total_rec_int (evaluation-only field, same test population "
-        "already scored) to diagnose the ex-ante/ex-post remainder gap. No model or policy changes.",
-    )
 
     test["scheduled_interest"] = test["installment"] * 36 - test["loan_amnt"]
     test["realized_net_cash"] = test["total_pymnt"] - test["collection_recovery_fee"] - test["funded_amnt"]

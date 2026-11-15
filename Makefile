@@ -32,10 +32,9 @@ data:
 	$(VENV)/python -m src.data.clean
 	$(VENV)/python -m src.data.target
 
-# Allow-list, rollout diagnostics, final train/validation/test/replay tables.
+# Rollout/missingness diagnostics, allow-list, final train/validation/test/replay tables.
 features: data
-	$(VENV)/python -m src.features.missing_by_year
-	$(VENV)/python -m src.features.field_rollout
+	$(VENV)/python -m src.data.audit
 	$(VENV)/python -m src.features.allow_list
 	$(VENV)/python -m src.features.build_features
 
@@ -96,10 +95,10 @@ test:
 drift:
 	$(VENV)/python -m src.monitoring.run_drift
 
-# Load models:/credit_default_lightgbm_champion@champion and assert it
+# Loads models:/credit_default_lightgbm_champion@champion and asserts it
 # matches the frozen model exactly on validation.
 verify:
-	$(VENV)/python -m src.models.verify_champion_alias
+	$(VENV)/pytest tests/test_models.py -k champion_alias -m requires_data -q
 
 # Port 5001, not MLflow's default 5000 - macOS AirPlay Receiver listens on
 # 5000 and silently intercepts it.

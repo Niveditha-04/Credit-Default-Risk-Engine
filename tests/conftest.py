@@ -1,12 +1,14 @@
-"""CI only: builds a tiny, structurally-valid dummy LightGBM booster and
-Platt calibrator at the exact paths the Dockerfile COPYs from
-(data/processed/models/lightgbm/), so `docker build` can be verified in
-CI without the real, gitignored, frozen champion artifacts. Same pattern
-tests/test_api.py already uses to test the API against a dummy model,
-on the real committed frozen feature list (reports/metrics/
-frozen_model_config.json) so the Dockerfile's COPY step and the served
-app's startup both exercise the real feature contract. Never run outside
-CI - this never touches the real frozen artifacts or any committed file.
+"""Shared pytest fixtures.
+
+build_dummy_lightgbm_artifacts() is also used directly (not through
+pytest) by CI, to write a tiny, structurally-valid dummy LightGBM
+booster and Platt calibrator at the exact paths the Dockerfile COPYs
+from (data/processed/models/lightgbm/), so `docker build` can be
+verified in CI without the real, gitignored, frozen champion artifacts.
+Built on the real committed frozen feature list
+(reports/metrics/frozen_model_config.json) so the Dockerfile's COPY
+step and the served app's startup both exercise the real feature
+contract.
 """
 
 import json
@@ -16,14 +18,14 @@ import joblib
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.linear_model import LogisticRegression
 
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 N_SYNTHETIC_ROWS = 200
-MODEL_DIR = Path("data/processed/models/lightgbm")
 
 
-def main() -> None:
+def build_dummy_lightgbm_artifacts(out_dir: Path) -> None:
     with open("reports/metrics/frozen_model_config.json") as f:
         feats = json.load(f)["lightgbm_chosen"]["features"]
 
@@ -53,11 +55,13 @@ def main() -> None:
     calibrator = LogisticRegression()
     calibrator.fit(raw_preds.reshape(-1, 1), target)
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump(booster, MODEL_DIR / "model_chosen.joblib")
-    joblib.dump(calibrator, MODEL_DIR / "calibrator.joblib")
-    print(f"Wrote dummy {MODEL_DIR / 'model_chosen.joblib'} and {MODEL_DIR / 'calibrator.joblib'} for CI docker build")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(booster, out_dir / "model_chosen.joblib")
+    joblib.dump(calibrator, out_dir / "calibrator.joblib")
 
 
-if __name__ == "__main__":
-    main()
+@pytest.fixture
+def dummy_lightgbm_artifacts_dir(tmp_path) -> Path:
+    out_dir = tmp_path / "dummy_lightgbm"
+    build_dummy_lightgbm_artifacts(out_dir)
+    return out_dir

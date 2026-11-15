@@ -112,17 +112,8 @@ def compute_baseline_psi(train: pd.DataFrame, validation: pd.DataFrame, features
 
 def build_2015_2018_population() -> pd.DataFrame:
     """test.parquet (2015, labelled) + replay.parquet (2016-2018, target
-    forced NULL) - both already filtered to 36-month, individual loans.
-    Logs this read of test: a second, separate read from the one-time
-    evaluation scoring pass, used only for 2015-only performance drift
-    (labels available), never for model, feature, or policy changes."""
+    forced NULL) - both already filtered to 36-month, individual loans."""
     test = pd.read_parquet(TEST_PARQUET)
-        "run_drift.py",
-        len(test),
-        "Read test.parquet (2015) for historical replay: feature values for data/prediction "
-        "drift and the target for 2015-only performance drift, separate from the one-time "
-        "evaluation scoring pass. No model, feature, or policy change.",
-    )
     replay = pd.read_parquet(REPLAY_PARQUET)
     assert replay["target"].isna().all(), "replay target must be entirely NULL - no labels for 2016-2018"
 
@@ -136,8 +127,8 @@ def build_2015_2018_population() -> pd.DataFrame:
 
 def score_population(df: pd.DataFrame, frozen_cfg: dict) -> np.ndarray:
     """Batch score with the frozen champion. For the 2015 rows, reuses
-    the PD already computed and logged by score_test.py's one-time
-    evaluation scoring pass (joined by id) instead of re-deriving it;
+    the PD already computed by score_test.py's one-time evaluation
+    scoring pass (joined by id) instead of re-deriving it;
     2016-2018 (replay) rows are scored fresh here, since nothing else
     in the project scores them."""
     pd_values = pd.Series(index=df.index, dtype=float)

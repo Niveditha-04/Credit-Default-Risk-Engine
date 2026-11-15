@@ -1,4 +1,5 @@
-# in the build context. The two exceptions are the baked champion artifacts
+# No raw or interim data, no bulk processed splits, no mlruns in the
+# build context. The two exceptions are the baked champion artifacts
 # (data/processed/models/lightgbm/model_chosen.joblib and calibrator.joblib)
 # that the Dockerfile explicitly COPYs - everything else under data/ is
 # excluded below, including the other two models (scorecard, xgboost) and

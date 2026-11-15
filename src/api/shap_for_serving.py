@@ -20,7 +20,6 @@ import joblib
 import numpy as np
 import pandas as pd
 
-
 METRICS_DIR = Path("reports/metrics")
 TEST_PARQUET = "data/processed/test.parquet"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
@@ -46,12 +45,6 @@ def main() -> None:
     model_hash = sha256_of(cfg["model_path"])
 
     test = pd.read_parquet(TEST_PARQUET)
-        "shap_for_serving.py",
-        len(test),
-        "Serving asset, not evaluation: re-read test.parquet to rank features by mean "
-        "|SHAP| for the currently-served model, used only by the API's missing-field "
-        "warning. No model, feature, or policy change.",
-    )
     for col in CATEGORICAL_COLUMNS:
         test[col] = test[col].astype("category")
     X = test[feats]

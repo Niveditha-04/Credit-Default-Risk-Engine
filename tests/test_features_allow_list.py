@@ -1,8 +1,10 @@
-"""src/features/allow_list.py: the allow-list declaration is pure,
-in-memory data (built from the 151 raw columns), so these functions need
-no real data file to test."""
+"""src/features/allow_list.py (pure, in-memory allow-list data, no real
+data file needed) and src.models.gbm.feature_list's exact assertion
+against it (frozen_model_config.json is a small, committed metrics
+file, not real training data, so this all runs in CI)."""
 
 import csv
+import json
 
 import pytest
 
@@ -16,6 +18,10 @@ from src.features.allow_list import (
     main,
     write_feature_audit_csv,
 )
+from src.models.gbm import feature_list
+
+with open("reports/metrics/frozen_model_config.json") as f:
+    FROZEN_FEATURES = json.load(f)["lightgbm_chosen"]["features"]
 
 
 def test_check_completeness_passes_for_the_real_allow_list():
@@ -78,3 +84,40 @@ def test_main_runs_against_the_real_allow_list(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert f"All {len(ALLOW_LIST)} columns have a decision." in out
     assert (tmp_path / "reports" / "metrics" / "feature_audit.csv").exists()
+
+
+# ---------------------------------------------------------------------
+# Exact allow-list assertion (src.models.gbm.feature_list): the model's
+# feature list must equal the frozen allow-list exactly, not just avoid
+# a handful of specifically-named banned columns.
+# ---------------------------------------------------------------------
+
+
+def test_real_table_columns_pass():
+    train_columns = ["id", "issue_d", "split", "target"] + FROZEN_FEATURES
+    assert feature_list(train_columns) == FROZEN_FEATURES
+
+
+def test_injected_extra_column_is_caught():
+    """A stray extra column, however it got there, must be rejected:
+    inject one once, confirm the assertion fires, then (implicitly,
+    since nothing is mutated on disk) the check reverts -
+    this test never writes to any file."""
+    train_columns = ["id", "issue_d", "split", "target"] + FROZEN_FEATURES + ["issue_d_1"]
+    with pytest.raises(AssertionError, match="issue_d_1"):
+        feature_list(train_columns)
+
+
+def test_injected_banned_column_is_caught():
+    """A column that predates origination (not even on the old deny-list)
+    must also be caught - this is the entire point of an allow-list over
+    a deny-list."""
+    train_columns = ["id", "issue_d", "split", "target"] + FROZEN_FEATURES + ["grade"]
+    with pytest.raises(AssertionError, match="grade"):
+        feature_list(train_columns)
+
+
+def test_missing_column_is_caught():
+    train_columns = ["id", "issue_d", "split", "target"] + FROZEN_FEATURES[1:]
+    with pytest.raises(AssertionError, match=FROZEN_FEATURES[0]):
+        feature_list(train_columns)

@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# notes carried forward - macOS needs libomp via brew instead, Linux/Docker
-# needs libgomp1 via apt).
+# libgomp1: LightGBM's runtime OpenMP dependency on Linux. macOS needs
+# libomp via brew instead; Linux/Docker needs libgomp1 via apt.
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 

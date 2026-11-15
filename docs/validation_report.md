@@ -4,6 +4,7 @@
 
 - Time-based split, no shuffling across time.
 - All models, features, hyperparameters, calibration method, and the approval threshold were frozen on train and validation (2012-2014) before test (2015) was read.
+- Test was read once for the primary evaluation. Every read after that is post-hoc.
 
 ## Population
 
@@ -36,6 +37,8 @@ FICO floor holds at 660 every year; the DTI ceiling does not (`reports/metrics/e
 | v1 (cap 34.99) | Test (2015) | +1.01 pp (n=273,086) | +5.07 pp (n=9,701) |
 | v2 (cap 39.99) | 2016 holdout, relative to in-range | - | +0.19 pp (35-40), +1.58 pp (>40, n=1,746), neither significant |
 
+(`reports/metrics/dti_cap_extrapolation_v1_test.csv`, `reports/metrics/dti_cap_extrapolation_v2_2016.csv`, `reports/metrics/dti_cap_extrapolation_v2_2016_relative.csv`)
+
 v1 under-predicts loans above its own cap by about 5x the in-range gap. v2's absolute gaps on the 2016 holdout are negative throughout (its calibrator targets lifetime default against a 24-month label); the relative comparison above removes that bias and shows the same direction as v1, smaller and not conclusive.
 
 ## Results (test, 2015)
@@ -47,7 +50,9 @@ v1 under-predicts loans above its own cap by about 5x the in-range gap. v2's abs
 | Scorecard | 0.6711 | 0.6686-0.6735 | 0.3421 | 0.2480 | 0.12105 | 0.0445 |
 | sub_grade | 0.6786 | 0.6760-0.6812 | 0.3573 | 0.2619 | 0.12153 | 0.0407 |
 
-Paired AUC differences, 95% bootstrap CI, 1,000 resamples:
+(`reports/metrics/test_core_metrics.json`, `reports/metrics/test_bootstrap_ci.json`)
+
+Paired AUC differences, 95% bootstrap CI, 1,000 resamples (`reports/metrics/test_bootstrap_ci.json`):
 
 | Comparison | Mean diff | 95% CI | Significant |
 |---|---|---|---|
@@ -81,7 +86,7 @@ Fold 2's LightGBM AUC (0.6962) beats the frozen champion's own test AUC (0.6872)
 
 ## Partial performance on replay (post-hoc, exploratory)
 
-One window, January-October 2016, has enough seasoning (29+ months by the March 2019 snapshot) for a fixed 24-month label (`reports/metrics/posthoc_replay_24m_performance.csv`). 5,929 of 265,967 loans (2.2%) excluded as unlabelable.
+One window, January-October 2016, has enough seasoning (29+ months by the March 2019 snapshot) for a fixed 24-month label (`reports/metrics/posthoc_replay_24m_performance.csv`). 5,929 of 265,967 loans (2.2%) excluded as unlabelable (`reports/metrics/posthoc_replay_24m_performance_summary.json`).
 
 | Population | AUC range (24-month label) |
 |---|---|
@@ -141,7 +146,7 @@ Four ablations, champion's frozen hyperparameters, no tuning search. Validation 
 | c. Champion features + sub_grade | 0.6891 | 0.6967 |
 | d. Champion features, 8 monotone constraints | 0.6833 | 0.6871 |
 
-Ablation (b) scores above the deployed scorecard but has 15 sign-mismatched WOE coefficients out of 63: the correlation/VIF/sign-correction steps buy stability, not AUC. Ablation (d) costs no detectable AUC (-0.0001, within the 0.0007 retraining-noise spread, `reports/metrics/training_order_sensitivity.json`) and led to v2.
+The 63 candidates' Information Value tops out at 0.13 (`reports/metrics/iv_table.csv`), well under the 0.5 threshold this project treats as a possible-leakage flag; none trips it. Ablation (b) scores above the deployed scorecard but has 15 sign-mismatched WOE coefficients out of 63: the correlation/VIF/sign-correction steps buy stability, not AUC. Ablation (d) costs no detectable AUC (-0.0001, within the 0.0007 retraining-noise spread, `reports/metrics/training_order_sensitivity.json`) and led to v2.
 
 Income monotonicity (mean SHAP for `annual_inc`, binned): the champion's curve reverses by 0.0926 log-odds after its peak; ablation (d)'s constrained curve reverses by only 0.0041 (95.6% smaller).
 
@@ -216,6 +221,8 @@ Out-of-sample on validation (fit 2014-01 to 2014-09, holdout 2014-10 to 2014-12)
 | Largest monthly gap | 1.89 pp |
 | Largest FICO-band gap | 1.90 pp |
 
+(`reports/metrics/test_core_metrics.json`, `reports/metrics/posthoc_calibration_summary.json`)
+
 Reliability plot: `reports/figures/posthoc_reliability_plot.png`.
 
 ### Recalibration policy (intent, not running code)
@@ -250,6 +257,8 @@ Threshold set on validation and train, maximizing total expected net value. Cuto
 | XGBoost | 99.12% | 14.63% | $274.9M | $232.2M | $42.7M (15.6%) |
 | Scorecard | 99.82% | 14.83% | $292.6M | $230.2M | $62.4M (21.3%) |
 
+(`reports/metrics/test_economics_at_fixed_cutoff.csv`)
+
 Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean on train charged-off loans. Sensitivity table: `reports/metrics/test_lgd_sensitivity.csv`. No cost of capital, operating cost, or time value of money in this EV model.
 
 ### Gap decomposition, LightGBM
@@ -268,6 +277,8 @@ Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean
 | LightGBM | 70% | 69.91% | $196.8M |
 | LightGBM | 80% | 79.59% | $213.7M |
 | LightGBM | 90% | 89.47% | $228.3M |
+
+(`reports/metrics/test_fixed_approval_rate_comparison.csv`)
 
 A different "70%" from decision quality below (fixed PD cutoff vs. exact top-N% rank): both correct under their own definition.
 

@@ -1,15 +1,68 @@
 """Data audits on the cleaned, typed LendingClub table (all years):
-status by year/term, maturity (resolved share), and payment-timing audit.
+status by year/term, maturity (resolved share), payment-timing, field
+-rollout timing, and missing-value rate by issue year.
 """
 
 import json
 from pathlib import Path
 
 import duckdb
+import pandas as pd
 
 CLEANED_PARQUET = Path("data/interim/accepted_2007_to_2018Q4_cleaned.parquet")
+FIELD_ROLLOUT_OUT_CSV = Path("reports/metrics/field_rollout.csv")
+MISSING_BY_YEAR_OUT_CSV = Path("reports/metrics/missing_by_year.csv")
 
 RESOLVED_STATUSES = ("Fully Paid", "Charged Off", "Default")
+
+# Columns kept as features whose train-year-average missingness is driven by
+# a 2012 collection rollout (identified in allow_list.py).
+ROLLOUT_KEEP_FEATURE_COLUMNS = [
+    "mo_sin_old_il_acct",
+    "mo_sin_old_rev_tl_op",
+    "mo_sin_rcnt_rev_tl_op",
+    "mo_sin_rcnt_tl",
+    "mort_acc",
+    "num_accts_ever_120_pd",
+    "num_actv_bc_tl",
+    "num_actv_rev_tl",
+    "num_bc_sats",
+    "num_bc_tl",
+    "num_il_tl",
+    "num_op_rev_tl",
+    "num_rev_accts",
+    "num_rev_tl_bal_gt_0",
+    "num_sats",
+    "num_tl_120dpd_2m",
+    "num_tl_30dpd",
+    "num_tl_90g_dpd_24m",
+    "num_tl_op_past_12m",
+    "pct_tl_nvr_dlq",
+    "total_rev_hi_lim",
+    "avg_cur_bal",
+    "tot_coll_amt",
+    "tot_cur_bal",
+    "tot_hi_cred_lim",
+    "total_bal_ex_mort",
+    "total_bc_limit",
+    "total_il_high_credit_limit",
+    "acc_open_past_24mths",
+    "bc_open_to_buy",
+    "bc_util",
+    "percent_bc_gt_75",
+    "mths_since_recent_bc",
+]
+
+# never_flag source columns confirmed to show the same 100%-missing-in-
+# Jan-2012 rollout signature (checked at month granularity).
+ROLLOUT_NEVER_FLAG_SOURCE_COLUMNS = [
+    "mths_since_recent_bc_dlq",
+    "mths_since_recent_inq",
+    "mths_since_recent_revol_delinq",
+    "mths_since_last_major_derog",
+]
+
+ALL_ROLLOUT_COLUMNS = ROLLOUT_KEEP_FEATURE_COLUMNS + ROLLOUT_NEVER_FLAG_SOURCE_COLUMNS
 
 
 def status_by_year(con: duckdb.DuckDBPyConnection) -> None:
@@ -136,6 +189,101 @@ def eligibility_caps_by_year(con: duckdb.DuckDBPyConnection) -> None:
     print(df.to_string(index=False))
 
 
+def field_rollout(con: duckdb.DuckDBPyConnection) -> None:
+    """For every column identified as having a 2012 data-collection
+    rollout (100% missing in January 2012, meaning the field did not
+    exist yet in LendingClub's schema), find the first issue month it
+    has any non-null value. Computed across the full cleaned dataset
+    (all years, all terms, all application types) since field
+    availability is a LendingClub-wide schema decision, not specific
+    to this project's modelling population."""
+    rows = []
+    for col in ALL_ROLLOUT_COLUMNS:
+        first_month = con.execute(
+            f"""
+            SELECT strftime(min(issue_d), '%Y-%m')
+            FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
+            WHERE "{col}" IS NOT NULL
+            """
+        ).fetchone()[0]
+
+        jan_2012_missing_pct = con.execute(
+            f"""
+            SELECT round(100.0 * sum(CASE WHEN "{col}" IS NULL THEN 1 ELSE 0 END) / count(*), 2)
+            FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
+            WHERE term = 36 AND application_type = 'Individual'
+              AND EXTRACT(year FROM issue_d) = 2012 AND EXTRACT(month FROM issue_d) = 1
+            """
+        ).fetchone()[0]
+
+        aug_2012_missing_pct = con.execute(
+            f"""
+            SELECT round(100.0 * sum(CASE WHEN "{col}" IS NULL THEN 1 ELSE 0 END) / count(*), 2)
+            FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
+            WHERE term = 36 AND application_type = 'Individual'
+              AND EXTRACT(year FROM issue_d) = 2012 AND EXTRACT(month FROM issue_d) = 8
+            """
+        ).fetchone()[0]
+
+        rows.append(
+            {
+                "column": col,
+                "first_issue_month_non_null": first_month,
+                "jan_2012_missing_pct": jan_2012_missing_pct,
+                "aug_2012_missing_pct": aug_2012_missing_pct,
+                "used_as_never_flag_source": col in ROLLOUT_NEVER_FLAG_SOURCE_COLUMNS,
+            }
+        )
+
+    df = pd.DataFrame(rows).sort_values("first_issue_month_non_null")
+    FIELD_ROLLOUT_OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(FIELD_ROLLOUT_OUT_CSV, index=False)
+    print(df.to_string(index=False))
+    print(f"\nWrote {FIELD_ROLLOUT_OUT_CSV} ({len(df)} rows)")
+
+
+def missing_by_year(con: duckdb.DuckDBPyConnection) -> None:
+    """Missing-value percentage by issue year, for every raw column,
+    within the 2012-2015 individual/36-month modelling population.
+    This is the evidence behind the allow_list.py drop/keep decisions
+    for columns that rolled out partway through the data's history."""
+    all_cols = [
+        r[0]
+        for r in con.execute(
+            f"DESCRIBE SELECT * FROM read_parquet('{CLEANED_PARQUET.as_posix()}')"
+        ).fetchall()
+    ]
+
+    base = f"""
+        FROM read_parquet('{CLEANED_PARQUET.as_posix()}')
+        WHERE term = 36
+          AND application_type = 'Individual'
+          AND EXTRACT(year FROM issue_d) BETWEEN 2012 AND 2015
+    """
+
+    selects = [
+        f'round(100.0 * sum(CASE WHEN "{c}" IS NULL THEN 1 ELSE 0 END) / count(*), 2) AS "{c}"'
+        for c in all_cols
+        if c != "issue_d"
+    ]
+
+    query = f"""
+        SELECT EXTRACT(year FROM issue_d) AS issue_year,
+        {", ".join(selects)}
+        {base}
+        GROUP BY 1
+        ORDER BY 1
+    """
+    wide = con.execute(query).fetchdf()
+
+    long = wide.melt(id_vars="issue_year", var_name="column", value_name="missing_pct")
+    long = long.sort_values(["column", "issue_year"]).reset_index(drop=True)
+
+    MISSING_BY_YEAR_OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    long.to_csv(MISSING_BY_YEAR_OUT_CSV, index=False)
+    print(f"Wrote {MISSING_BY_YEAR_OUT_CSV} ({len(long)} rows, {len(all_cols) - 1} columns x {wide.shape[0]} years)")
+
+
 def duplicate_id_check(con: duckdb.DuckDBPyConnection) -> dict:
     row = con.execute(
         f"""
@@ -151,6 +299,8 @@ def duplicate_id_check(con: duckdb.DuckDBPyConnection) -> dict:
 def main() -> None:
     con = duckdb.connect()
     con.execute("SET memory_limit = '8GB'")
+    missing_by_year(con)
+    field_rollout(con)
     status_by_year(con)
     maturity_audit(con)
     event_timing_audit(con)

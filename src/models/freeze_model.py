@@ -13,7 +13,6 @@ data/processed/models/: scorecard/, lightgbm/, xgboost/.
 """
 
 import json
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -28,15 +27,6 @@ CHAMPION_AUC_TOLERANCE_NOTE = (
     "XGBoost and the scorecard are carried forward as comparison models "
     "in the test evaluation, not candidates for champion."
 )
-
-
-def git_hash() -> str:
-    return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-
-
-def git_status_clean() -> bool:
-    out = subprocess.check_output(["git", "status", "--porcelain"], text=True)
-    return len(out.strip()) == 0
 
 
 def load_json(path: Path) -> dict:
@@ -72,9 +62,6 @@ def main() -> None:
 
     config = {
         "frozen_at_utc": datetime.now(UTC).isoformat(),
-        "git_hash_at_freeze": git_hash(),
-        "git_status_clean_at_freeze": git_status_clean(),
-        "note_on_git_hash": "This is the HEAD commit BEFORE the freeze commit that adds this file itself.",
         "champion": "lightgbm_chosen",
         "champion_reason": CHAMPION_AUC_TOLERANCE_NOTE,
         "champion_vs_xgboost_validation_auc_gap": champion_vs_xgb_auc_gap,

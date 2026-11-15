@@ -27,7 +27,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
 METRICS_DIR = Path("reports/metrics")
 TEST_SCORED = METRICS_DIR / "test_scored.parquet"
 TEST_PARQUET = "data/processed/test.parquet"
@@ -122,13 +121,6 @@ def symmetric_decomposition(df: pd.DataFrame, month_from: str, month_to: str, gr
 
 def main() -> None:
     df = pd.read_parquet(TEST_SCORED)
-        "kpi_movement.py",
-        len(df),
-        "Post-hoc, descriptive only: re-read saved test_scored.parquet (plus test.parquet "
-        "for fico_mean and purpose, not stored in test_scored.parquet) to explain month-to-"
-        "month movement in the already-known 2015 default rate. No model, feature, or policy "
-        "change.",
-    )
     test_feats = pd.read_parquet(TEST_PARQUET, columns=["id", "fico_mean", "purpose"])
     df = df.merge(test_feats, on="id", how="left")
     df["month"] = pd.to_datetime(df["issue_d"]).dt.to_period("M").astype(str)

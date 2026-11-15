@@ -3,10 +3,6 @@
 feature, never a second hand-written copy, so the two paths cannot
 silently drift apart.
 
-This was originally inline DuckDB SQL in build_features.py. It has been
-verified to reproduce that SQL's output exactly, row for row, on every
-before build_features.py was switched over to call these functions.
-
 Required raw input columns: fico_range_low, fico_range_high, earliest_cr_line,
 issue_d, loan_amnt, annual_inc, revol_bal, tot_cur_bal, and the 6
 mths_since_* columns.

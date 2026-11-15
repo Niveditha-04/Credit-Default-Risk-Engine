@@ -4,9 +4,16 @@ the logit of p) and isotonic (sklearn IsotonicRegression, fit directly on
 p). A real frozen calibrator is never mocked here - both are fit on tiny
 synthetic data and apply_calibrator is checked against calling the
 calibrator's own native method directly.
+
+The champion-alias parity test at the bottom needs the real MLflow
+registry and the real frozen model, so it is marked requires_data and
+skipped in CI.
 """
 
+from pathlib import Path
+
 import numpy as np
+import pytest
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
@@ -61,3 +68,49 @@ def test_apply_calibrator_isotonic_is_monotonic_in_the_raw_score():
     ordered = np.sort(RAW_PRED)
     calibrated = apply_calibrator(isotonic, ordered)
     assert np.all(np.diff(calibrated) >= 0)
+
+
+# ---------------------------------------------------------------------
+# Loads models:/credit_default_lightgbm_champion@champion from the
+# MLflow registry and asserts its predictions equal the frozen model's
+# predictions exactly (not just close) on the full validation set -
+# proof that registering the model through MLflow's pyfunc flavor
+# didn't change anything about how it scores a loan.
+# ---------------------------------------------------------------------
+
+MLFLOW_DB = Path("mlflow.db")
+VALIDATION_PARQUET = Path("data/processed/validation.parquet")
+FROZEN_CONFIG = Path("reports/metrics/frozen_model_config.json")
+
+requires_real_mlflow = pytest.mark.skipif(
+    not (MLFLOW_DB.exists() and VALIDATION_PARQUET.exists() and FROZEN_CONFIG.exists()),
+    reason="real MLflow registry and model artifacts not present (expected outside a developer checkout)",
+)
+
+
+@pytest.mark.requires_data
+@requires_real_mlflow
+def test_registered_champion_alias_matches_frozen_model_exactly():
+    import json
+
+    import mlflow
+    import pandas as pd
+
+    from src.evaluation.score_models import score_lightgbm
+    from src.models.mlflow_utils import TRACKING_URI
+
+    mlflow.set_tracking_uri(TRACKING_URI)
+    loaded = mlflow.pyfunc.load_model("models:/credit_default_lightgbm_champion@champion")
+
+    with open(FROZEN_CONFIG) as f:
+        frozen = json.load(f)
+    cfg = frozen["lightgbm_chosen"]
+
+    validation = pd.read_parquet(VALIDATION_PARQUET)
+    registry_preds = np.array(loaded.predict(validation[cfg["features"]]))
+    frozen_preds = score_lightgbm(validation, cfg)
+
+    assert np.array_equal(registry_preds, frozen_preds), (
+        f"registry model predictions do not exactly match the frozen model "
+        f"(max abs diff {np.max(np.abs(registry_preds - frozen_preds))})"
+    )

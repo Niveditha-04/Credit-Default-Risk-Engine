@@ -3,8 +3,7 @@ grouped by topic in one module instead of five separate scripts.
 Every check here is a second, separate read of already-saved
 predictions or already-saved data after the one-time evaluation that
 chose and froze the champion; none of them changes a model, feature,
-or policy decision. Each section logs its own access through
-that re-reads reports/metrics/test_scored.parquet).
+or policy decision.
 
 Sections, run in order by main():
   1. Calibration detail: reliability plot, Expected Calibration Error,
@@ -51,6 +50,7 @@ from src.models.scorecard import (
 
 METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
+TEST_SCORED = METRICS_DIR / "test_scored.parquet"
 TEST_PARQUET = "data/processed/test.parquet"
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -118,12 +118,7 @@ def run_calibration() -> None:
     fig.savefig(fig_path, dpi=150)
     print(f"Saved {fig_path}")
 
-    df = load_test_scored(
-        "posthoc_calibration.py",
-        "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean, "
-        "not stored in test_scored.parquet) to compute calibration by issue month and by "
-        "FICO band. No model, feature, or policy change.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
     test_feats = pd.read_parquet(TEST_PARQUET, columns=["id", "fico_mean"])
     df = df.merge(test_feats, on="id", how="left")
 
@@ -176,11 +171,7 @@ def run_calibration() -> None:
 
 
 def run_monthly_lift() -> None:
-    df = load_test_scored(
-        "posthoc_monthly_lift.py",
-        "Post-hoc: re-read saved test_scored.parquet to compute paired monthly AUC lift "
-        "by issue month. No model, feature, or policy change.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
     df["month"] = pd.to_datetime(df["issue_d"]).dt.to_period("M").astype(str)
     df["sub_grade_ordinal"] = sub_grade_ordinal(df["sub_grade"])
 
@@ -244,13 +235,7 @@ def segment_table(df: pd.DataFrame, group_col: str) -> pd.DataFrame:
 
 
 def run_segments() -> None:
-    df = load_test_scored(
-        "posthoc_segments.py",
-        "Post-hoc: re-read saved test_scored.parquet (plus test.parquet for fico_mean "
-        "and purpose, not stored in test_scored.parquet) to compute a segment table "
-        "(FICO band, purpose, loan size band, issue quarter). No model, feature, or "
-        "policy change.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
     test_feats = pd.read_parquet(TEST_PARQUET, columns=["id", "fico_mean", "purpose"])
     df = df.merge(test_feats, on="id", how="left")
 
@@ -331,15 +316,6 @@ def run_replay_performance() -> None:
           AND issue_d >= '{REPLAY_WINDOW_START}' AND issue_d <= '{REPLAY_WINDOW_END}'
         """
     ).fetchdf()
-
-        "posthoc_replay_performance.py",
-        len(replay_window),
-        "Post-hoc, exploratory: reads loan_status/last_pymnt_d for replay loans issued "
-        "2016-01 to 2016-10 (every vintage in this window has >= 29 months of seasoning "
-        "by the March 2019 snapshot, a 5-month buffer past the 24-month label horizon) "
-        "to build a 24-month-horizon label for a partial, informal performance check. "
-        "Not the project's target, not cached for reuse, no model, feature, or policy change.",
-    )
 
     replay_window["quarter"] = pd.to_datetime(replay_window["issue_d"]).dt.to_period("Q").astype(str)
     still_open_rows = []
@@ -526,13 +502,6 @@ def run_walkforward() -> None:
     for col in CATEGORICAL_COLUMNS:
         test_c[col] = test_c[col].astype("category").cat.set_categories(fold2_train[col].cat.categories)
 
-        "posthoc_walkforward.py",
-        len(test_c),
-        "Post-hoc: reads test.parquet to evaluate a walk-forward fold (train 2012-2014, "
-        "frozen LightGBM hyperparameters and tree count, no tuning; scorecard refit "
-        "through its own pipeline) against test (2015). No change to the frozen champion.",
-    )
-
     booster = fit_frozen_lightgbm_walkforward(fold2_train, champion_feats)
     lgb_pred = booster.predict(test_c[champion_feats], num_iteration=booster.best_iteration)
     lgb_fold2_auc = float(roc_auc_score(test_c["target"].values, lgb_pred))
@@ -608,13 +577,7 @@ def gains_curve(y_true: np.ndarray, score: np.ndarray) -> tuple:
 def run_roc_ks_gains() -> None:
     import matplotlib.pyplot as plt
 
-    df = load_test_scored(
-        "posthoc_validation.py:run_roc_ks_gains",
-        "Post-hoc: re-read saved test_scored.parquet to draw ROC, KS, and cumulative "
-        "-gains curves for v1 LightGBM, the scorecard, and sub_grade's ordinal rank on "
-        "test (2015). No model, feature, or policy change; every AUC drawn here already "
-        "matches reports/metrics/test_core_metrics.json.",
-    )
+    df = pd.read_parquet(TEST_SCORED)
     y = df["target"].values
     df["sub_grade_ordinal"] = sub_grade_ordinal(df["sub_grade"])
 

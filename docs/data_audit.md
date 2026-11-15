@@ -15,11 +15,11 @@ LendingClub accepted loans, 2007-2018, public Kaggle copy (Nathan George, CC0). 
 | `term` values after cleaning | 36, 60 |
 | `dti` cleaned | 2 negative, 2,561 over 100, both set to null |
 
-SHA-256 hash recorded at `reports/metrics/raw_data_profile.json`.
+SHA-256 hash recorded at `reports/metrics/raw_data_profile.json`; the cleaning counts above are from `reports/metrics/cleaning_summary.json`.
 
 ## Population filters
 
-Modeling population: 36-month, individual-application loans, 2012-2015. Of 1,539,983 36-month individual loans across all years, 3.4% (52,413) have a last payment after month 36, which is why `last_pymnt_d` only approximates when a charged-off loan stopped paying.
+Modeling population: 36-month, individual-application loans, 2012-2015, chosen on resolved-share by issue year and term (`reports/metrics/status_by_year.csv`, `reports/metrics/maturity_audit.csv`): 36-month loans reach 100% resolved by 2014, while 60-month and later 36-month vintages have not. Of 1,539,983 36-month individual loans across all years, 3.4% (52,413) have a last payment after month 36 (`reports/metrics/event_timing_audit_summary.json`), which is why `last_pymnt_d` only approximates when a charged-off loan stopped paying.
 
 ## Target
 

@@ -304,14 +304,6 @@ def run_ablations() -> None:
     train_sg, validation_sg, test_sg = load_splits(extra_join_sub_grade=True)
     champion_feats = feature_list(list(train.columns))
 
-        "posthoc_ablations.py",
-        len(test),
-        "Post-hoc: reads test.parquet to report test AUC for 4 ablations fit with the "
-        "frozen champion's own hyperparameters (no tuning search). Validation (2014) is "
-        "the primary number for every ablation; test AUC here is post-hoc only, never "
-        "used to pick or tune any of these ablations. No change to the frozen champion.",
-    )
-
     print("=== Ablation a: LightGBM on the scorecard's 17 features ===")
     result_a = ablation_a_scorecard_features(train, validation, test)
     print(json.dumps(result_a, indent=2))
@@ -434,13 +426,6 @@ def fit_v2(champion_feats: list[str]) -> lgb.Booster:
 
 def run_v2_evaluation() -> None:
     population = build_eval_population()
-        "posthoc_v2_evaluation.py",
-        len(population),
-        "Post-hoc, exploratory: scores v1 (frozen champion, unchanged) and a freshly-fit, "
-        "in-memory-only v2 on 2016 vintages (issue <= 2016-10-31, 24-month label) to "
-        "evaluate the pre-registered adoption rule in docs/v2_decision_rule.md, committed "
-        "before this script was run. No change to the frozen v1 champion.",
-    )
 
     train = pd.read_parquet(TRAIN_PARQUET)
     champion_feats = feature_list(list(train.columns))
@@ -542,13 +527,6 @@ def build_population_both_labels() -> pd.DataFrame:
 
 def run_v2_label_robustness() -> None:
     population = build_population_both_labels()
-        "posthoc_v2_label_robustness.py",
-        len(population),
-        "Post-hoc, exploratory robustness check (does not change the already-recorded "
-        "pre-registered v2 decision): rescores v1 and a freshly-refit v2 on the same "
-        "2016-vintage population with a second, corrected 24-month label, chosen after "
-        "the pre-registered evaluation already ran. No change to the frozen v1 champion.",
-    )
 
     train = pd.read_parquet(TRAIN_PARQUET)
     champion_feats = feature_list(list(train.columns))
@@ -632,15 +610,6 @@ def run_v2_on_test_2015() -> None:
     for col in CATEGORICAL_COLUMNS:
         test[col] = test[col].astype("category")
     test["pd_v2"] = score_lightgbm(test, cfg)
-
-        "posthoc_v2.py:run_v2_on_test_2015",
-        len(test),
-        "Post-hoc: scores the served v2 model (saved booster and calibrator, no refit) "
-        "on test (2015) to report its own AUC/Gini/KS with bootstrap CIs. v2's Platt "
-        "calibrator was already fit on 2015 (a calibration step, not model selection), "
-        "so 2015 is not a clean holdout for v2 the way it was for v1. No model, feature, "
-        "or policy change.",
-    )
 
     test_scored = pd.read_parquet(TEST_SCORED)
     merged = test[["id"]].merge(

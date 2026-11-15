@@ -38,10 +38,11 @@ LendingClub accepted loans, 2007 to 2018 (public Kaggle copy, Nathan George, CC0
 - Trained LightGBM (champion) and XGBoost, both tuned and calibrated on validation only.
 - Set one approval cutoff on validation by maximizing expected net value, applied it to test once.
 - Explained every prediction with LightGBM's own exact TreeSHAP, served through FastAPI in Docker.
-- Checked drift over 2016-2018 as a historical PSI replay, and tested the pipeline in CI.
+- Checked drift over 2016-2018 as a historical PSI replay, with a pytest suite with coverage in CI.
 
 ## Results
 
+All models, features, and the approval threshold were frozen on validation before test was read. Test was read once for the primary evaluation; every read after that is post-hoc.
 
 | Model | AUC (95% CI) | Gini | KS | Brier |
 |---|---|---|---|---|
@@ -49,6 +50,8 @@ LendingClub accepted loans, 2007 to 2018 (public Kaggle copy, Nathan George, CC0
 | XGBoost | 0.6886 (0.6859-0.6912) | 0.3772 | 0.2725 | 0.1195 |
 | Scorecard | 0.6711 (0.6686-0.6735) | 0.3421 | 0.2480 | 0.1211 |
 | sub_grade | 0.6786 (0.6760-0.6812) | 0.3573 | 0.2619 | 0.1215 |
+
+(`reports/metrics/test_core_metrics.json`, `reports/metrics/test_bootstrap_ci.json`)
 
 XGBoost is ahead by **0.0014**, within the **0.0007** retraining-noise spread; I kept LightGBM, chosen on validation, **273** vs. **2,122** trees.
 
@@ -126,7 +129,7 @@ Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** defaul
 | 10 | home_ownership | 0.0690 |
 
 - Every direction matches intuition: higher FICO lowers risk, higher DTI and loan-to-income raise it.
-- `annual_inc` alone is most protective around $90K-110K, then weakens above that; a monotone-constrained variant (v2's ablation) removes most of this reversal.
+- `annual_inc` alone is most protective around $90K-110K, then weakens above that; a monotone-constrained variant (v2's ablation) removes most of this reversal (`reports/metrics/posthoc_ablations_summary.json`).
 
 ![SHAP dependence, top 6 features](reports/figures/shap_dependence_top6.png)
 

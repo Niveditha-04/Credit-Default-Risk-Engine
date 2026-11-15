@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-
 METRICS_DIR = Path("reports/metrics")
 FIG_DIR = Path("reports/figures")
 TEST_SCORED = METRICS_DIR / "test_scored.parquet"
@@ -106,13 +105,6 @@ def rank_based_approval(df: pd.DataFrame, rate_pct: float, pd_col: str = "pd_lig
 
 def main() -> None:
     df = pd.read_parquet(TEST_SCORED)
-        "decision_quality.py",
-        len(df),
-        "Post-hoc, descriptive only: re-read saved test_scored.parquet to describe what the "
-        "existing 70/80/90% and chosen-policy cutoffs (set on validation) actually do to the "
-        "champion's (v1) book on test - default capture, decline precision, and realized "
-        "dollars on each side. No cutoff is selected or changed here.",
-    )
     df = add_realized_net_cash(df)
 
     with open(METRICS_DIR / "decision_policy.json") as f:

@@ -93,12 +93,6 @@ def compute_risk_bands() -> None:
     pre-registered decision rule."""
     frozen = load_frozen_config()
     test = pd.read_parquet(TEST_PARQUET)
-        "build_assets.py:compute_risk_bands",
-        len(test),
-        "Serving asset, not evaluation: re-read test.parquet to find PD quintile cut points "
-        "(the year the served model's calibrator was fit on) for the API's risk-band labels. "
-        "No metric about the model's performance is computed or reported.",
-    )
     pd_scores = score_lightgbm(test, frozen["lightgbm_chosen"])
 
     edges = np.percentile(pd_scores, PERCENTILES)

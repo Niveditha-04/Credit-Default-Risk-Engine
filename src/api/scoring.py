@@ -62,15 +62,11 @@ class ScoringEngine:
 
         self.booster = joblib.load(self.cfg["model_path"])
         # The model version is self-describing and verifiable without a
-        # live MLflow server: the git commit the frozen config was cut
-        # from, plus the SHA-256 of the exact booster file baked into this
-        # image. Anyone can independently recompute the second half from
-        # the artifact and confirm it's the one actually running.
+        # live MLflow server: the SHA-256 of the exact booster file baked
+        # into this image. Anyone can independently recompute it from the
+        # artifact and confirm it's the one actually running.
         joblib_sha256 = _sha256_of(self.cfg["model_path"])
-        self.model_version = (
-            f"lightgbm_chosen@git:{self.frozen['git_hash_at_freeze'][:12]}"
-            f"+sha256:{joblib_sha256[:12]}"
-        )
+        self.model_version = f"lightgbm_chosen+sha256:{joblib_sha256[:12]}"
 
         with open(API_DIR / "risk_bands.json") as f:
             self.risk_bands = json.load(f)["bands"]
