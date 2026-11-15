@@ -163,7 +163,7 @@ Months in one year share macro conditions: 12 of 12 positive is a consistency ch
 
 ## Economics at matched funding volume (post-hoc)
 
-Funds the top 70/80/90% of test loans by each model's own score. Return per dollar funded = realized net cash / funded amount (`reports/metrics/evaluation/posthoc_matched_volume_economics.csv`).
+Funds the top 70/80/90% of test loans by each model's own score. Return per dollar funded = realized net cash / funded amount (`reports/metrics/economics/posthoc_matched_volume_economics.csv`).
 
 | Model | 70% | 80% | 90% |
 |---|---|---|---|
@@ -174,7 +174,7 @@ Funds the top 70/80/90% of test loans by each model's own score. Return per doll
 
 At 4% annual cost of funds: 3.40% / 3.16% / 2.88% (LightGBM). At 8%: -0.76% / -0.97% / -1.23%. Not annualized: measured over each loan's observed life.
 
-Paired bootstrap 95% CI on LightGBM's edge, 1,000 resamples (`reports/metrics/evaluation/posthoc_matched_volume_comparison_table.csv`):
+Paired bootstrap 95% CI on LightGBM's edge, 1,000 resamples (`reports/metrics/economics/posthoc_matched_volume_comparison_table.csv`):
 
 | Selection rate | Cost of funds | LightGBM minus scorecard | LightGBM minus sub_grade |
 |---|---|---|---|
@@ -186,7 +186,7 @@ All 18 differences checked (3 rates x 3 cost levels) are positive and significan
 
 ## Funding-fraction optimization (post-hoc)
 
-LightGBM's fraction maximizing total net cash after cost, per cost of funds (`reports/metrics/evaluation/posthoc_funding_optimization_optimal.csv`):
+LightGBM's fraction maximizing total net cash after cost, per cost of funds (`reports/metrics/economics/posthoc_funding_optimization_optimal.csv`):
 
 | Cost of funds | Optimal rate | Net cash after cost |
 |---|---|---|
@@ -198,7 +198,7 @@ At 8% cost of funds every model's best fraction still loses money: not a volume 
 
 ## sub_grade alone vs. sub_grade + LightGBM (post-hoc)
 
-Champion features plus `sub_grade` (ablation c) vs. sub_grade's own PD map (`reports/metrics/evaluation/posthoc_subgrade_lightgbm_matched_volume.csv`):
+Champion features plus `sub_grade` (ablation c) vs. sub_grade's own PD map (`reports/metrics/economics/posthoc_subgrade_lightgbm_matched_volume.csv`):
 
 | Year | Model | 70% | 90% |
 |---|---|---|---|
@@ -257,9 +257,9 @@ Threshold set on validation and train, maximizing total expected net value. Cuto
 | XGBoost | 99.12% | 14.63% | $274.9M | $232.2M | $42.7M (15.6%) |
 | Scorecard | 99.82% | 14.83% | $292.6M | $230.2M | $62.4M (21.3%) |
 
-(`reports/metrics/evaluation/test_economics_at_fixed_cutoff.csv`)
+(`reports/metrics/economics/test_economics_at_fixed_cutoff.csv`)
 
-Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean on train charged-off loans. Sensitivity table: `reports/metrics/evaluation/test_lgd_sensitivity.csv`. No cost of capital, operating cost, or time value of money in this EV model.
+Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean on train charged-off loans. Sensitivity table: `reports/metrics/economics/test_lgd_sensitivity.csv`. No cost of capital, operating cost, or time value of money in this EV model.
 
 ### Gap decomposition, LightGBM
 
@@ -278,7 +278,7 @@ Loss rate: cash basis, `1 - (total payment - fees) / funded amount`, 0.3803 mean
 | LightGBM | 80% | 79.59% | $213.7M |
 | LightGBM | 90% | 89.47% | $228.3M |
 
-(`reports/metrics/evaluation/test_fixed_approval_rate_comparison.csv`)
+(`reports/metrics/economics/test_fixed_approval_rate_comparison.csv`)
 
 A different "70%" from decision quality below (fixed PD cutoff vs. exact top-N% rank): both correct under their own definition.
 

@@ -254,7 +254,7 @@ def run_matched_volume_economics() -> None:
         "selection_rates_reported_pct": MATCHED_VOLUME_SELECTION_RATES_PCT,
         "cost_of_funds_rates_pct": COST_OF_FUNDS_RATES_PCT,
         "at_70_80_90_pct_selection": highlight.to_dict("records"),
-        "bootstrap_comparison_table": "reports/metrics/evaluation/posthoc_matched_volume_comparison_table.csv",
+        "bootstrap_comparison_table": "reports/metrics/economics/posthoc_matched_volume_comparison_table.csv",
     }
     with open(metrics_path("posthoc_matched_volume_economics_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)

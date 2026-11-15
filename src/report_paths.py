@@ -1,7 +1,9 @@
 """Where each reports/metrics/ file lives, grouped by topic subfolder:
 data/ (raw data, cleaning, population, feature audit), models/ (scorecard,
-LightGBM, XGBoost, served-model checks), evaluation/ (test-set metrics,
-decision economics, post-hoc checks), drift/ (PSI replay), explain/ (SHAP).
+LightGBM, XGBoost, served-model checks), evaluation/ (test-set rank and
+calibration metrics, post-hoc checks), economics/ (decision policy,
+funding and matched-volume economics, decision quality, LGD and gap
+decomposition), drift/ (PSI replay), explain/ (SHAP).
 """
 
 from pathlib import Path
@@ -46,7 +48,6 @@ _METRICS_TOPIC = {
     "api_latency.json": "models",
     "api_field_requirements.json": "models",
     # evaluation
-    "decision_policy.json": "evaluation",
     "dti_cap_extrapolation_summary.json": "evaluation",
     "dti_cap_extrapolation_v1_test.csv": "evaluation",
     "dti_cap_extrapolation_v2_2016.csv": "evaluation",
@@ -55,19 +56,12 @@ _METRICS_TOPIC = {
     "kpi_movement_summary.json": "evaluation",
     "posthoc_ablations_summary.json": "evaluation",
     "posthoc_calibration_summary.json": "evaluation",
-    "posthoc_funding_optimization_optimal.csv": "evaluation",
-    "posthoc_funding_optimization_summary.json": "evaluation",
-    "posthoc_matched_volume_comparison_table.csv": "evaluation",
-    "posthoc_matched_volume_economics.csv": "evaluation",
-    "posthoc_matched_volume_economics_summary.json": "evaluation",
     "posthoc_monthly_lift.csv": "evaluation",
     "posthoc_monthly_lift_summary.json": "evaluation",
     "posthoc_replay_24m_performance.csv": "evaluation",
     "posthoc_replay_24m_performance_summary.json": "evaluation",
     "posthoc_segment_summary.json": "evaluation",
     "posthoc_segment_table.csv": "evaluation",
-    "posthoc_subgrade_lightgbm_matched_volume.csv": "evaluation",
-    "posthoc_subgrade_lightgbm_matched_volume_summary.json": "evaluation",
     "posthoc_v2_evaluation.json": "evaluation",
     "posthoc_v2_label_robustness.json": "evaluation",
     "posthoc_v2_test_2015.json": "evaluation",
@@ -76,18 +70,27 @@ _METRICS_TOPIC = {
     "test_bootstrap_ci.json": "evaluation",
     "test_calibration_lightgbm.csv": "evaluation",
     "test_core_metrics.json": "evaluation",
-    "test_decision_quality.csv": "evaluation",
-    "test_economics_at_fixed_cutoff.csv": "evaluation",
-    "test_fixed_approval_rate_comparison.csv": "evaluation",
-    "test_gap_decomposition_lightgbm.json": "evaluation",
-    "test_gap_remainder_diagnostic.json": "evaluation",
-    "test_lgd_sensitivity.csv": "evaluation",
     "test_robustness.json": "evaluation",
-    "test_scorecard_gap_explanation.json": "evaluation",
     "test_scored.parquet": "evaluation",
     "test_stability_by_quarter.csv": "evaluation",
     "test_stability_by_region.csv": "evaluation",
     "test_sub_grade_level_count.json": "evaluation",
+    # economics
+    "decision_policy.json": "economics",
+    "posthoc_funding_optimization_optimal.csv": "economics",
+    "posthoc_funding_optimization_summary.json": "economics",
+    "posthoc_matched_volume_comparison_table.csv": "economics",
+    "posthoc_matched_volume_economics.csv": "economics",
+    "posthoc_matched_volume_economics_summary.json": "economics",
+    "posthoc_subgrade_lightgbm_matched_volume.csv": "economics",
+    "posthoc_subgrade_lightgbm_matched_volume_summary.json": "economics",
+    "test_decision_quality.csv": "economics",
+    "test_economics_at_fixed_cutoff.csv": "economics",
+    "test_fixed_approval_rate_comparison.csv": "economics",
+    "test_gap_decomposition_lightgbm.json": "economics",
+    "test_gap_remainder_diagnostic.json": "economics",
+    "test_lgd_sensitivity.csv": "economics",
+    "test_scorecard_gap_explanation.json": "economics",
     # drift
     "drift_baseline_psi_validation_vs_train.csv": "drift",
     "drift_combined_psi_table.csv": "drift",

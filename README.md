@@ -55,7 +55,7 @@ All models, features, and the approval threshold were frozen on validation befor
 
 XGBoost is ahead by **0.0014**, within the **0.0007** retraining-noise spread; I kept LightGBM, chosen on validation, **273** vs. **2,122** trees.
 
-Return per $100 funded, 0% cost of funds (`reports/metrics/evaluation/posthoc_matched_volume_economics.csv`):
+Return per $100 funded, 0% cost of funds (`reports/metrics/economics/posthoc_matched_volume_economics.csv`):
 
 | Model | 70% | 80% | 90% |
 |---|---|---|---|
@@ -64,7 +64,7 @@ Return per $100 funded, 0% cost of funds (`reports/metrics/evaluation/posthoc_ma
 | Scorecard | $7.28 | $7.04 | $6.80 |
 | sub_grade map | $6.97 | $6.88 | $6.74 |
 
-Decision quality, LightGBM exact rank on test (`reports/metrics/evaluation/test_decision_quality.csv`):
+Decision quality, LightGBM exact rank on test (`reports/metrics/economics/test_decision_quality.csv`):
 
 | Approval rate | Default rate approved | Defaults caught | Good loans declined per default avoided | Realized net cash |
 |---|---|---|---|---|
@@ -93,7 +93,7 @@ v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`do
 - **Rate, not mix:** **7 of 11** month-over-month 2015 default-rate changes exceed sampling noise; the moves are within-segment rate shifts, not a change in applicant mix (mean mix effect **0.08 pp** vs. rate effect **0.77 pp**).
 - **AUC is range-restricted:** FICO stayed at or above **660** in every year used, and LendingClub had already pre-screened every applicant before this data existed (`reports/metrics/data/eligibility_caps_by_year.csv`).
 
-Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/evaluation/test_gap_decomposition_lightgbm.json`, `reports/metrics/evaluation/test_gap_remainder_diagnostic.json`).
+Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/economics/test_gap_decomposition_lightgbm.json`, `reports/metrics/economics/test_gap_remainder_diagnostic.json`).
 
 ## Drift (historical replay, 2015-2018)
 
@@ -138,7 +138,7 @@ Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** defaul
 - Accepted loans only: I never see applicants LendingClub rejected.
 - Modeling data is 2012-2015, plus a 2016 holdout check for v2; no claim beyond that window.
 - No protected attributes in this data, and none built as proxies, so no fairness test was run.
-- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/evaluation/test_lgd_sensitivity.csv`.
+- Loss rate on funded amount (cash basis, 38.03%) is an estimate from train-year charged-off loans; a sensitivity table is in `reports/metrics/economics/test_lgd_sensitivity.csv`.
 - Drift monitoring replays closed historical periods; it has never run against a live feed.
 
 ## How to run

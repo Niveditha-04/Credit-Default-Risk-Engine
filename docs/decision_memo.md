@@ -14,11 +14,11 @@ Given a pool of accepted, already-underwritten LendingClub loans, which ones sho
 | ~4% | **~85%** by the champion's own score | Still the dollar-maximizing point, not a guess |
 | ~8% | Every tested level loses money | Weak case for funding this book at this cost |
 
-This is descriptive, not a new policy: the deployed cutoff was chosen on validation (2014) and fixed before test was read (`reports/metrics/evaluation/decision_policy.json`). The rates above come from a separate, post-hoc sweep run after that policy was fixed.
+This is descriptive, not a new policy: the deployed cutoff was chosen on validation (2014) and fixed before test was read (`reports/metrics/economics/decision_policy.json`). The rates above come from a separate, post-hoc sweep run after that policy was fixed.
 
 ## Trade-off: what each approval rate buys
 
-LightGBM's own decision-quality view of test (2015), exact rank (`reports/metrics/evaluation/test_decision_quality.csv`):
+LightGBM's own decision-quality view of test (2015), exact rank (`reports/metrics/economics/test_decision_quality.csv`):
 
 | Approval rate | Default rate approved | Defaults caught by declining | Good loans declined per default avoided | Realized net cash |
 |---|---|---|---|---|

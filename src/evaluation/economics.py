@@ -1,6 +1,6 @@
 """Apply the economics assumptions to test, once. Reads ONLY from the
 already-saved reports/metrics/evaluation/test_scored.parquet (no new read of raw
-test data) and reports/metrics/evaluation/decision_policy.json (the cutoff, LGD,
+test data) and reports/metrics/economics/decision_policy.json (the cutoff, LGD,
 and interest formula, all set on validation and train before this
 script runs).
 """

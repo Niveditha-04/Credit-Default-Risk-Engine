@@ -1,7 +1,7 @@
 """Post-hoc, descriptive decision-quality view of the existing approval
 cutoffs. Nothing here selects or changes a cutoff: the 70/80/90% and
 chosen-policy cutoffs are the ones already set on validation
-(reports/metrics/evaluation/decision_policy.json) and already scored once on test
+(reports/metrics/economics/decision_policy.json) and already scored once on test
 (reports/metrics/evaluation/test_scored.parquet). This only describes what each
 cutoff actually does to the champion's (LightGBM) book on test: how
 many defaults it catches by declining, how many good loans are declined
