@@ -47,7 +47,7 @@ from src.evaluation.test_evaluation import (
 )
 from src.models.gbm import feature_list
 from src.models.scorecard import candidate_features
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -59,7 +59,7 @@ CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 SEED = 42
 
-# The frozen champion's own hyperparameters (reports/metrics/models/frozen_model_config.json).
+# The frozen champion's own hyperparameters (config/model_config.json).
 # No tuning search is run anywhere in this module. Shared by the
 # ablations (section 1) and v2 (sections 2-3), which reuse them exactly.
 FROZEN_LGB_PARAMS = {
@@ -324,7 +324,7 @@ def run_ablations() -> None:
     # ablation here reuses hyperparameters from, and the model ablation
     # d's monotone constraints led to v2 from) - v1_lightgbm_cfg, never
     # lightgbm_chosen, which now describes v2 after v2's promotion.
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     v1_cfg = v1_lightgbm_cfg(frozen)
     champion_booster = joblib.load(v1_cfg["model_path"])
@@ -645,7 +645,7 @@ def run_v2_on_test_2015() -> None:
             "identical whether scored with or without the calibrator applied. v1's score "
             "(pd_lightgbm) and target come from the already-saved, one-time "
             "test_scored.parquet; v2 is scored fresh here with its own saved artifacts "
-            "(reports/metrics/models/frozen_model_config.json's lightgbm_chosen)."
+            "(config/model_config.json's lightgbm_chosen)."
         ),
     }
     with open(metrics_path("posthoc_v2_test_2015.json"), "w") as f:

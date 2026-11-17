@@ -27,7 +27,7 @@ import pandas as pd
 
 from src.evaluation.score_models import v1_lightgbm_cfg
 from src.explain.labels import PLAIN_ENGLISH
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 FIG_DIR = Path("reports/figures")
 EXTRA_DIR = Path("reports/extra")
@@ -60,7 +60,7 @@ def nan_safe_corr(values: np.ndarray, shap_vals: np.ndarray) -> float:
 
 
 def load_test() -> tuple[pd.DataFrame, pd.DataFrame, list]:
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     cfg = v1_lightgbm_cfg(frozen)
     feats = cfg["features"]
@@ -116,7 +116,7 @@ def shap_followup_checks() -> None:
     $500K+ income bucket has n=116, the dti 0-1 bucket has n=700), and
     a point-estimate "dip" or "rise" that looks clean on a chart can be
     well within sampling noise once the interval is checked."""
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     cfg = v1_lightgbm_cfg(frozen)
     booster = joblib.load(cfg["model_path"])
@@ -266,7 +266,7 @@ def loan_to_income_cap_check() -> None:
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     booster = joblib.load(v1_lightgbm_cfg(frozen)["model_path"])
 
@@ -487,8 +487,6 @@ def main() -> None:
         if col in X.columns:
             missing_check[col] = int(X[col].isna().sum())
     print(json.dumps(missing_check, indent=2))
-    with open(metrics_path("shap_rollout_missing_check.json"), "w") as f:
-        json.dump(missing_check, f, indent=2)
 
     summary = {
         "sample_size": len(test),

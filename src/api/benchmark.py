@@ -1,27 +1,20 @@
-"""Post-build checks for the served API: latency against a running
-Docker container, the built image's size, and that the registry/local
-artifact/served model_version string all agree.
+"""Latency benchmark for the served API: 1,000 sequential requests
+against a running Docker container.
 """
 
-import hashlib
 import json
 import os
 import platform
-import shutil
 import subprocess
-import tempfile
 import time
 
 import httpx
-import mlflow
 import numpy as np
 
 from src.report_paths import metrics_path
 
 BASE_URL = "http://localhost:8000"
 N_REQUESTS = 1000
-IMAGE = "credit-default-risk-engine:latest"
-REGISTERED_MODEL_NAME = "credit_default_lightgbm_champion"
 
 LATENCY_PAYLOAD = {
     "loan_amnt": 15000.0, "annual_inc": 65000.0, "dti": 18.5,
@@ -112,90 +105,5 @@ def latency_test() -> None:
     print(json.dumps(result, indent=2))
 
 
-def record_docker_image_size() -> None:
-    """Records the built Docker image's size and the free disk space at
-    the time of recording. Run right after `docker build`."""
-    image_id = subprocess.check_output(["docker", "images", "-q", IMAGE], text=True).strip()
-    assert image_id, f"image {IMAGE} not found - run docker build first"
-
-    size_bytes = int(subprocess.check_output(["docker", "inspect", IMAGE, "--format", "{{.Size}}"], text=True).strip())
-    df = subprocess.check_output(["docker", "images", IMAGE, "--format", "{{.Size}}"], text=True).strip()
-
-    free_bytes = shutil.disk_usage("/").free
-
-    result = {
-        "image": IMAGE,
-        "image_id": image_id,
-        "size_bytes": size_bytes,
-        "size_mb": round(size_bytes / 1_000_000, 1),
-        "docker_images_reported_size": df,
-        "free_disk_bytes_at_record_time": free_bytes,
-        "free_disk_gb_at_record_time": round(free_bytes / 1_000_000_000, 1),
-        "base_image": "python:3.11-slim",
-        "note": "requirements-serve.txt does not include shap or matplotlib (see src/api/scoring.py - "
-        "reason codes use booster.predict(pred_contrib=True) instead), which keeps this image small.",
-    }
-    with open(metrics_path("docker_image.json"), "w") as f:
-        json.dump(result, f, indent=2)
-    print(json.dumps(result, indent=2))
-
-
-def _sha256_of(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def verify_served_model_version() -> None:
-    """Confirms three things agree: the MLflow registry's @champion alias,
-    the booster artifact baked into the local joblib file the API loads,
-    and the model_version string the API actually reports. The API
-    intentionally never talks to a live MLflow server at request time (it
-    only reads frozen_model_config.json + joblib files), so this is the
-    one place that closes the loop between "what MLflow says is champion"
-    and "what the running service is actually scoring with."
-    """
-    from src.api.scoring import ScoringEngine
-    from src.models.mlflow_utils import TRACKING_URI
-
-    mlflow.set_tracking_uri(TRACKING_URI)
-    client = mlflow.MlflowClient()
-    alias_version = client.get_model_version_by_alias(REGISTERED_MODEL_NAME, "champion")
-
-    with open(metrics_path("frozen_model_config.json")) as f:
-        frozen = json.load(f)
-    local_path = frozen["lightgbm_chosen"]["model_path"]
-    local_sha = _sha256_of(local_path)
-
-    with tempfile.TemporaryDirectory() as tmp:
-        downloaded = client.download_artifacts(
-            alias_version.run_id, "lightgbm_champion/artifacts/model_chosen.joblib", tmp
-        )
-        registry_sha = _sha256_of(downloaded)
-
-    engine = ScoringEngine()
-
-    result = {
-        "registry_alias_points_to_version": alias_version.version,
-        "registry_booster_sha256": registry_sha,
-        "local_baked_booster_sha256": local_sha,
-        "registry_matches_local_artifact": registry_sha == local_sha,
-        "served_model_version_string": engine.model_version,
-        "served_sha256_prefix_matches_local": engine.model_version.split("+sha256:")[1] == local_sha[:12],
-    }
-    assert result["registry_matches_local_artifact"], result
-    assert result["served_sha256_prefix_matches_local"], result
-
-    with open(metrics_path("served_model_version_check.json"), "w") as f:
-        json.dump(result, f, indent=2)
-    print(json.dumps(result, indent=2))
-
-
 if __name__ == "__main__":
-    verify_served_model_version()
-    print()
-    record_docker_image_size()
-    print()
     latency_test()

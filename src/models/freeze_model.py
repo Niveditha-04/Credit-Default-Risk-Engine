@@ -3,7 +3,7 @@ to touch.
 
 Reads only already-saved metrics files from the scorecard and gradient
 boosting training scripts (never retrains anything) and writes
-reports/metrics/models/frozen_model_config.json. The test evaluation must load
+config/model_config.json. The test evaluation must load
 its models, features, and calibrator from this file alone - no
 retraining, no re-tuning, no feature changes once test (2015) is in
 scope.
@@ -16,10 +16,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 MODELS_DIR = Path("data/processed/models")
-OUT_PATH = metrics_path("frozen_model_config.json")
+OUT_PATH = MODEL_CONFIG_PATH
 
 CHAMPION_AUC_TOLERANCE_NOTE = (
     "lightgbm_chosen is the champion: within 0.0021 validation AUC of "

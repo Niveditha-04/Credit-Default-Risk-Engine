@@ -45,7 +45,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
 
 from src.models.math_utils import apply_calibrator, logit
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -105,7 +105,7 @@ def promote_candidate_artifacts(candidate_dir: Path, frozen_dir: Path) -> None:
 
 SEED = 42
 METADATA_COLUMNS = {"id", "issue_d", "split", "target"}
-FROZEN_CONFIG_PATH = metrics_path("frozen_model_config.json")
+FROZEN_CONFIG_PATH = MODEL_CONFIG_PATH
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 
 N_TUNING_TRIALS_LGB = 20
@@ -143,7 +143,7 @@ def feature_list(train_columns: list[str]) -> list[str]:
         missing = [c for c in frozen_features if c not in derived]
         raise AssertionError(
             "Feature list does not exactly match the frozen allow-list "
-            f"(reports/metrics/models/frozen_model_config.json). Extra columns present now "
+            f"(config/model_config.json). Extra columns present now "
             f"that are not in the frozen list: {extra}. Columns in the frozen list "
             f"missing now: {missing}."
         )
@@ -394,7 +394,7 @@ def main(log_to_mlflow: bool = False, run_id: str | None = None) -> dict:
 
     train, validation, feats = load_data()
     print(f"Feature list: {len(feats)} features")
-    print("Exact allow-list check passed: feature list matches frozen_model_config.json exactly")
+    print("Exact allow-list check passed: feature list matches config/model_config.json exactly")
     with open(metrics_path("gbm_feature_list.json"), "w") as f:
         json.dump(feats, f, indent=2)
 
@@ -620,10 +620,11 @@ def run_with_mlflow() -> None:
 
         for fname in [
             "gbm_feature_list.json", "gbm_validation_metrics.json",
-            "gbm_feature_importance.csv", "gbm_calibration.json", "frozen_model_config.json",
+            "gbm_feature_importance.csv", "gbm_calibration.json",
             "shap_summary.json", "shap_global_importance.csv",
         ]:
             log_file_if_exists(str(METRICS_DIR / fname))
+        log_file_if_exists(str(MODEL_CONFIG_PATH))
         log_file_if_exists(str(EXTRA_DIR / "gbm_tuning_trials.csv"))
         log_file_if_exists("reports/figures/shap_dependence_top6.png")
 

@@ -1,6 +1,5 @@
 {
   "label": "post-hoc, exploratory",
-  "rule_file": "docs/v2_decision_rule.md",
   "evaluation_population": {
     "window": [
       "2016-01-01",

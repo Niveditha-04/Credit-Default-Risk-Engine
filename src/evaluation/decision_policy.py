@@ -43,7 +43,7 @@ import pandas as pd
 
 from src.evaluation.score_models import v1_lightgbm_cfg
 from src.models.math_utils import apply_calibrator
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 EXTRA_DIR = Path("reports/extra")
 CLEANED_PARQUET = "data/interim/accepted_2007_to_2018Q4_cleaned.parquet"
@@ -121,7 +121,7 @@ def load_champion_predictions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): this
     policy was set once, on validation, before v2 existed, and must
     never move just because a later model was promoted."""
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     lgb_cfg = v1_lightgbm_cfg(frozen)
 

@@ -74,7 +74,7 @@ promote: freeze
 calibrate:
 	$(VENV)/python -m src.models.calibrate_comparison_models
 
-# Writes reports/metrics/models/frozen_model_config.json: the one file the test
+# Writes config/model_config.json: the one file the test
 # evaluation loads every model, feature list, and calibrator from.
 freeze:
 	$(VENV)/python -m src.models.freeze_model

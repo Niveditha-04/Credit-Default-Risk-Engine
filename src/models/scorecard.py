@@ -15,7 +15,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 from src.features.allow_list import feature_columns
 from src.models.mlflow_utils import log_common_context, log_file_if_exists, setup_mlflow
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 TRAIN_PARQUET = "data/processed/train.parquet"
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -191,15 +191,11 @@ def main() -> None:
 
     print("\n=== Step 3: investigate IV > 0.5 ===")
     suspicious = iv_table[iv_table["iv"] > IV_SUSPICIOUS_THRESHOLD]
-    suspicious_report = []
     for _, row in suspicious.iterrows():
         name = row["name"]
         table = bp.get_binned_variable(name).binning_table.build()
-        suspicious_report.append({"feature": name, "iv": row["iv"], "bins": table.to_dict("records")})
         print(f"  {name}: IV={row['iv']:.4f}")
         print(table.to_string(index=False))
-    with open(metrics_path("iv_suspicious_investigation.json"), "w") as f:
-        json.dump(suspicious_report, f, indent=2, default=str)
 
     iv_map = dict(zip(iv_table["name"], iv_table["iv"]))
     above_min = [c for c in candidates if iv_map.get(c, 0) >= IV_MIN_THRESHOLD]
@@ -453,9 +449,10 @@ def run_with_mlflow() -> None:
             "scorecard_validation_metrics.json", "feature_selection_log.json",
             "logistic_regression_coefficients.csv", "iv_table.csv", "scorecard_points.json",
             "scorecard_score_summary.json",
-            "scorecard_calibration.json", "frozen_model_config.json",
+            "scorecard_calibration.json",
         ]:
             log_file_if_exists(str(METRICS_DIR / fname))
+        log_file_if_exists(str(MODEL_CONFIG_PATH))
         for fname in [
             "scorecard_calibration_validation.csv", "scorecard_score_bands_validation.csv",
             "missing_bin_diagnostic.csv",

@@ -26,7 +26,7 @@ replacement).
 
 No model, feature, or policy change. No new model is fit: v2 is scored
 with the real, currently-served booster and calibrator
-(reports/metrics/models/frozen_model_config.json), the same artifacts the API
+(config/model_config.json), the same artifacts the API
 serves predictions from today.
 """
 

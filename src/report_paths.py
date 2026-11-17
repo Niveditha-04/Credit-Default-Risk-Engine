@@ -9,6 +9,7 @@ decomposition), drift/ (PSI replay), explain/ (SHAP).
 from pathlib import Path
 
 METRICS_DIR = Path("reports/metrics")
+MODEL_CONFIG_PATH = Path("config/model_config.json")
 
 _METRICS_TOPIC = {
     # data
@@ -24,7 +25,6 @@ _METRICS_TOPIC = {
     "eligibility_caps_by_year.csv": "data",
     "build_features_summary.json": "data",
     # models
-    "frozen_model_config.json": "models",
     "gbm_calibration.json": "models",
     "gbm_feature_importance.csv": "models",
     "gbm_feature_list.json": "models",
@@ -32,19 +32,14 @@ _METRICS_TOPIC = {
     "gbm_validation_metrics.json": "models",
     "logistic_regression_coefficients.csv": "models",
     "iv_table.csv": "models",
-    "iv_suspicious_investigation.json": "models",
     "feature_selection_log.json": "models",
     "scorecard_calibration.json": "models",
     "scorecard_points.json": "models",
     "scorecard_score_summary.json": "models",
     "scorecard_validation_metrics.json": "models",
     "xgboost_calibration.json": "models",
-    "xgboost_order_sensitivity_check.json": "models",
     "training_order_sensitivity.json": "models",
     "risk_bands.json": "models",
-    "v2_promotion_summary.json": "models",
-    "served_model_version_check.json": "models",
-    "docker_image.json": "models",
     "api_latency.json": "models",
     "api_field_requirements.json": "models",
     # evaluation
@@ -74,7 +69,6 @@ _METRICS_TOPIC = {
     "test_scored.parquet": "evaluation",
     "test_stability_by_quarter.csv": "evaluation",
     "test_stability_by_region.csv": "evaluation",
-    "test_sub_grade_level_count.json": "evaluation",
     # economics
     "decision_policy.json": "economics",
     "posthoc_funding_optimization_optimal.csv": "economics",
@@ -90,15 +84,12 @@ _METRICS_TOPIC = {
     "test_gap_decomposition_lightgbm.json": "economics",
     "test_gap_remainder_diagnostic.json": "economics",
     "test_lgd_sensitivity.csv": "economics",
-    "test_scorecard_gap_explanation.json": "economics",
     # drift
     "drift_baseline_psi_validation_vs_train.csv": "drift",
     "drift_combined_psi_table.csv": "drift",
     "drift_data_first_crossing.csv": "drift",
     "drift_data_monthly_psi.csv": "drift",
-    "drift_evidently_file_sizes.json": "drift",
     "drift_loan_to_income_cap_signal.json": "drift",
-    "drift_loan_to_income_psi_explanation.json": "drift",
     "drift_performance_2015_monthly.csv": "drift",
     "drift_prediction_monthly.csv": "drift",
     "drift_summary.json": "drift",
@@ -107,7 +98,6 @@ _METRICS_TOPIC = {
     "shap_global_importance_served.csv": "explain",
     "shap_global_importance_served_summary.json": "explain",
     "shap_reason_codes_examples.json": "explain",
-    "shap_rollout_missing_check.json": "explain",
     "shap_summary.json": "explain",
 }
 

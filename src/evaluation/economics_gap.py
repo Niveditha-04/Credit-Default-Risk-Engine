@@ -15,8 +15,6 @@ fixed_approval_rate_and_gap_analysis():
      test default rate (14.88%), vs how much is left over. Plus a check of
      the recovery-timing hypothesis (newer loans have had less time to
      recover by the March 2019 data snapshot).
-  3. Verification of the scorecard's ex-ante EV being inflated by a less
-     dispersed PD distribution rather than a different approval set.
 
 gap_remainder_diagnostic():
   How much of the LightGBM ex-ante/ex-post remainder gap (after removing
@@ -32,7 +30,7 @@ import json
 import duckdb
 import pandas as pd
 
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 TEST_SCORED = metrics_path("test_scored.parquet")
 VALIDATION_PARQUET = "data/processed/validation.parquet"
@@ -43,7 +41,7 @@ FIXED_APPROVAL_RATES_PCT = [70, 80, 90]
 
 
 def score_validation_all(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
 
     validation = pd.read_parquet(VALIDATION_PARQUET)
@@ -139,11 +137,6 @@ def fixed_approval_rate_and_gap_analysis() -> None:
     fixed_table.to_csv(metrics_path("test_fixed_approval_rate_comparison.csv"), index=False)
     print(fixed_table.to_string(index=False))
 
-    n_sub_grade_levels = int(test["sub_grade"].nunique())
-    with open(metrics_path("test_sub_grade_level_count.json"), "w") as f:
-        json.dump({"n_distinct_sub_grade_levels_test": n_sub_grade_levels}, f, indent=2)
-    print(f"\nDistinct sub_grade levels in test: {n_sub_grade_levels}")
-
     # ================================================================
     # 2. Gap decomposition for LightGBM
     # ================================================================
@@ -230,48 +223,6 @@ def fixed_approval_rate_and_gap_analysis() -> None:
 
     with open(metrics_path("test_gap_decomposition_lightgbm.json"), "w") as f:
         json.dump({"gap_decomposition": gap_decomposition, "recovery_timing_check": recovery_timing}, f, indent=2)
-
-    # ================================================================
-    # 3. Scorecard gap explanation check
-    # ================================================================
-    print("\n=== Scorecard vs LightGBM: approval-set overlap and PD dispersion ===")
-    lgb_approved_ids = set(test[test["pd_lightgbm"] <= champion_full_cutoff]["id"])
-    sc_cutoff = champion_full_cutoff  # same fixed PD cutoff policy applied to all models
-    sc_approved_ids = set(test[test["pd_scorecard"] <= sc_cutoff]["id"])
-
-    overlap = lgb_approved_ids & sc_approved_ids
-    only_lgb = lgb_approved_ids - sc_approved_ids
-    only_sc = sc_approved_ids - lgb_approved_ids
-
-    common = test[test["id"].isin(overlap)]
-    scorecard_check = {
-        "lightgbm_approved_n": len(lgb_approved_ids),
-        "scorecard_approved_n": len(sc_approved_ids),
-        "approved_by_both_n": len(overlap),
-        "approved_by_both_pct_of_lightgbm_set": round(100 * len(overlap) / len(lgb_approved_ids), 2),
-        "approved_by_both_pct_of_scorecard_set": round(100 * len(overlap) / len(sc_approved_ids), 2),
-        "only_lightgbm_approved_n": len(only_lgb),
-        "only_scorecard_approved_n": len(only_sc),
-        "pd_std_full_test": {
-            "lightgbm": round(float(test["pd_lightgbm"].std()), 4),
-            "scorecard": round(float(test["pd_scorecard"].std()), 4),
-        },
-        "on_commonly_approved_loans": {
-            "mean_pd_lightgbm": round(float(common["pd_lightgbm"].mean()), 4),
-            "mean_pd_scorecard": round(float(common["pd_scorecard"].mean()), 4),
-            "std_pd_lightgbm": round(float(common["pd_lightgbm"].std()), 4),
-            "std_pd_scorecard": round(float(common["pd_scorecard"].std()), 4),
-        },
-        "interpretation": (
-            "Approval sets are nearly identical (see overlap percentages). The ex-ante EV difference comes "
-            "from the scorecard assigning systematically lower/less dispersed PDs to the SAME commonly-approved "
-            "loans (see mean/std PD on commonly-approved loans), which mechanically inflates its computed EV - "
-            "not from the scorecard approving a different, better-risk set of loans."
-        ),
-    }
-    print(json.dumps(scorecard_check, indent=2))
-    with open(metrics_path("test_scorecard_gap_explanation.json"), "w") as f:
-        json.dump(scorecard_check, f, indent=2)
 
     print("\nDone.")
 

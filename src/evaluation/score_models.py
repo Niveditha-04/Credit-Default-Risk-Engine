@@ -15,7 +15,7 @@ CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
 V1_HISTORY_DIR = "data/processed/models/lightgbm_v1_history"
 
 
-def load_frozen_config(path: str = "reports/metrics/models/frozen_model_config.json") -> dict:
+def load_frozen_config(path: str = "config/model_config.json") -> dict:
     with open(path) as f:
         return json.load(f)
 

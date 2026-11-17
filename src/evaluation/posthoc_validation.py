@@ -47,7 +47,7 @@ from src.models.scorecard import (
     reduce_by_correlation,
     reduce_by_vif,
 )
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 FIG_DIR = Path("reports/figures")
 EXTRA_DIR = Path("reports/extra")
@@ -475,7 +475,7 @@ def run_walkforward() -> None:
     results = []
 
     # ---- Fold 1: train 2012-2013 -> evaluate 2014 (already fit, reuse) ----
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     # v1's own train/validation metrics moved to lightgbm_v1_history when
     # v2 was promoted (frozen_model_config.json's lightgbm_chosen now

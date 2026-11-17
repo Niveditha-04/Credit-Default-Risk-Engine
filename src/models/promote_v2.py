@@ -35,7 +35,7 @@ With --promote, in addition:
    data/processed/models/lightgbm_v1_history/, then promotes the v2
    candidate over the frozen path using src.models.gbm's own
    promote_candidate_artifacts (unlocks, copies, re-locks read-only).
-5. Updates reports/metrics/models/frozen_model_config.json: lightgbm_chosen now
+5. Updates config/model_config.json: lightgbm_chosen now
    describes v2; the previous lightgbm_chosen content is preserved under
    a new key, lightgbm_v1_history, with its model_path/calibrator.path
    pointed at the backed-up files (not the live path, which this step
@@ -71,7 +71,7 @@ from src.models.posthoc_v2 import (
     FROZEN_N_TREES,
     MONOTONE_DIRECTIONS,
 )
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH
 
 MODELS_DIR = Path("data/processed/models")
 FROZEN_LGB_DIR = MODELS_DIR / "lightgbm"
@@ -203,7 +203,7 @@ def main() -> None:
     print(f"v2 model_chosen.joblib SHA-256: {v2_hash}")
 
     print("\n=== Step 5: update frozen_model_config.json ===")
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
 
     v1_chosen = frozen["lightgbm_chosen"]
@@ -240,7 +240,7 @@ def main() -> None:
         },
         "v1_history_key": "lightgbm_v1_history",
     }
-    with open(metrics_path("frozen_model_config.json"), "w") as f:
+    with open(MODEL_CONFIG_PATH, "w") as f:
         json.dump(frozen, f, indent=2)
     print("frozen_model_config.json updated: lightgbm_chosen = v2, lightgbm_v1_history = v1")
 
@@ -257,17 +257,8 @@ def main() -> None:
     print(f"Alias 'v1_champion' set on version {current_champion.version} (the model that was 'champion' until now)")
 
     register_champion_standalone()
-
-    summary = {
-        "label": "promotion (not post-hoc/exploratory - this changes the served model)",
-        "v2_model_sha256": v2_hash,
-        "v1_history_artifacts": str(V1_HISTORY_DIR),
-        "v1_mlflow_alias": "v1_champion",
-        "calibration_evidence": calib_evidence,
-    }
-    with open(metrics_path("v2_promotion_summary.json"), "w") as f:
-        json.dump(summary, f, indent=2)
-    print("\n" + json.dumps(summary, indent=2))
+    print(f"\nv2 promoted: model_sha256={v2_hash}, v1 artifacts at {V1_HISTORY_DIR}, "
+          f"v1 MLflow alias 'v1_champion'.")
 
 
 if __name__ == "__main__":

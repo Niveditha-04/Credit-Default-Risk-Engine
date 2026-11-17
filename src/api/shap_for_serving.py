@@ -19,7 +19,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.report_paths import metrics_path
+from src.report_paths import MODEL_CONFIG_PATH, metrics_path
 
 TEST_PARQUET = "data/processed/test.parquet"
 CATEGORICAL_COLUMNS = ["home_ownership", "purpose", "verification_status"]
@@ -38,7 +38,7 @@ def sha256_of(path) -> str:
 
 
 def main() -> None:
-    with open(metrics_path("frozen_model_config.json")) as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     cfg = frozen["lightgbm_chosen"]
     feats = cfg["features"]

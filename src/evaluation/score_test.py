@@ -1,7 +1,7 @@
 """THE ONE-TIME TOUCH OF TEST (2015).
 
 Rules this script follows:
-  - Load models ONLY from reports/metrics/models/frozen_model_config.json.
+  - Load models ONLY from config/model_config.json.
   - After this script runs and results are seen, no model, feature, or
     calibration changes.
 

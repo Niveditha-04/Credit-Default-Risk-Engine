@@ -20,7 +20,7 @@ from src.features.allow_list import (
 )
 from src.models.gbm import feature_list
 
-with open("reports/metrics/models/frozen_model_config.json") as f:
+with open("config/model_config.json") as f:
     FROZEN_FEATURES = json.load(f)["lightgbm_chosen"]["features"]
 
 

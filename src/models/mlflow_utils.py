@@ -12,6 +12,8 @@ import mlflow
 import mlflow.pyfunc
 import pandas as pd
 
+from src.report_paths import MODEL_CONFIG_PATH
+
 TRACKING_URI = "sqlite:///mlflow.db"
 ARTIFACT_LOCATION = "./mlartifacts"
 EXPERIMENT_NAME = "credit-default-risk-engine"
@@ -155,7 +157,7 @@ class LightGBMChampionModel(mlflow.pyfunc.PythonModel):
 
 
 def register_champion_standalone(
-    metrics_dir="reports/metrics", models_dir="data/processed/models", validation_parquet="data/processed/validation.parquet"
+    models_dir="data/processed/models", validation_parquet="data/processed/validation.parquet"
 ):
     """Registers the champion in MLflow using the already-trained,
     already-frozen booster and calibrator on disk - no tuning search, no
@@ -166,8 +168,7 @@ def register_champion_standalone(
     MLflow infers a column's nullability from whether the sample happens
     to contain a missing value in it, so the sample has to be built
     carefully rather than just taking the first few rows."""
-    metrics_dir = Path(metrics_dir)
-    with open(metrics_dir / "frozen_model_config.json") as f:
+    with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     feats = frozen["lightgbm_chosen"]["features"]
 
