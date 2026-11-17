@@ -6,7 +6,7 @@ to decide whether a missing field warrants a "lowers fidelity" warning.
 This is a narrower, serving-focused sibling of src/explain/shap_analysis.py
 (which does the full SHAP writeup - dependence plots, income-group check,
 WOE-direction comparison - for v1, already documented throughout
-README.md and docs/validation_report.md as v1's result). Re-running
+README.md as v1's result). Re-running
 shap_analysis.py itself for a newly-served model would silently break
 that existing, already-cited documentation; this script only produces
 what src.api.scoring.ScoringEngine actually reads at request time, and

@@ -12,7 +12,7 @@ Sections, run in order by main():
   1. Ablations: four variants of the champion's own hyperparameters (no
      tuning search), validation (2014) primary, test (2015) post-hoc.
   2. v2 evaluation: v1 (frozen, unchanged) vs. a freshly-fit v2 against
-     the pre-registered adoption rule in docs/v2_decision_rule.md, on
+     the adoption rule fixed in writing before any v2 code ran, on
      2016 vintages.
   3. v2 label robustness: the same evaluation rerun with a second,
      "corrected" 24-month label, chosen after section 2 already ran, to
@@ -380,7 +380,7 @@ def run_ablations() -> None:
 EVAL_WINDOW_START = "2016-01-01"
 EVAL_WINDOW_END = "2016-10-31"
 
-# Adoption rule, reports/metrics/v2_decision_rule.md / docs/v2_decision_rule.md.
+# Adoption rule, fixed in writing and committed before any v2 code ran.
 AUC_SLACK = 0.002
 ECE_SLACK = 0.005
 
@@ -447,7 +447,7 @@ def run_v2_evaluation() -> None:
 
     result = {
         "label": "post-hoc, exploratory",
-        "rule_file": "docs/v2_decision_rule.md",
+        "rule_fixed_before_v2_code_ran": True,
         "evaluation_population": {
             "window": [EVAL_WINDOW_START, EVAL_WINDOW_END],
             "n_scored": len(population),
@@ -591,7 +591,7 @@ def run_v2_on_test_2015() -> None:
     refit) on test (2015). This is a genuinely new, separate post-hoc
     read of test: v2 was selected on 2016 vintages (section 2) and its
     calibrator was fit on 2015 afterward (not an evaluation, a
-    calibration step, see docs/validation_report.md), but v2's AUC,
+    calibration step, see README.md), but v2's AUC,
     Gini, and KS on the full 2015 test population were never computed
     before this check. 2015 is therefore not a clean holdout for v2 in
     the way it was for v1: v2's calibrator already saw these labels.

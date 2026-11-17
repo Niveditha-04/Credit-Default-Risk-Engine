@@ -4,7 +4,7 @@
 
 I built a model that scores the lifetime default risk of a LendingClub loan, using only what was known at origination. The view is an investor's: which already-accepted loans to fund, not who to approve in the first place.
 
-[Read the one-page decision memo](docs/decision_memo.md) for the plain-English recommendation.
+**Bottom line:** fund almost every loan the model does not flag as high risk when the cost of funds is low. Pull back to a smaller, safer slice as that cost rises. At an 8% cost of funds, every approval rate I tested loses money.
 
 ## Results at a glance
 
@@ -74,7 +74,7 @@ Decision quality, LightGBM exact rank on test (`reports/metrics/economics/test_d
 
 ## v1 vs. v2
 
-v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`docs/v2_decision_rule.md`).
+v2 is the model the API serves now, chosen over v1 by a rule I fixed in writing and committed before any v2 code ran: adopt v2 only if AUC does not drop by more than 0.002 and ECE does not rise by more than 0.005, on a 2016 holdout.
 
 | | v1 | v2 |
 |---|---|---|
@@ -94,6 +94,33 @@ v2 is the model the API serves now, chosen over v1 by a pre-registered rule (`do
 - **AUC is range-restricted:** FICO stayed at or above **660** in every year used, and LendingClub had already pre-screened every applicant before this data existed (`reports/metrics/data/eligibility_caps_by_year.csv`).
 
 Ex-ante expected value overstated realized cash by **$44.6M**: **$21.9M** default-rate drift, **$12.9M** prepayment, **$7.3M** loss severity, **$2.4M** unexplained (`reports/metrics/economics/test_gap_decomposition_lightgbm.json`, `reports/metrics/economics/test_gap_remainder_diagnostic.json`).
+
+## Calibration
+
+Out-of-sample on validation (fit 2014-01 to 2014-09, holdout 2014-10 to 2014-12), refit on all of 2014 for deployment:
+
+| Check | Value |
+|---|---|
+| Mean predicted PD, test | 13.74% |
+| Actual default rate, test | 14.88% |
+| Expected Calibration Error, test, 10 bins | 0.0121 |
+| Largest monthly gap | 1.89 pp |
+| Largest FICO-band gap | 1.90 pp |
+
+(`reports/metrics/evaluation/test_core_metrics.json`, `reports/metrics/evaluation/posthoc_calibration_summary.json`)
+
+## Stability across segments (post-hoc)
+
+LightGBM AUC and default rate by segment, test:
+
+| Dimension | AUC range | Default-rate range |
+|---|---|---|
+| FICO band | 0.6481-0.7417 | 4.77%-19.32% |
+| Purpose (top 6 + other) | 0.6677-0.6945 | 12.23%-18.48% |
+| Loan size band | 0.6596-0.7124 | - |
+| Issue quarter | 0.6812-0.6914 | - |
+
+The model discriminates better among safer borrowers and larger loans. Labeled stability, not fairness: this data has no protected attributes (`reports/metrics/evaluation/posthoc_segment_table.csv`, `reports/metrics/evaluation/test_stability_by_quarter.csv`, `reports/metrics/evaluation/test_stability_by_region.csv`).
 
 ## Drift (historical replay, 2015-2018)
 
@@ -150,10 +177,17 @@ make promote   # refits v2, writes to candidates/ only; add PROMOTE_V2_FLAG=--pr
 make test      # pytest, synthetic fixtures only
 make serve     # FastAPI dev server
 docker build -t credit-default-risk-engine:latest . && docker run -d --rm -p 8000:8000 --name cdre credit-default-risk-engine:latest
-curl -s -X POST http://localhost:8000/score -H "Content-Type: application/json" -d @docs/api_example.json
+curl -s -X POST http://localhost:8000/score -H "Content-Type: application/json" -d @examples/api_example.json
 ```
 
-`make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included). On macOS, LightGBM needs `brew install libomp`; the Docker image installs `libgomp1`. More detail, including the full API schema and latency numbers, is in `docs/validation_report.md`.
+`make data` needs `accepted_2007_to_2018Q4.csv.gz` in `data/raw/` (not included). On macOS, LightGBM needs `brew install libomp`; the Docker image installs `libgomp1`.
+
+`/score` accepts 63 fields (19 required, < 1% missing in train + validation); an example request is in `examples/api_example.json`. Latency, 1,000 sequential requests, one container, Apple M4 (`reports/metrics/models/api_latency.json`):
+
+| Condition | p50 | p95 | p99 |
+|---|---|---|---|
+| With reason codes | 17.25 ms | 21.61 ms | 35.14 ms |
+| Without reason codes | 14.62 ms | 20.68 ms | 29.54 ms |
 
 ## License and data credit
 

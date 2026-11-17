@@ -9,9 +9,9 @@ is passed on the command line, same convention as src.models.gbm's own
 --promote flag. This never reads reports/metrics/evaluation/test_scored.parquet,
 the locked one-time test evaluation file, and never writes to it.
 
-v2 was defined and evaluated against a pre-registered rule in
-docs/v2_decision_rule.md, committed before any v2 code ran. That
-evaluation (reports/metrics/evaluation/posthoc_v2_evaluation.json) said adopt v2 on
+v2 was defined and evaluated against a rule fixed in writing and
+committed before any v2 code ran. That evaluation
+(reports/metrics/evaluation/posthoc_v2_evaluation.json) said adopt v2 on
 2016 vintages, confirmed by a label robustness check
 (reports/metrics/evaluation/posthoc_v2_label_robustness.json). v1's artifacts are
 preserved as history, not deleted, the one time this script is run
@@ -219,7 +219,7 @@ def main() -> None:
         "model_type": "lightgbm",
         "role": "champion (v2)",
         "selection_rule": (
-            "Pre-registered in docs/v2_decision_rule.md before any v2 code ran: adopt v2 "
+            "Fixed in writing and committed before any v2 code ran: adopt v2 "
             "if AUC(v2) >= AUC(v1) - 0.002 and ECE(v2) <= ECE(v1) + 0.005 on 2016 vintages "
             "(issue <= 2016-10-31, 24-month label). Result: AUC(v2)=0.6978 vs. "
             "AUC(v1)=0.6899, ECE(v2)=0.0079 vs. ECE(v1)=0.0080 - both conditions met. "
