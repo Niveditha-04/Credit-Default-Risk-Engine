@@ -4,7 +4,7 @@ calibrator fit on 2015).
 
 Every run refits v2 and writes it to data/processed/models/candidates/
 v2_promotion/lightgbm/ - the frozen, served data/processed/models/lightgbm/
-path, frozen_model_config.json, and MLflow are untouched unless --promote
+path, config/model_config.json, and MLflow are untouched unless --promote
 is passed on the command line, same convention as src.models.gbm's own
 --promote flag. This never reads reports/metrics/evaluation/test_scored.parquet,
 the locked one-time test evaluation file, and never writes to it.
@@ -181,7 +181,7 @@ def main() -> None:
     if not promote_requested():
         print(
             "\n--promote not passed: stopping here. The frozen data/processed/models/lightgbm/ "
-            "path, frozen_model_config.json, and MLflow are untouched. Rerun with --promote "
+            "path, config/model_config.json, and MLflow are untouched. Rerun with --promote "
             "to deploy this candidate as the served model."
         )
         return
@@ -202,7 +202,7 @@ def main() -> None:
     assert v2_hash == candidate_hash, "promoted artifact hash does not match the candidate just written"
     print(f"v2 model_chosen.joblib SHA-256: {v2_hash}")
 
-    print("\n=== Step 5: update frozen_model_config.json ===")
+    print("\n=== Step 5: update config/model_config.json ===")
     with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
 
@@ -242,7 +242,7 @@ def main() -> None:
     }
     with open(MODEL_CONFIG_PATH, "w") as f:
         json.dump(frozen, f, indent=2)
-    print("frozen_model_config.json updated: lightgbm_chosen = v2, lightgbm_v1_history = v1")
+    print("config/model_config.json updated: lightgbm_chosen = v2, lightgbm_v1_history = v1")
 
     print("\n=== Step 6: MLflow - alias v1 on the current champion, then register v2 as champion ===")
     setup_mlflow()

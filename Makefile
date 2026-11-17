@@ -6,7 +6,7 @@ RAW_PARQUET = data/interim/accepted_2007_to_2018Q4_raw.parquet
 RAW_PROFILE = reports/metrics/data/raw_data_profile.json
 # Passed through to promote_v2.py. Empty by default: `make promote` only
 # refits v2 and writes it to data/processed/models/candidates/, leaving
-# the served model, frozen_model_config.json, and MLflow untouched.
+# the served model, config/model_config.json, and MLflow untouched.
 # `make promote PROMOTE_V2_FLAG=--promote` deploys it for real.
 PROMOTE_V2_FLAG :=
 
@@ -61,9 +61,9 @@ promote-v1: train
 # Writes to data/processed/models/candidates/v2_promotion/ only, unless
 # PROMOTE_V2_FLAG=--promote is passed, which deploys the refit over the
 # frozen data/processed/models/lightgbm/ path (backing up v1's
-# artifacts first), updates frozen_model_config.json, and registers v2
+# artifacts first), updates config/model_config.json, and registers v2
 # in MLflow as champion. Needs freeze to already have run (reads
-# frozen_model_config.json's allow-list to validate v2's own features).
+# config/model_config.json's allow-list to validate v2's own features).
 # Never reads or writes reports/metrics/evaluation/test_scored.parquet, the locked
 # one-time test evaluation file - only test.parquet, for calibration.
 promote: freeze

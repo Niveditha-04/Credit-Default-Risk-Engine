@@ -477,10 +477,10 @@ def run_walkforward() -> None:
     # ---- Fold 1: train 2012-2013 -> evaluate 2014 (already fit, reuse) ----
     with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
-    # v1's own train/validation metrics moved to lightgbm_v1_history when
-    # v2 was promoted (frozen_model_config.json's lightgbm_chosen now
-    # describes v2); fold 1 is specifically v1's already-fit split, so it
-    # reads from history, same number (0.6834) as before the promotion.
+    # v1's own train/validation metrics live under lightgbm_v1_history,
+    # since config/model_config.json's lightgbm_chosen describes v2, the
+    # served champion; fold 1 is specifically v1's already-fit split, so
+    # it reads from history, the same number (0.6834) as v1's own champion run.
     lgb_fold1_auc = frozen["lightgbm_v1_history"]["train_validation_metrics"]["validation_auc"]
     with open(metrics_path("scorecard_validation_metrics.json")) as f:
         sc_metrics = json.load(f)

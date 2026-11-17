@@ -4,7 +4,7 @@ three separate scripts: the ablations that led to v2's monotone
 robustness check on that decision's label, and a later, separate check
 of the now-served v2 model directly against test (2015).
 
-None of this touches data/processed/models/ or frozen_model_config.json
+None of this touches data/processed/models/ or config/model_config.json
 except by reading it; every model refit here is fit fresh, in memory,
 and only ever written to reports/metrics/.
 
@@ -587,7 +587,7 @@ def run_v2_label_robustness() -> None:
 
 def run_v2_on_test_2015() -> None:
     """Scores the actual served v2 (its saved booster and calibrator,
-    read from frozen_model_config.json's lightgbm_chosen, not a fresh
+    read from config/model_config.json's lightgbm_chosen, not a fresh
     refit) on test (2015). This is a genuinely new, separate post-hoc
     read of test: v2 was selected on 2016 vintages (section 2) and its
     calibrator was fit on 2015 afterward (not an evaluation, a

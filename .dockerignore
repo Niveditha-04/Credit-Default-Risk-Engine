@@ -27,7 +27,6 @@ htmlcov/
 .coverage
 
 notebooks/
-docs/
 tests/
 
 .env

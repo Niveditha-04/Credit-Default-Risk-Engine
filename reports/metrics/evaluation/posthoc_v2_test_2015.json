@@ -24,5 +24,5 @@
     "n_resamples_used": 1000,
     "significant": true
   },
-  "note": "Calibration (v2's Platt scaling, fit on 2015) is a monotone transform of the raw booster score, so it does not change AUC, Gini, or KS - these metrics are identical whether scored with or without the calibrator applied. v1's score (pd_lightgbm) and target come from the already-saved, one-time test_scored.parquet; v2 is scored fresh here with its own saved artifacts (reports/metrics/frozen_model_config.json's lightgbm_chosen)."
+  "note": "Calibration (v2's Platt scaling, fit on 2015) is a monotone transform of the raw booster score, so it does not change AUC, Gini, or KS - these metrics are identical whether scored with or without the calibrator applied. v1's score (pd_lightgbm) and target come from the already-saved, one-time test_scored.parquet; v2 is scored fresh here with its own saved artifacts (config/model_config.json's lightgbm_chosen)."
 }

@@ -1,6 +1,6 @@
 """src/features/allow_list.py (pure, in-memory allow-list data, no real
 data file needed) and src.models.gbm.feature_list's exact assertion
-against it (frozen_model_config.json is a small, committed metrics
+against it (config/model_config.json is a small, committed metrics
 file, not real training data, so this all runs in CI)."""
 
 import csv
