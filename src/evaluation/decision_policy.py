@@ -119,8 +119,8 @@ def estimate_prepayment_ratio_from_train(con: duckdb.DuckDBPyConnection) -> dict
 
 def load_champion_predictions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """v1 explicitly (lightgbm_v1_history, not lightgbm_chosen): this
-    policy was set once, on validation, before v2 existed, and must
-    never move just because a later model was promoted."""
+    policy is set once, on validation, and stays fixed; v2 is the
+    served model, but this policy does not move to track it."""
     with open(MODEL_CONFIG_PATH) as f:
         frozen = json.load(f)
     lgb_cfg = v1_lightgbm_cfg(frozen)

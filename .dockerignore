@@ -2,14 +2,13 @@
 # build context. The two exceptions are the baked champion artifacts
 # (data/processed/models/lightgbm/model_chosen.joblib and calibrator.joblib)
 # that the Dockerfile explicitly COPYs - everything else under data/ is
-# excluded below, including the other two models (scorecard, xgboost) and
-# the unconstrained-reference LightGBM artifact, none of which the API uses.
+# excluded below, including the other two models (scorecard, xgboost),
+# none of which the API uses.
 data/raw/
 data/interim/
 data/processed/*.parquet
 data/processed/models/scorecard/
 data/processed/models/xgboost/
-data/processed/models/lightgbm/model_best_unconstrained.joblib
 data/processed/models/lightgbm/features.json
 
 mlruns/

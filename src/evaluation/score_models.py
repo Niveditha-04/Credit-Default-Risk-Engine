@@ -24,13 +24,12 @@ def v1_lightgbm_cfg(frozen: dict) -> dict:
     """v1's LightGBM scoring config, explicit, from lightgbm_v1_history.
     Every script that reports a v1 result (SHAP, test evaluation,
     decision policy, economics, drift, any post-hoc v1 section) calls
-    this, never frozen["lightgbm_chosen"] directly: that key now
-    describes whichever model is currently served (v2 as of this
-    project's current state), not v1. model_path/calibrator.path are
-    overridden to the actual backed-up v1 files under
+    this, never frozen["lightgbm_chosen"] directly: that key describes
+    whichever model is served (v2), not v1. model_path/calibrator.path
+    are overridden to the actual backed-up v1 files under
     lightgbm_v1_history/, because lightgbm_v1_history's own path
-    fields still point at the live lightgbm/ path it shared with v1
-    before v2 was promoted over it."""
+    fields still point at the live lightgbm/ path, which serves v2,
+    not v1."""
     cfg = dict(frozen["lightgbm_v1_history"])
     cfg["model_path"] = f"{V1_HISTORY_DIR}/model_chosen.joblib"
     cfg["calibrator"] = dict(cfg["calibrator"])
